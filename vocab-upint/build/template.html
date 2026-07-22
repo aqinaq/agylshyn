@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vocabulary in Use — Upper-Intermediate</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#fbfcfd; --text:#16191d; --muted:#6b7280;
+  --line:#e3e6ea; --line2:#eef0f3; --accent:#2f6fed; --accent-soft:#e8effd;
+  --ok:#0e7a4a; --ok-bg:#e6f5ed; --bad:#c0392b; --bad-bg:#fdecea;
+  --warn:#8a6100; --warn-bg:#fdf3d8; --chip:#eef1f5;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04);
+}
+/* Follows the operating system automatically — there is no theme setting. */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101317; --panel:#171b21; --panel2:#1c2128; --text:#e6e9ee; --muted:#98a2b3;
+    --line:#272d36; --line2:#212730; --accent:#6f9bff; --accent-soft:#1b2942;
+    --ok:#4ec98a; --ok-bg:#12301f; --bad:#ff8a7a; --bad-bg:#381c18;
+    --warn:#e8c168; --warn-bg:#332a12; --chip:#232a33;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit}
+input{font:inherit}
+
+/* ---------- layout ---------- */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{
+  width:318px;flex:0 0 318px;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth}
+.wrap{max-width:820px;margin:0 auto;padding:22px 24px 120px}
+
+/* ---------- sidebar ---------- */
+.brand{padding:14px 16px 10px;border-bottom:1px solid var(--line2)}
+.brand h1{margin:0;font-size:14px;letter-spacing:.01em}
+.brand p{margin:2px 0 0;font-size:11.5px;color:var(--muted)}
+.navbtns{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.nb{
+  flex:1;min-width:0;padding:7px 4px;border:1px solid var(--line);background:var(--panel2);
+  border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.nb:hover{border-color:var(--accent)}
+.nb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){ .nb.on{color:#0d1522;font-weight:600} }
+.nb .badge{display:inline-block;margin-left:4px;background:var(--bad);color:#fff;border-radius:9px;
+  padding:0 5px;font-size:10.5px;line-height:15px;vertical-align:1px}
+.nb.on .badge{background:rgba(255,255,255,.28)}
+.searchbox{padding:10px 12px;border-bottom:1px solid var(--line2)}
+.searchbox input{
+  width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:8px;
+  background:var(--panel2);color:var(--text);outline:none;
+}
+.searchbox input:focus{border-color:var(--accent)}
+.units{flex:1;overflow-y:auto;padding:6px 8px 20px}
+.unit{
+  display:block;width:100%;text-align:left;border:0;background:none;cursor:pointer;
+  padding:7px 8px;border-radius:8px;margin-bottom:1px;
+}
+.unit:hover{background:var(--panel2)}
+.unit.on{background:var(--accent-soft)}
+.unit .row1{display:flex;align-items:baseline;gap:7px}
+.unit .num{font-size:11px;color:var(--muted);min-width:22px;font-variant-numeric:tabular-nums}
+.unit .ttl{font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unit .pct{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.unit.done .pct{color:var(--ok);font-weight:600}
+.bar{height:3px;background:var(--line2);border-radius:3px;margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.unit.done .bar i{background:var(--ok)}
+.sidefoot{padding:9px 12px;border-top:1px solid var(--line2);display:flex;gap:8px;align-items:center}
+.linkbtn{background:none;border:0;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px;border-radius:6px}
+.linkbtn:hover{color:var(--accent)}
+
+/* ---------- main content ---------- */
+.pagehead{margin:0 0 4px;font-size:22px;font-weight:650;letter-spacing:-.01em}
+.pagesub{margin:0 0 18px;color:var(--muted);font-size:13px}
+.ex{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.exhead{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+.exno{font-weight:700;font-size:15px}
+.exsum{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.tag{
+  font-size:11px;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--muted);
+  white-space:nowrap;
+}
+.tag.pdf{background:var(--accent-soft);color:var(--accent)}
+.tag.low{background:var(--warn-bg);color:var(--warn)}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}
+.instr{font-size:13.5px;color:var(--muted);margin:0 0 12px;white-space:pre-wrap}
+.instr.clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.more{background:none;border:0;color:var(--accent);font-size:12px;cursor:pointer;padding:0;margin:-6px 0 12px}
+.wb{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px}
+.wb b{font-size:11.5px;color:var(--muted);font-weight:600;margin-right:2px;align-self:center}
+.wb span{background:var(--chip);border-radius:6px;padding:2px 8px;font-size:12.5px}
+.rawref{
+  margin:0 0 12px;padding:9px 11px;background:var(--warn-bg);border-radius:8px;
+  font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);
+  white-space:pre-wrap;max-height:150px;overflow:auto;opacity:.9;
+}
+
+/* ---------- items ---------- */
+.item{padding:10px 0;border-top:1px solid var(--line2)}
+.item:first-of-type{border-top:0}
+.q{display:flex;gap:9px;align-items:flex-start}
+.n{color:var(--muted);font-size:12.5px;min-width:19px;padding-top:2px;font-variant-numeric:tabular-nums}
+.qt{flex:1;font-size:14.5px}
+.qt .blank{
+  display:inline-block;min-width:52px;border-bottom:2px solid var(--accent);
+  vertical-align:-2px;height:1.1em;margin:0 2px;
+}
+.qt em.nq{color:var(--muted);font-style:normal;font-size:13.5px}
+.ans{display:flex;gap:7px;margin:7px 0 0 28px;flex-wrap:wrap;align-items:center}
+.ans input{
+  flex:1;min-width:190px;padding:7px 11px;border:1.5px solid var(--line);border-radius:8px;
+  background:var(--panel2);color:var(--text);outline:none;transition:border-color .15s;
+}
+.ans input:focus{border-color:var(--accent);background:var(--panel)}
+.ans input:disabled{opacity:.75}
+.btn{
+  padding:7px 13px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;
+  cursor:pointer;font-size:13px;white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{opacity:.9;color:#fff}
+@media (prefers-color-scheme: dark){
+  .btn.primary{color:#0d1522;font-weight:600}
+  .btn.primary:hover{color:#0d1522}
+}
+.btn.sm{padding:4px 9px;font-size:12px}
+.fb{margin:7px 0 0 28px;font-size:13.5px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.fb .ic{font-weight:700}
+.fb.ok{color:var(--ok)}
+.fb.bad{color:var(--bad)}
+.fb.warn{color:var(--warn)}
+.fb .sol{color:var(--text);background:var(--chip);padding:1px 7px;border-radius:6px}
+.item.correct{background:linear-gradient(90deg,var(--ok-bg),transparent 60%);border-radius:8px}
+.item.wrong{background:linear-gradient(90deg,var(--bad-bg),transparent 60%);border-radius:8px}
+.item.close{background:linear-gradient(90deg,var(--warn-bg),transparent 60%);border-radius:8px}
+.example{
+  margin:0 0 0 28px;font-size:13px;color:var(--muted);background:var(--panel2);
+  border-left:3px solid var(--line);padding:5px 10px;border-radius:0 6px 6px 0;
+}
+.noans{margin-left:28px;font-size:12.5px;color:var(--muted);font-style:italic}
+.mastered-pill{font-size:10.5px;color:var(--ok);background:var(--ok-bg);border-radius:999px;padding:1px 7px}
+
+/* ---------- stats ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.card .big{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.card .lbl{font-size:12px;color:var(--muted);margin-top:2px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{padding:8px 12px;text-align:left;font-size:13px;border-bottom:1px solid var(--line2)}
+th{background:var(--panel2);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.empty{text-align:center;color:var(--muted);padding:48px 20px;font-size:14px}
+.hint{font-size:12.5px;color:var(--muted);margin:-8px 0 16px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.mobtop{display:none}
+
+@media(max-width:820px){
+  .app{flex-direction:column;height:auto;overflow:visible}
+  .sidebar{width:100%;flex:none;border-right:0;border-bottom:1px solid var(--line);max-height:none}
+  .sidebar.collapsed .searchbox,.sidebar.collapsed .units,.sidebar.collapsed .sidefoot{display:none}
+  .units{max-height:44vh}
+  .main{overflow:visible}
+  .wrap{padding:16px 14px 80px}
+  .mobtop{display:inline-block}
+}
+@media(max-width:560px){
+  .ans input{flex:1 1 100%;min-width:0}
+  .ans{gap:6px}
+  .ans .btn{flex:1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar collapsed" id="sidebar">
+    <div class="brand">
+      <h1>English Vocabulary in Use</h1>
+      <p>Upper-Intermediate · 4th Edition · <span id="globalpct">0%</span>
+         <button class="linkbtn mobtop" id="togglenav" style="float:right">☰ Бөлімдер</button></p>
+    </div>
+    <div class="navbtns">
+      <button class="nb on" data-view="units">Бөлімдер</button>
+      <button class="nb" data-view="mistakes">Қателер<span class="badge" id="mbadge">0</span></button>
+      <button class="nb" data-view="stats">Статистика</button>
+    </div>
+    <div class="searchbox"><input id="search" placeholder="Бөлімді іздеу…" autocomplete="off"></div>
+    <div class="units" id="unitlist"></div>
+    <div class="sidefoot">
+      <span style="flex:1"></span>
+      <button class="linkbtn" id="reset">Нәтижені өшіру</button>
+    </div>
+  </aside>
+  <main class="main" id="main"><div class="wrap" id="content"></div></main>
+</div>
+
+<script type="application/json" id="dataset">__DATA__</script>
+<script>
+(function(){
+"use strict";
+
+/* =====================  DATA  ===================== */
+var DATA = JSON.parse(document.getElementById('dataset').textContent);
+var UNITS = DATA.units;
+
+/* Build a flat index of practisable items. */
+var ALL = [];                 // {key, unitIdx, exIdx, itemIdx, unit, ex, item}
+UNITS.forEach(function(u, ui){
+  u.exercises.forEach(function(ex, ei){
+    ex.items.forEach(function(it, ii){
+      if(it.isExample) return;
+      if(!it.answer && !it.blank) return;
+      var rec = {key: ui+'|'+ei+'|'+ii, unitIdx:ui, exIdx:ei, itemIdx:ii, unit:u, ex:ex, item:it};
+      ALL.push(rec);
+    });
+  });
+});
+var BYKEY = {}; ALL.forEach(function(r){ BYKEY[r.key]=r; });
+var BYUNIT = {}; ALL.forEach(function(r){ (BYUNIT[r.unitIdx]=BYUNIT[r.unitIdx]||[]).push(r); });
+
+/* =====================  STORAGE  ===================== */
+var LS = 'evu-upper-int-v1';
+var S = load();
+function load(){
+  try{
+    var raw = localStorage.getItem(LS);
+    if(raw){ var o = JSON.parse(raw); if(o && o.items) return o; }
+  }catch(e){}
+  return {v:1, items:{}, streak:0, best:0, answered:0, correct:0};
+}
+var saveTimer=null, dirty=false;
+function save(){
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 250);
+}
+function flush(){
+  clearTimeout(saveTimer);
+  if(!dirty) return;               /* never let an idle tab clobber another tab's newer progress */
+  try{ localStorage.setItem(LS, JSON.stringify(S)); dirty = false; }catch(e){}
+}
+function rec(key){ return S.items[key] || (S.items[key]={c:0,w:0,s:0,m:false}); }
+function isMastered(key){ var r=S.items[key]; return !!(r && r.m); }
+function isWrongOpen(key){ var r=S.items[key]; return !!(r && r.w>0 && !r.m); }
+
+var MASTER_STREAK = 3;
+
+/* =====================  ANSWER CHECKING  ===================== */
+function norm(s){
+  return String(s||'')
+    .toLowerCase()
+    .replace(/[‘’ʼ′´`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—−]/g, '-')
+    .replace(/…/g, ' ')
+    .replace(/\.\.\./g, ' ')
+    .replace(/[-_/\\]/g, ' ')
+    .replace(/[.,;:!?"()\[\]{}*"]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function stripLead(s){ return s.replace(/^(?:a|an|the|to|some)\s+/, ''); }
+
+/* Turn a raw answer string into a list of acceptable variants. */
+function variants(raw){
+  if(!raw) return [];
+  var out = [], seen = {};
+  function push(x){
+    var n = norm(x); if(!n) return;
+    if(!seen[n]){ seen[n]=1; out.push(n); }
+    var st = stripLead(n);
+    if(st && st!==n && !seen[st]){ seen[st]=1; out.push(st); }
+  }
+  var base = [String(raw)];
+  // remove bracketed explanations -> extra variant
+  var noParen = String(raw).replace(/\([^)]*\)/g,' ');
+  if(norm(noParen) && norm(noParen)!==norm(raw)) base.push(noParen);
+  // keep bracket content as optional -> "(table) mat" => "table mat"
+  var flat = String(raw).replace(/[()]/g,' ');
+  base.push(flat);
+
+  base.forEach(function(b){
+    push(b);
+    // split alternatives
+    b.split(/\s*\/\s*|\s+or\s+|\s*;\s*/i).forEach(function(p){ if(p.trim().length) push(p); });
+  });
+  return out;
+}
+function lev(a,b){
+  if(a===b) return 0;
+  var m=a.length,n=b.length;
+  if(!m) return n; if(!n) return m;
+  var prev=new Array(n+1), cur=new Array(n+1), i,j;
+  for(j=0;j<=n;j++) prev[j]=j;
+  for(i=1;i<=m;i++){
+    cur[0]=i;
+    for(j=1;j<=n;j++){
+      cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a.charCodeAt(i-1)===b.charCodeAt(j-1)?0:1));
+    }
+    var t=prev; prev=cur; cur=t;
+  }
+  return prev[n];
+}
+function tolerance(len){ return len<=4?0 : len<=8?1 : 2; }
+
+/* returns 'correct' | 'close' | 'wrong' */
+function grade(user, item){
+  var u = norm(user); if(!u) return 'wrong';
+  var us = stripLead(u);
+  var vs = variants(item.answer).concat(variants(item.blank));
+  if(!vs.length) return 'wrong';
+  var i, v;
+  for(i=0;i<vs.length;i++){
+    v = vs[i];
+    if(u===v || us===v || u===stripLead(v)) return 'correct';
+  }
+  // whole-word containment either way (for longer sentence answers)
+  for(i=0;i<vs.length;i++){
+    v = vs[i];
+    if(v.length>=5 && (u.indexOf(v)>=0 || (u.length>=5 && v.indexOf(u)>=0))) return 'correct';
+  }
+  for(i=0;i<vs.length;i++){
+    v = vs[i];
+    if(lev(u,v) <= tolerance(v.length)) return 'close';
+  }
+  return 'wrong';
+}
+
+/* =====================  RESULT RECORDING  ===================== */
+function record(key, ok){
+  var r = rec(key);
+  S.answered++;
+  if(ok){
+    r.c++; r.s++; S.correct++; S.streak++;
+    if(S.streak > S.best) S.best = S.streak;
+    if(r.s >= MASTER_STREAK) r.m = true;
+  }else{
+    r.w++; r.s=0; r.m=false; S.streak=0;
+  }
+  save();
+  refreshProgress(key);
+}
+
+/* =====================  RENDER HELPERS  ===================== */
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function el(html){ var d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+function qText(t){
+  return esc(t).replace(/_{2,}/g,'<span class="blank"></span>');
+}
+function unitTotal(ui){ return (BYUNIT[ui]||[]).length; }
+function unitDone(ui){
+  var a = BYUNIT[ui]||[], n=0;
+  for(var i=0;i<a.length;i++) if(isMastered(a[i].key)) n++;
+  return n;
+}
+function mistakeList(){
+  return ALL.filter(function(r){ return isWrongOpen(r.key); });
+}
+
+/* =====================  SIDEBAR  ===================== */
+var unitEls = [];
+function buildSidebar(){
+  var list = document.getElementById('unitlist');
+  var frag = document.createDocumentFragment();
+  UNITS.forEach(function(u, ui){
+    var b = el('<button class="unit" data-ui="'+ui+'">'+
+      '<span class="row1"><span class="num">'+esc(u.unit)+'</span>'+
+      '<span class="ttl">'+esc(u.title)+'</span><span class="pct">0%</span></span>'+
+      '<span class="bar"><i></i></span></button>');
+    b.addEventListener('click', function(){ show({view:'unit', ui:ui}); });
+    unitEls[ui] = {node:b, pct:b.querySelector('.pct'), bar:b.querySelector('.bar i')};
+    frag.appendChild(b);
+  });
+  list.appendChild(frag);
+  updateAllBars();
+}
+function updateUnitBar(ui){
+  var t = unitTotal(ui), d = unitDone(ui);
+  var p = t ? Math.round(d*100/t) : 0;
+  var e = unitEls[ui]; if(!e) return;
+  e.pct.textContent = t ? p+'%' : '—';
+  e.bar.style.width = p+'%';
+  e.node.classList.toggle('done', t>0 && d===t);
+}
+function updateAllBars(){
+  for(var ui=0; ui<UNITS.length; ui++) updateUnitBar(ui);
+  updateGlobal();
+}
+function updateGlobal(){
+  var done=0; for(var i=0;i<ALL.length;i++) if(isMastered(ALL[i].key)) done++;
+  document.getElementById('globalpct').textContent =
+     done+' / '+ALL.length+' ('+Math.round(done*100/ALL.length)+'%)';
+  document.getElementById('mbadge').textContent = mistakeList().length;
+}
+function refreshProgress(key){
+  var r = BYKEY[key];
+  if(r) updateUnitBar(r.unitIdx);
+  updateGlobal();
+}
+
+/* =====================  ITEM ROW  ===================== */
+function renderItem(r, opts){
+  opts = opts || {};
+  var it = r.item, key = r.key, st = S.items[key];
+  var node = el('<div class="item"></div>');
+
+  var head = '<div class="q"><span class="n">'+esc(it.n!=null?it.n:'•')+'</span><span class="qt">'+
+    (it.question ? qText(it.question)
+                 : '<em class="nq">Сұрақ PDF-те ('+esc(r.ex.pdfExercisePage)+'-бет, '+esc(it.n)+'-тапсырма) — жауабын жазыңыз</em>')+
+    (isMastered(key)?' <span class="mastered-pill">меңгерілді</span>':'')+
+    '</span></div>';
+  node.appendChild(el(head));
+
+  if(opts.showEx){
+    node.insertBefore(el('<div class="tag pdf" style="margin:0 0 6px 28px;display:inline-block">'+
+      esc(r.unit.unit)+'. '+esc(r.unit.title)+' · '+esc(r.ex.number)+' · PDF '+esc(r.ex.pdfExercisePage)+'-бет</div>'), node.firstChild);
+  }
+
+  var loose = !!it.exampleAnswers;
+  var row = el('<div class="ans">'+
+     '<input type="text" placeholder="'+(loose?'Өз жауабыңыз…':'Жауабыңыз…')+'" spellcheck="false" autocomplete="off">'+
+     '<button class="btn primary">Тексеру</button>'+
+     '<button class="btn">Жауабы</button></div>');
+  var input = row.children[0], checkBtn = row.children[1], showBtn = row.children[2];
+  node.appendChild(row);
+
+  var fb = el('<div class="fb" style="display:none"></div>');
+  node.appendChild(fb);
+
+  var settled = false;
+
+  function solution(){
+    var s = it.answer || it.blank || '';
+    return s;
+  }
+  function finish(ok, cls, msg, showSol, extra){
+    node.classList.remove('correct','wrong','close');
+    node.classList.add(cls==='warn' ? 'close' : (ok?'correct':'wrong'));
+    fb.className = 'fb ' + cls;
+    fb.style.display = '';
+    fb.innerHTML = '<span class="ic">'+(ok?'✓':(cls==='warn'?'≈':'✗'))+'</span><span>'+esc(msg)+'</span>'+
+      (showSol?'<span class="sol">'+esc(solution())+'</span>':'')+
+      (loose && showSol?'<span class="tag">үлгі жауап</span>':'');
+    if(extra) extra.forEach(function(b){ fb.appendChild(b); });
+  }
+  function mkbtn(label, fn){
+    var b = el('<button class="btn sm">'+esc(label)+'</button>');
+    b.addEventListener('click', fn);
+    return b;
+  }
+  function lock(){
+    settled = true; input.disabled = true;
+    checkBtn.textContent = 'Қайталау'; checkBtn.classList.remove('primary');
+  }
+  function reopen(){
+    settled=false; input.disabled=false; input.value=''; fb.style.display='none';
+    node.classList.remove('correct','wrong','close');
+    checkBtn.textContent='Тексеру'; checkBtn.classList.add('primary');
+    input.focus();
+  }
+  function accept(msg, bulk){
+    record(key, true);
+    finish(true, 'ok', msg || 'Дұрыс!', false);
+    lock();
+    if(isMastered(key) && !node.querySelector('.mastered-pill')){
+      node.querySelector('.qt').innerHTML += ' <span class="mastered-pill">меңгерілді</span>';
+    }
+    if(!bulk) setTimeout(nextFocus, 60);
+  }
+  function reject(msg){
+    record(key, false);
+    finish(false, 'bad', msg || 'Қате. Дұрысы:', true, [mkbtn('Мен дұрыс жаздым', function(){
+      /* undo the wrong result that was just recorded, then record it as correct */
+      var rr = rec(key);
+      rr.w = Math.max(0, rr.w-1);
+      S.answered = Math.max(0, S.answered-1);
+      record(key, true);
+      finish(true, 'ok', 'Дұрыс деп белгіленді. Кітаптағы жауап:', true);
+      lock();
+    })]);
+    lock();
+  }
+  function nextFocus(){
+    // move to the first still-enabled input that comes after this one
+    var all = [].slice.call(document.querySelectorAll('#content input[type=text]'));
+    var myPos = all.indexOf(input);
+    for(var i=myPos+1;i<all.length;i++){ if(!all[i].disabled){ all[i].focus(); return; } }
+  }
+
+  /* The one place a check happens. Returns:
+     'correct' | 'wrong' | 'pending' (needs your decision) | 'empty' | 'already' */
+  function doCheck(bulk){
+    if(settled) return 'already';
+    var v = input.value.trim();
+    if(!v){ if(!bulk) input.focus(); return 'empty'; }
+    var g = grade(v, it);
+    if(g==='correct'){ accept(null, bulk); return 'correct'; }
+    if(g==='close'){
+      finish(true, 'warn', 'Жақын — емле қатесі болуы мүмкін. Дұрысы:', true, [
+        mkbtn('Дұрыс деп санау', function(){ accept('Дұрыс деп есептелді.', true); done(); }),
+        mkbtn('Қате деп санау', function(){ reject('Қате деп белгіленді. Дұрысы:'); done(); })
+      ]);
+      return 'pending';
+    }
+    if(loose){
+      finish(false, 'warn', 'Бұл ашық жауапты тапсырма. Кітаптағы үлгі:', true, [
+        mkbtn('Жауабым дұрыс', function(){ accept('Дұрыс деп есептелді.', true); done(); }),
+        mkbtn('Дұрыс емес', function(){ reject('Қате деп белгіленді. Үлгі:'); done(); })
+      ]);
+      return 'pending';
+    }
+    reject();
+    return 'wrong';
+  }
+  function done(){ if(opts.onDone) opts.onDone(); }
+
+  checkBtn.addEventListener('click', function(){
+    if(settled){ reopen(); return; }
+    doCheck(false);
+    done();
+  });
+
+  showBtn.addEventListener('click', function(){
+    if(!settled) record(key, false);
+    finish(false, 'bad', 'Жауабы:', true);
+    lock();
+    done();
+  });
+
+  input.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ e.preventDefault(); checkBtn.click(); }
+  });
+
+  if(st && st.m){ node.classList.add('correct'); }
+  /* exposed so "check the whole exercise / unit" can drive this row */
+  node.checkNow = doCheck;
+  node.hasInput = function(){ return !settled && input.value.trim().length>0; };
+  return node;
+}
+
+/* =====================  BULK CHECK  ===================== */
+/* Check every visible, filled-in row inside `root`. */
+function checkAll(root){
+  var res = {correct:0, wrong:0, pending:0, empty:0, already:0, first:null};
+  [].forEach.call(root.querySelectorAll('.item[data-key]'), function(n){
+    if(!n.checkNow) return;
+    if(n.offsetParent === null && n.style.display === 'none') return;  // respect the filter
+    var s = n.checkNow(true);
+    res[s] = (res[s]||0) + 1;
+    if(!res.first && (s==='wrong' || s==='pending')) res.first = n;
+  });
+  return res;
+}
+function summaryHTML(res){
+  var p = ['<b style="color:var(--ok)">✓ '+res.correct+'</b>'];
+  if(res.wrong)   p.push('<b style="color:var(--bad)">✗ '+res.wrong+'</b>');
+  if(res.pending) p.push('<b style="color:var(--warn)">≈ '+res.pending+' шешім күтуде</b>');
+  if(res.empty)   p.push('<span>'+res.empty+' бос қалды</span>');
+  return p.join(' · ');
+}
+function runBulk(root, sumEl){
+  var res = checkAll(root);
+  if(res.correct + res.wrong + res.pending === 0 && res.empty === 0){
+    sumEl.innerHTML = '<span>барлығы тексерілген</span>';
+  }else if(res.correct + res.wrong + res.pending === 0){
+    sumEl.innerHTML = '<span>алдымен жауаптарды жазыңыз ('+res.empty+' бос)</span>';
+  }else{
+    sumEl.innerHTML = summaryHTML(res);
+  }
+  sumEl.style.display = '';
+  if(res.first) res.first.scrollIntoView({block:'center', behavior:'smooth'});
+  return res;
+}
+
+/* =====================  VIEWS  ===================== */
+var content = document.getElementById('content');
+var state = {view:'home'};
+
+function show(s){
+  state = s;
+  window.scrollTo(0,0);
+  document.getElementById('main').scrollTop = 0;
+  [].forEach.call(document.querySelectorAll('.nb'), function(b){
+    b.classList.toggle('on',
+      (b.dataset.view==='units' && (s.view==='unit'||s.view==='home')) || b.dataset.view===s.view);
+  });
+  [].forEach.call(document.querySelectorAll('.unit'), function(b){
+    b.classList.toggle('on', s.view==='unit' && +b.dataset.ui===s.ui);
+  });
+  if(s.view==='unit') renderUnit(s.ui);
+  else if(s.view==='mistakes') renderMistakes();
+  else if(s.view==='stats') renderStats();
+  else renderHome();
+  if(window.innerWidth<=820) document.getElementById('sidebar').classList.add('collapsed');
+}
+
+function renderHome(){
+  var done=0; for(var i=0;i<ALL.length;i++) if(isMastered(ALL[i].key)) done++;
+  content.innerHTML =
+    '<h2 class="pagehead">English Vocabulary in Use — Upper-Intermediate</h2>'+
+    '<p class="pagesub">'+UNITS.length+' бөлім · '+ALL.length+' тапсырма · PDF: 4-ші басылым (Cambridge, 2017)</p>'+
+    '<div class="cards">'+
+      '<div class="card"><div class="big">'+done+'</div><div class="lbl">меңгерілген тапсырма</div></div>'+
+      '<div class="card"><div class="big">'+Math.round(done*100/ALL.length)+'%</div><div class="lbl">жалпы үлгерім</div></div>'+
+      '<div class="card"><div class="big">'+mistakeList().length+'</div><div class="lbl">қайталауды күтеді</div></div>'+
+      '<div class="card"><div class="big">'+S.streak+'</div><div class="lbl">қатарынан дұрыс</div></div>'+
+    '</div>'+
+    '<div class="ex"><p class="instr" style="margin:0">'+
+      '<b>Қалай қолданамыз:</b> PDF кітапты экранның оң жағында ашыңыз. Сол жақтағы тізімнен бөлімді таңдаңыз — '+
+      'әр жаттығудың жанында PDF беті көрсетілген. Сөйлемді кітаптан оқып, жауапты теріп <b>Enter</b> басыңыз.<br><br>'+
+      'Бір тапсырманы қатарынан '+MASTER_STREAK+' рет дұрыс жауаптасаңыз, ол «меңгерілді» болып белгіленеді '+
+      'және «Қателер» тізімінен шығады. Барлық нәтиже браузерде сақталады.'+
+    '</p></div>';
+}
+
+function renderUnit(ui){
+  var u = UNITS[ui];
+  var t = unitTotal(ui), d = unitDone(ui);
+  var html = '<h2 class="pagehead">'+esc(u.unit)+'. '+esc(u.title)+'</h2>'+
+    '<p class="pagesub" id="unitsub">'+u.exercises.length+' жаттығу · '+t+' тапсырма · меңгерілгені: '+d+'/'+t+'</p>'+
+    '<div class="toolbar">'+
+      (t?'<button class="btn primary" id="checkunit">Бөлімді толық тексеру</button>':'')+
+      '<button class="btn" id="onlyleft">Тек орындалмағандарын көрсету</button>'+
+      (ui>0?'<button class="btn" id="prevu">← Алдыңғы бөлім</button>':'')+
+      (ui<UNITS.length-1?'<button class="btn" id="nextu">Келесі бөлім →</button>':'')+
+      '<span class="exsum" id="unitsum" style="display:none"></span>'+
+    '</div>';
+  content.innerHTML = html;
+
+  var onlyLeft = false;
+  u.exercises.forEach(function(ex, ei){ content.appendChild(exerciseCard(ui, ei, function(){return onlyLeft;})); });
+
+  var ol = document.getElementById('onlyleft');
+  ol.addEventListener('click', function(){
+    onlyLeft = !onlyLeft;
+    ol.classList.toggle('primary', onlyLeft);
+    [].forEach.call(content.querySelectorAll('.ex'), function(card){
+      var rows = [].slice.call(card.querySelectorAll('.item[data-key]'));
+      var vis = 0;
+      rows.forEach(function(row){
+        var hide = onlyLeft && isMastered(row.dataset.key);
+        row.style.display = hide ? 'none' : '';
+        if(!hide) vis++;
+      });
+      if(rows.length) card.style.display = (onlyLeft && vis===0) ? 'none' : '';
+    });
+  });
+  var cu = document.getElementById('checkunit');
+  if(cu) cu.addEventListener('click', function(){
+    var res = runBulk(content, document.getElementById('unitsum'));
+    // refresh every card's done/total chip
+    [].forEach.call(content.querySelectorAll('.ex'), function(c){
+      if(c.refreshCounter) c.refreshCounter();
+    });
+    document.getElementById('unitsub').textContent =
+      u.exercises.length+' жаттығу · '+t+' тапсырма · меңгерілгені: '+unitDone(ui)+'/'+t;
+  });
+  var pv=document.getElementById('prevu'), nx=document.getElementById('nextu');
+  if(pv) pv.addEventListener('click', function(){ show({view:'unit', ui:ui-1}); });
+  if(nx) nx.addEventListener('click', function(){ show({view:'unit', ui:ui+1}); });
+}
+
+function exerciseCard(ui, ei){
+  var u = UNITS[ui], ex = u.exercises[ei];
+  var card = el('<div class="ex"></div>');
+  var low = ex.confidence === 'low';
+
+  var practisable = ex.items.filter(function(it){ return !it.isExample && (it.answer||it.blank); });
+  var doneN = 0;
+  ex.items.forEach(function(it, ii){
+    if(it.isExample || !(it.answer||it.blank)) return;
+    if(isMastered(ui+'|'+ei+'|'+ii)) doneN++;
+  });
+
+  var head = '<div class="exhead"><span class="exno">'+esc(ex.number)+'</span>'+
+    '<span class="tag pdf">PDF, '+esc(ex.pdfExercisePage)+'-бет</span>'+
+    (low?'<span class="tag low">⚠ Сұрақты PDF-тен оқыңыз</span>':'')+
+    (ex.exerciseType==='match'?'<span class="tag">сәйкестендіру</span>':'')+
+    (practisable.length? '<span class="tag counter'+(doneN===practisable.length?' ok':'')+'">'+doneN+'/'+practisable.length+'</span>':'')+
+    '</div>';
+  var headEl = el(head);
+  card.appendChild(headEl);
+
+  /* refresh the "done/total" chip whenever a row in this card settles */
+  function refreshCounter(){
+    var chip = headEl.querySelector('.counter'); if(!chip) return;
+    var n = 0;
+    ex.items.forEach(function(it, ii){
+      if(it.isExample || !(it.answer||it.blank)) return;
+      if(isMastered(ui+'|'+ei+'|'+ii)) n++;
+    });
+    chip.textContent = n+'/'+practisable.length;
+    chip.classList.toggle('ok', n===practisable.length);
+  }
+  card.refreshCounter = refreshCounter;
+
+  if(practisable.length){
+    headEl.appendChild(el('<span style="flex:1"></span>'));
+    var sum = el('<span class="exsum" style="display:none"></span>');
+    var allBtn = el('<button class="btn sm">Жаттығуды тексеру</button>');
+    allBtn.addEventListener('click', function(){ runBulk(card, sum); refreshCounter(); });
+    headEl.appendChild(sum);
+    headEl.appendChild(allBtn);
+  }
+
+  var instr = String(ex.instructions||'');
+  var long = instr.length > 320;
+  var ip = el('<p class="instr'+(long?' clamped':'')+'">'+esc(instr)+'</p>');
+  card.appendChild(ip);
+  if(long){
+    var mb = el('<button class="more">толығырақ ▾</button>');
+    mb.addEventListener('click', function(){
+      var c = ip.classList.toggle('clamped');
+      mb.textContent = c ? 'толығырақ ▾' : 'жию ▴';
+    });
+    card.appendChild(mb);
+  }
+
+  if(ex.wordBank && ex.wordBank.length){
+    var wb = el('<div class="wb"><b>Сөздер қорабы:</b></div>');
+    ex.wordBank.forEach(function(w){ wb.appendChild(el('<span>'+esc(w)+'</span>')); });
+    card.appendChild(wb);
+  }
+  if(low && ex.rawReference){
+    card.appendChild(el('<pre class="rawref">'+esc(ex.rawReference)+'</pre>'));
+  }
+
+  ex.items.forEach(function(it, ii){
+    if(it.isExample){
+      if(it.question) card.appendChild(el('<div class="item"><div class="q">'+
+        '<span class="n">'+esc(it.n)+'</span><span class="qt"><span class="tag">мысал</span> '+
+        esc(it.question)+'</span></div></div>'));
+      return;
+    }
+    if(!(it.answer||it.blank)){
+      card.appendChild(el('<div class="item"><div class="q"><span class="n">'+esc(it.n)+'</span>'+
+        '<span class="qt">'+(it.question?qText(it.question):'<em class="nq">—</em>')+
+        '</span></div><div class="noans">ашық сұрақ — жауап кілті жоқ</div></div>'));
+      return;
+    }
+    var r = BYKEY[ui+'|'+ei+'|'+ii];
+    var n = renderItem(r, {onDone: refreshCounter});
+    n.dataset.key = r.key;
+    card.appendChild(n);
+  });
+  return card;
+}
+
+function renderMistakes(){
+  var list = mistakeList();
+  if(!list.length){
+    content.innerHTML = '<h2 class="pagehead">Қателер</h2>'+
+      '<div class="empty">Қате тізімі бос. 👏<br><br>'+
+      'Қате жауап берген тапсырмалар осында жиналады және қатарынан '+MASTER_STREAK+' рет дұрыс жауаптағанда жоғалады.</div>';
+    return;
+  }
+  content.innerHTML = '<h2 class="pagehead">Қателер</h2>'+
+    '<p class="pagesub">'+list.length+' тапсырма қайталауды күтеді</p>'+
+    '<div class="toolbar">'+
+      '<button class="btn primary" id="checkmis">Барлығын тексеру</button>'+
+      '<button class="btn" id="shuf">Араластыру</button>'+
+      '<span class="exsum" id="missum" style="display:none"></span>'+
+      '<span class="hint" style="margin:0">Қатарынан '+MASTER_STREAK+' рет дұрыс → тізімнен шығады</span>'+
+    '</div>';
+  var box = el('<div class="ex" id="mbox"></div>');
+  content.appendChild(box);
+  document.getElementById('checkmis').addEventListener('click', function(){
+    runBulk(box, document.getElementById('missum'));
+  });
+
+  function fill(arr){
+    box.innerHTML = '';
+    arr.forEach(function(r){
+      var rr = S.items[r.key];
+      var n = renderItem(r, {showEx:true});
+      n.dataset.key = r.key;
+      n.appendChild(el('<div class="hint" style="margin:4px 0 0 28px">қате: '+rr.w+
+        ' · дұрыс қатары: '+rr.s+'/'+MASTER_STREAK+'</div>'));
+      box.appendChild(n);
+    });
+  }
+  fill(list);
+  document.getElementById('shuf').addEventListener('click', function(){
+    var a = mistakeList();
+    for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; }
+    fill(a);
+  });
+}
+
+function renderStats(){
+  var done=0, seen=0, wrongOpen=mistakeList().length;
+  for(var i=0;i<ALL.length;i++){
+    var r=S.items[ALL[i].key];
+    if(r){ seen++; if(r.m) done++; }
+  }
+  var acc = S.answered ? Math.round(S.correct*100/S.answered) : 0;
+  var rows = '';
+  for(var ui=0; ui<UNITS.length; ui++){
+    var t = unitTotal(ui); if(!t) continue;
+    var d = unitDone(ui);
+    var w = (BYUNIT[ui]||[]).filter(function(r){ return isWrongOpen(r.key); }).length;
+    var p = Math.round(d*100/t);
+    if(!d && !w) continue;
+    rows += '<tr><td><a href="#" data-ui="'+ui+'" class="ulink">'+esc(UNITS[ui].unit)+'. '+esc(UNITS[ui].title)+'</a></td>'+
+      '<td class="num">'+d+'/'+t+'</td><td class="num">'+p+'%</td><td class="num">'+(w||'')+'</td></tr>';
+  }
+  content.innerHTML = '<h2 class="pagehead">Статистика</h2>'+
+    '<div class="cards">'+
+      '<div class="card"><div class="big">'+done+' / '+ALL.length+'</div><div class="lbl">меңгерілген тапсырма</div></div>'+
+      '<div class="card"><div class="big">'+Math.round(done*100/ALL.length)+'%</div><div class="lbl">жалпы үлгерім</div></div>'+
+      '<div class="card"><div class="big">'+wrongOpen+'</div><div class="lbl">қателер тізімінде</div></div>'+
+      '<div class="card"><div class="big">'+S.streak+'</div><div class="lbl">қатарынан дұрыс</div></div>'+
+      '<div class="card"><div class="big">'+S.best+'</div><div class="lbl">ең ұзын қатар</div></div>'+
+      '<div class="card"><div class="big">'+acc+'%</div><div class="lbl">дәлдік ('+S.correct+'/'+S.answered+')</div></div>'+
+    '</div>'+
+    '<p class="hint">Тек басталған бөлімдер көрсетілген. Жалпы: '+seen+' тапсырма кем дегенде бір рет жауапталды.</p>'+
+    (rows ? '<table><thead><tr><th>Бөлім</th><th style="text-align:right">Меңгерілді</th>'+
+            '<th style="text-align:right">%</th><th style="text-align:right">Қате</th></tr></thead><tbody>'+rows+'</tbody></table>'
+          : '<div class="empty">Әзірге дерек жоқ — бір бөлімнен бастаңыз.</div>');
+  [].forEach.call(content.querySelectorAll('.ulink'), function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); show({view:'unit', ui:+a.dataset.ui}); });
+  });
+}
+
+/* =====================  CHROME  ===================== */
+buildSidebar();
+
+[].forEach.call(document.querySelectorAll('.nb'), function(b){
+  b.addEventListener('click', function(){
+    var v = b.dataset.view;
+    if(v==='units'){ document.getElementById('sidebar').classList.remove('collapsed'); show({view:'home'}); }
+    else show({view:v});
+  });
+});
+
+document.getElementById('search').addEventListener('input', function(e){
+  var q = e.target.value.toLowerCase().trim();
+  [].forEach.call(document.querySelectorAll('.unit'), function(b){
+    var u = UNITS[+b.dataset.ui];
+    var hit = !q || (u.title.toLowerCase().indexOf(q)>=0) || (String(u.unit)===q) || String(u.unit).indexOf(q)===0;
+    b.style.display = hit ? '' : 'none';
+  });
+});
+
+document.getElementById('togglenav').addEventListener('click', function(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
+
+document.getElementById('reset').addEventListener('click', function(){
+  if(!confirm('Барлық нәтиже өшіріледі. Сенімдісіз бе?')) return;
+  S = {v:1, items:{}, streak:0, best:0, answered:0, correct:0};
+  try{ localStorage.removeItem(LS); }catch(e){}
+  updateAllBars();
+  show(state.view==='unit' ? state : {view:'home'});
+});
+
+show({view:'home'});
+window.addEventListener('beforeunload', flush);
+document.addEventListener('visibilitychange', function(){ if(document.hidden) flush(); });
+})();
+</script>
+</body>
+</html>

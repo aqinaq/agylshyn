@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/akbopebakytkeldy -maxdepth 4 -iname \"exercises.json\" 2>/dev/null | head -20; echo \"---\"; ls ~/Downloads 2>/dev/null | head -30)",
+      "Read(//Users/akbopebakytkeldy/**)",
+      "Read(//Users/akbopebakytkeldy/Downloads/**)",
+      "Bash(cp ~/Downloads/exercises.json .)",
+      "Bash(python3 -c ' *)",
+      "Bash(node /private/tmp/claude-501/-Users-akbopebakytkeldy-enginuse/90733165-6102-4d70-86e1-af4a03e4e499/scratchpad/t.js)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

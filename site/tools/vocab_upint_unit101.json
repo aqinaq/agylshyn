@@ -1,0 +1,88 @@
+{
+ "_note": "Unit 101 is missing from vocab-upint/exercises.json but is present in the book (PDF pages 209-210, answer key on 257). Transcribed from the PDF text layer, which runs words together, so spacing was restored by hand. The picture-based items in 101.2 carry no question text on purpose - the learner reads them from the page.",
+ "unit": 101,
+ "title": "US English",
+ "pdfIntroPage": 209,
+ "pdfExercisePage": 210,
+ "subExercises": [
+  {
+   "number": "101.1",
+   "type": "items",
+   "instructions": "If you saw words spelt in the following way, would you expect the writer in each case to be British or American? Why?",
+   "items": [
+    {"n": 1, "question": "favor", "isExample": true, "answer": "American (ends in -or)"},
+    {"n": 2, "question": "centre", "answer": "British (-re, not -er)"},
+    {"n": 3, "question": "hospitalized", "answer": "American (-z- not -s-)"},
+    {"n": 4, "question": "a movie theater", "answer": "American (-er, not -re)"},
+    {"n": 5, "question": "colour", "answer": "British (-our, not -or)"},
+    {"n": 6, "question": "jewelry", "answer": "American (not jewellery)"}
+   ]
+  },
+  {
+   "number": "101.2",
+   "type": "items",
+   "instructions": "What are (a) the American and (b) the British words for the following things? (the pictures are on the exercise page)",
+   "items": [
+    {"n": 1, "isExample": true, "answer": "closet, wardrobe"},
+    {"n": 2, "answer": "elevator, lift"},
+    {"n": 3, "answer": "undershirt, vest"},
+    {"n": 4, "answer": "flashlight, torch"},
+    {"n": 5, "answer": "diaper, nappy"},
+    {"n": 6, "answer": "drapes, curtains"},
+    {"n": 7, "answer": "Scotch tape, Sellotape"},
+    {"n": 8, "answer": "truck, lorry"}
+   ]
+  },
+  {
+   "number": "101.3",
+   "type": "items",
+   "instructions": "Translate the following into British English.",
+   "items": [
+    {"n": 1, "question": "We went there in the fall.", "isExample": true, "answer": "We went there in the autumn."},
+    {"n": 2, "question": "Pass me the cookies.", "answer": "Pass me the biscuits."},
+    {"n": 3, "question": "It’s in the closet.", "answer": "It’s in the wardrobe."},
+    {"n": 4, "question": "Open the drapes.", "answer": "Open the curtains."},
+    {"n": 5, "question": "We’ve run out of gas.", "answer": "We’ve run out of petrol."},
+    {"n": 6, "question": "Our bags are in the trunk.", "answer": "Our bags are in the boot."},
+    {"n": 7, "question": "One-way or round trip?", "answer": "Single or return?"},
+    {"n": 8, "question": "Let’s take the subway.", "answer": "Let’s take the underground."},
+    {"n": 9, "question": "We’ve been working in the yard.", "answer": "We’ve been working in the garden."},
+    {"n": 10, "question": "I hate waiting in line.", "answer": "I hate waiting in queues / a queue."}
+   ]
+  },
+  {
+   "number": "101.4",
+   "type": "items",
+   "instructions": "Can you avoid some of the most common confusions arising between British and American speakers? Try the following quiz. Give the American answer (a) and the British answer (b).",
+   "items": [
+    {"n": "1a", "question": "Where would you take an American visitor who said they wanted to wash up — the kitchen or the bathroom?", "isExample": true, "answer": "bathroom"},
+    {"n": "1b", "question": "And where would you take a British visitor who said the same?", "isExample": true, "answer": "kitchen"},
+    {"n": "2a", "question": "You have just come into an unknown office block. If an American says the office you need is on the second floor, how many flights of stairs do you need to climb?", "answer": "one"},
+    {"n": "2b", "question": "And if a Brit says the second floor?", "answer": "two"},
+    {"n": "3a", "question": "If an American asks for a bill, is he or she more likely to be in a bank or a café?", "answer": "a bank"},
+    {"n": "3b", "question": "And if a Brit asks for a bill?", "answer": "a café"},
+    {"n": "4a", "question": "Would a British man wear a vest under or over his shirt?", "answer": "under"},
+    {"n": "4b", "question": "And a man from the USA?", "answer": "over"}
+   ]
+  },
+  {
+   "number": "101.5",
+   "type": "items",
+   "instructions": "Complete the sentences in two ways, an American way and a British way.",
+   "items": [
+    {"n": 1, "question": "We can park the car in the … behind the station.", "isExample": true, "answer": "parking lot / car park"},
+    {"n": 2, "question": "I’ve written the wrong number here. Can I borrow your …? I’ll correct it.", "answer": "eraser / rubber"},
+    {"n": 3, "question": "All that food is no good any more — we’d better throw it in the …", "answer": "trash / garbage / rubbish"},
+    {"n": 4, "question": "We can take the … up to the fifth floor.", "answer": "elevator / lift"},
+    {"n": 5, "question": "Don’t cross here — it’s dangerous. There’s a … further down the street.", "answer": "crosswalk / zebra crossing"},
+    {"n": 6, "question": "The car wouldn’t start so we opened the … to see if we could find what was wrong.", "answer": "hood / bonnet"}
+   ]
+  },
+  {
+   "number": "101.6",
+   "type": "open",
+   "instructions": "Over to you. If you were going on holiday/vacation to the US, which of the words listed opposite do you think it would be most important for you to know?",
+   "items": []
+  }
+ ]
+}

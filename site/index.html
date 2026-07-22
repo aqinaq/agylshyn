@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ағылшын — жаттығулар</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Ctext x='16' y='23' font-size='19' font-family='-apple-system,Segoe UI,Arial' font-weight='700' fill='%23fff' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script>
+/* Applies the saved theme before first paint so a dark reader never sees a
+   white flash. Key must match STORE_KEY in app.js. */
+(function () {
+  try {
+    var s = JSON.parse(localStorage.getItem('agylshyn_v1') || '{}');
+    if (s.theme === 'light' || s.theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', s.theme);
+    }
+  } catch (e) { /* no storage — fall back to the OS preference */ }
+})();
+</script>
+</head>
+<body data-view="home">
+
+<!-- ================= home: intro + book picker ================= -->
+<section id="home" class="screen">
+  <div class="controls floating">
+    <button type="button" class="theme-btn" data-theme-btn></button>
+    <div class="lang-switch">
+      <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
+    </div>
+  </div>
+  <div class="wrap">
+
+    <header class="home-hero">
+      <div class="hh-main">
+        <div class="hero-mark">Grammar &amp; Vocabulary in Use</div>
+        <h1 data-i18n="hero.h1"></h1>
+        <p data-i18n="hero.p"></p>
+      </div>
+      <div class="hh-side">
+        <div class="hero-stats">
+          <div><div class="v">6</div><div class="k" data-i18n="hero.books"></div></div>
+          <div><div class="v" id="hsUnits">—</div><div class="k" data-i18n="hero.units"></div></div>
+          <div><div class="v" id="hsItems">—</div><div class="k" data-i18n="hero.questions"></div></div>
+          <div><div class="v" id="hsDone">—</div><div class="k" data-i18n="hero.done"></div></div>
+        </div>
+        <div id="heroResume" class="hero-resume" hidden></div>
+      </div>
+    </header>
+
+    <p class="home-choose" data-i18n="home.choose"></p>
+    <div id="bookGrid"></div>
+
+    <button type="button" class="home-help" data-open-help>
+      <span class="hh-icon">📘</span>
+      <span class="hh-text">
+        <b data-i18n="home.helpTitle"></b>
+        <span data-i18n="home.helpSub"></span>
+      </span>
+      <span class="hh-go">→</span>
+    </button>
+
+  </div>
+</section>
+
+<!-- ================= book ================= -->
+<header class="topbar">
+  <button id="menuBtn" class="icon-btn" data-i18n-aria="menu.aria">☰</button>
+  <a class="home-link" href="#/" data-i18n-aria="library.aria">◇</a>
+  <div class="brand">
+    <span class="brand-title" id="brandTitle"></span>
+    <span class="brand-sub" id="brandSub"></span>
+  </div>
+  <nav class="tabs">
+    <a href="#" data-tab="units"  class="tab" id="tabUnits" data-i18n="nav.units"></a>
+    <a href="#" data-tab="errors" class="tab" id="tabErrors"><span data-i18n="nav.errors"></span> <span id="errBadge" class="badge" hidden>0</span></a>
+    <a href="#" data-tab="stats"  class="tab" id="tabStats" data-i18n="nav.stats"></a>
+    <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help">?</button>
+    <div class="controls">
+      <button type="button" class="theme-btn" data-theme-btn></button>
+      <div class="lang-switch">
+        <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- book on the left, exercises in the middle, unit list on the right:
+     the same order you read a page in -->
+<div class="layout">
+  <aside id="pdfPane" class="pdf-pane" hidden>
+    <div class="pdf-head">
+      <span class="pdf-title" id="pdfTitle"></span>
+      <a class="pdf-btn" id="pdfNewTab" target="_blank" rel="noopener" data-i18n-aria="pdf.newTab">↗</a>
+      <button type="button" class="pdf-btn" id="pdfClose" data-i18n-aria="pdf.close">✕</button>
+    </div>
+    <iframe id="pdfFrame" class="pdf-frame" title="PDF"></iframe>
+    <div class="pdf-fallback" id="pdfFallback" hidden></div>
+  </aside>
+
+  <div id="dragPdf" class="dragger" role="separator" aria-orientation="vertical" data-i18n-aria="ui.resize" hidden></div>
+
+  <main id="main" class="main"></main>
+
+  <div id="dragSidebar" class="dragger" role="separator" aria-orientation="vertical" data-i18n-aria="ui.resize"></div>
+
+  <div id="overlay" class="overlay" hidden></div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="search-wrap">
+      <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off">
+    </div>
+    <ul id="unitList" class="unit-list"></ul>
+  </aside>
+</div>
+
+<!-- ================= help dialog (used from inside a book) ================= -->
+<div id="helpModal" class="modal" hidden>
+  <div class="modal-backdrop" data-close-help></div>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="modal-head">
+      <h2 id="helpModalTitle" data-i18n="help.h1"></h2>
+      <button type="button" class="modal-close" data-close-help data-i18n-aria="help.close">✕</button>
+    </div>
+    <div id="helpModalBody" class="modal-body"></div>
+  </div>
+</div>
+
+<script src="i18n.js"></script>
+<script src="help.js"></script>
+<script src="books.js"></script>
+<script src="dict.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

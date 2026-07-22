@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vocabulary in Use — Advanced · Жаттығулар</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --fg:#16181d; --muted:#697086; --line:#e2e5ec;
+  --accent:#2f6df6; --accent-soft:#e8f0ff;
+  --ok:#127a3d; --ok-bg:#e6f6ec; --ok-line:#a9dcbd;
+  --bad:#c02626; --bad-bg:#fdecec; --bad-line:#f2b8b8;
+  --warn:#8a5a00; --warn-bg:#fff5e0; --warn-line:#f0d79a;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101216; --card:#171a20; --fg:#e8eaf0; --muted:#98a0b3; --line:#272c36;
+    --accent:#6f9bff; --accent-soft:#1b2740;
+    --ok:#6fd79a; --ok-bg:#12281c; --ok-line:#2c5c3f;
+    --bad:#ff8f8f; --bad-bg:#2c1618; --bad-line:#5f2b2e;
+    --warn:#f0c268; --warn-bg:#2c2312; --warn-line:#5c4a20;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--fg);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+
+/* ---------- layout ---------- */
+header.top{
+  position:sticky; top:0; z-index:20; background:var(--card);
+  border-bottom:1px solid var(--line); padding:8px 12px;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.brand{font-weight:700; font-size:14px; letter-spacing:.2px; margin-right:auto;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{
+  background:transparent;border:1px solid var(--line);border-radius:999px;
+  padding:5px 11px;font-size:13px;
+}
+nav button.active{background:var(--accent-soft);border-color:transparent;color:var(--accent);font-weight:600}
+main{max-width:820px;margin:0 auto;padding:14px 12px 80px}
+
+/* ---------- generic ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+h1{font-size:19px;margin:0 0 4px}
+h2{font-size:16px;margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.row{display:flex;gap:8px;align-items:center}
+.wrap{flex-wrap:wrap}
+.spacer{flex:1}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13.5px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{border-style:dashed}
+.btn:disabled{opacity:.45;cursor:default}
+
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.badge.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn);cursor:help}
+.badge.info{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.badge.ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
+
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;flex:1;min-width:60px}
+.bar > i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.bar.done > i{background:var(--ok)}
+
+/* ---------- home ---------- */
+.searchbox{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.unit-list{display:flex;flex-direction:column;gap:6px}
+.unit{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:9px 11px;text-align:left;width:100%}
+.unit:hover{border-color:var(--accent)}
+.unit .no{font-variant-numeric:tabular-nums;font-weight:700;color:var(--muted);min-width:26px;font-size:13px}
+.unit .ttl{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unit .pct{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:56px;text-align:right}
+.unit .bar{max-width:70px;flex:0 0 70px}
+@media (max-width:520px){ .unit .bar{display:none} }
+
+/* ---------- exercise ---------- */
+.ex-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.ex-num{font-weight:700;font-size:15px;color:var(--accent)}
+.instr{font-size:13.5px;color:var(--muted);margin:0 0 10px}
+.wordbank{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 9px;font-size:13px}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+.item{padding:10px 0;border-top:1px dashed var(--line)}
+.item:first-of-type{border-top:none}
+.item .q{font-size:14.5px;margin-bottom:7px;display:flex;gap:8px;align-items:baseline}
+.item .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px;min-width:18px;font-weight:600}
+.blank{display:inline-block;min-width:52px;border-bottom:2px dotted var(--accent);vertical-align:baseline;margin:0 3px}
+.ansrow{display:flex;gap:6px;align-items:stretch}
+.ansrow input, .ansrow textarea{
+  flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);
+}
+.ansrow input:focus,.ansrow textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.ansrow .mini{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:0 10px;font-size:14px}
+.ansrow .mini:hover{border-color:var(--accent)}
+.item.ok input{border-color:var(--ok-line);background:var(--ok-bg)}
+.item.bad input{border-color:var(--bad-line);background:var(--bad-bg)}
+.item.near input{border-color:var(--warn-line);background:var(--warn-bg)}
+.fb{margin-top:7px;font-size:13px;padding:7px 10px;border-radius:9px;display:none}
+.fb.show{display:block}
+.fb.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+.fb.bad{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad-line)}
+.fb.neutral{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.fb b{font-weight:700}
+.fb .judge{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.fb .judge button{border:1px solid currentColor;background:transparent;border-radius:8px;padding:3px 9px;font-size:12.5px}
+.example{background:var(--bg);border:1px dashed var(--line);border-radius:9px;padding:8px 10px;font-size:13.5px}
+.selfcheck{background:var(--accent-soft);border-radius:9px;padding:10px 12px;font-size:13.5px;color:var(--fg)}
+.dots{display:inline-flex;gap:3px;vertical-align:middle;margin-left:6px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line);display:block}
+.dots i.on{background:var(--ok)}
+
+/* ---------- stats ---------- */
+table.stats{width:100%;border-collapse:collapse;font-size:13px}
+table.stats td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.stats td.n{color:var(--muted);font-variant-numeric:tabular-nums;width:30px}
+table.stats td.p{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);width:64px;white-space:nowrap}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile .v{font-size:22px;font-weight:700}
+.tile .k{font-size:12px;color:var(--muted)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px}
+.spark div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.spark div.empty{background:var(--line)}
+
+/* ---------- loader ---------- */
+.drop{border:2px dashed var(--line);border-radius:14px;padding:28px 18px;text-align:center;background:var(--card)}
+.drop.hot{border-color:var(--accent);background:var(--accent-soft)}
+kbd{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--fg);color:var(--bg);
+  padding:8px 14px;border-radius:99px;font-size:13px;z-index:99;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:.95}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">English Vocabulary in Use — Advanced<small id="subtitle">101 бөлім · жаттығулар</small></div>
+  <nav>
+    <button data-go="#/">Бөлімдер</button>
+    <button data-go="#/mistakes">Қателерім</button>
+    <button data-go="#/stats">Статистика</button>
+  </nav>
+</header>
+
+<main id="view"></main>
+<div class="toast" id="toast"></div>
+
+<!-- Деректер осында ендірілуі мүмкін (standalone нұсқа) -->
+<script type="application/json" id="embedded-data">null</script>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   0. Кішкене көмекшілер
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+/* Жергілікті уақыт бойынша күн кілті (UTC емес) */
+const dayKey = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const todayKey = () => dayKey();
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+/* =====================================================================
+   1. Прогресс (localStorage)
+   ===================================================================== */
+const STORE_KEY = "vocabAdv.progress.v1";
+const DATA_KEY  = "vocabAdv.data.v1";
+const MASTER_STREAK = 3;
+
+let P = { items: {}, daily: {}, updated: 0 };
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      P = { items: p.items || {}, daily: p.daily || {}, updated: p.updated || 0 };
+    }
+  } catch (e) { console.warn("progress оқылмады", e); }
+}
+let saveTimer = null;
+function saveProgress() {
+  P.updated = Date.now();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); }
+    catch (e) { toast("Сақтау мүмкін болмады (localStorage толы?)"); }
+  }, 250);
+}
+function st(id) {
+  return P.items[id] || (P.items[id] = { c: 0, w: 0, streak: 0, mastered: false, needs: false, last: 0 });
+}
+function record(id, correct) {
+  const s = st(id);
+  s.last = Date.now();
+  if (correct) {
+    s.c++; s.streak++;
+    if (s.streak >= MASTER_STREAK) { s.mastered = true; s.needs = false; }
+  } else {
+    s.w++; s.streak = 0; s.needs = true;
+  }
+  const d = P.daily[todayKey()] || (P.daily[todayKey()] = { c: 0, t: 0 });
+  d.t++; if (correct) d.c++;
+  saveProgress();
+}
+/* Қайталауды қажет ететін item: әрекет болған, бірақ әлі мастерленбеген
+   немесе мастерленген соң қате жіберілген. */
+function needsReview(id) {
+  const s = P.items[id];
+  if (!s) return false;
+  return (!s.mastered && (s.c > 0 || s.w > 0)) || s.needs;
+}
+
+/* =====================================================================
+   2. Жауапты тексеру логикасы
+   ===================================================================== */
+function normalize(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[‘’ʼ`´]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—−]/g, "-")
+    .replace(/…/g, " ")
+    .replace(/\.\.\./g, " ")
+    .replace(/[_]{2,}/g, " ")
+    .replace(/[-\/]/g, " ")        // сызықша мен қиғаш сызық — бос орын
+    .replace(/['’]/g, "")           // апостроф еленбейді
+    .replace(/[^\p{L}\p{N}\s]/gu, " ") // қалған тыныс белгілері
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* Жақшадағы бөлікті бар/жоқ етіп нұсқалар жасау */
+function parenVariants(s) {
+  const out = new Set();
+  const stack = [s];
+  let guard = 0;
+  while (stack.length && guard++ < 400) {
+    const cur = stack.pop();
+    const m = cur.match(/\(([^()]*)\)/);
+    if (!m) { out.add(cur); continue; }
+    const before = cur.slice(0, m.index), after = cur.slice(m.index + m[0].length);
+    stack.push(before + after);            // жақшасыз
+    stack.push(before + m[1] + after);     // жақша ішіндегімен
+  }
+  if (!out.size) out.add(s);
+  return [...out];
+}
+
+/* "a / b" — түгел балама; "a/b" — тек сол сөздің баламасы */
+function slashVariants(s) {
+  if (/\s\/\s/.test(s)) return s.split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean);
+  if (!s.includes("/")) return [s];
+  const toks = s.split(/\s+/);
+  let res = [""];
+  for (const t of toks) {
+    const alts = t.includes("/") ? t.split("/").filter(Boolean) : [t];
+    const next = [];
+    for (const r of res) for (const a of alts) next.push(r ? r + " " + a : a);
+    res = next.slice(0, 24);
+  }
+  return res;
+}
+
+/* Бос орын мен сызықшаны мүлдем елемейтін нұсқа: "start-up" = "startup" */
+const tight = s => normalize(s).replace(/\s+/g, "");
+
+function acceptedAnswers(item) {
+  const raw = [];
+  if (item.answer) raw.push(item.answer);
+  if (item.blank) raw.push(item.blank);
+  const set = new Set();
+  for (const r of raw) {
+    const n0 = normalize(r);           // жауаптың өзі, өзгеріссіз
+    if (n0) set.add(n0);
+    for (const p of parenVariants(r))
+      for (const v of slashVariants(p)) {
+        const n = normalize(v);
+        if (n) set.add(n);
+      }
+  }
+  return [...set];
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  if (a.length > 260 || b.length > 260) return Math.abs(a.length - b.length) + 99;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function similarity(a, b) {
+  const m = Math.max(a.length, b.length);
+  if (!m) return 1;
+  return 1 - levenshtein(a, b) / m;
+}
+/* Ұзындыққа қарай рұқсат етілген қате саны (әріп қатесін кешіру) */
+function nearDistance(len) {
+  return Math.min(8, Math.max(1, Math.round(len * 0.16)));
+}
+
+/**
+ * verdict: "correct" | "near" | "wrong"
+ * near — кішкене қате (әріп қатесі) немесе "мысал жауап" режимі.
+ */
+function checkAnswer(item, userText, isExampleAnswers) {
+  const u = normalize(userText);
+  if (!u) return { verdict: "wrong", empty: true, best: 0 };
+  const ut = u.replace(/\s+/g, "");
+  const accepted = acceptedAnswers(item);
+  let best = 0, near = false;
+  for (const a of accepted) {
+    if (a === u || a.replace(/\s+/g, "") === ut) return { verdict: "correct", best: 1 };
+    const d = levenshtein(a, u);
+    if (d <= nearDistance(Math.max(a.length, u.length))) near = true;
+    best = Math.max(best, similarity(a, u));
+  }
+  if (near && u.length >= 4) return { verdict: "near", best };
+  if (isExampleAnswers) return { verdict: "near", best, exampleNote: true };
+  return { verdict: "wrong", best };
+}
+
+/* =====================================================================
+   3. Деректерді жүктеу
+   ===================================================================== */
+let DATA = null;         // бөлімдер массиві
+let INDEX = null;        // { units:[{unit,title,...,exs:[{...,items:[{id,...}]}]}] }
+
+function buildIndex(data) {
+  const units = data.map(u => {
+    const exs = (u.exercises || []).map(ex => {
+      const items = (ex.items || []).map(it => ({
+        ...it,
+        id: `${u.unit}|${ex.number}|${it.n}`,
+        scorable: !it.isExample && !ex.overToYou
+      }));
+      let freeform = null;
+      if (ex.freeformAnswer && !ex.overToYou) {
+        freeform = { id: `${u.unit}|${ex.number}|F`, answer: ex.freeformAnswer, scorable: true };
+      }
+      return { ...ex, unit: u.unit, items, freeform };
+    });
+    const total = exs.reduce((s, ex) =>
+      s + ex.items.filter(i => i.scorable).length + (ex.freeform ? 1 : 0), 0);
+    return { ...u, exs, total };
+  });
+  return { units, total: units.reduce((s, u) => s + u.total, 0) };
+}
+
+function unitMastered(u) {
+  let m = 0;
+  for (const ex of u.exs) {
+    for (const it of ex.items) if (it.scorable && P.items[it.id]?.mastered) m++;
+    if (ex.freeform && P.items[ex.freeform.id]?.mastered) m++;
+  }
+  return m;
+}
+
+async function loadData() {
+  // 1) HTML ішіне ендірілген дерек (standalone нұсқа)
+  try {
+    const emb = JSON.parse($("#embedded-data").textContent);
+    if (Array.isArray(emb) && emb.length) return emb;
+  } catch (e) { /* ендірілмеген */ }
+  // 2) қатар тұрған exercises.json (http:// немесе кейбір браузерлерде file://)
+  try {
+    const r = await fetch("exercises.json", { cache: "no-store" });
+    if (r.ok) {
+      const j = await r.json();
+      if (Array.isArray(j) && j.length) {
+        try { localStorage.setItem(DATA_KEY, JSON.stringify(j)); } catch (e) {}
+        return j;
+      }
+    }
+  } catch (e) { /* file:// шектеуі */ }
+  // 3) бұрын қолмен жүктелген дерек
+  try {
+    const c = localStorage.getItem(DATA_KEY);
+    if (c) { const j = JSON.parse(c); if (Array.isArray(j) && j.length) return j; }
+  } catch (e) {}
+  return null;
+}
+
+function renderLoader() {
+  $("#view").innerHTML = `
+    <div class="card">
+      <h1>exercises.json файлын жүктеңіз</h1>
+      <p class="muted small">Браузер <code>file://</code> режимінде қатар тұрған файлды өзі оқи алмайды
+      (қауіпсіздік шектеуі). Файлды бір рет таңдасаңыз, ол браузердің жадына сақталады және
+      келесіде автоматты ашылады.</p>
+      <div class="drop" id="drop">
+        <p style="margin:0 0 10px"><b>exercises.json</b> файлын осында сүйреңіз</p>
+        <button class="btn primary" id="pick">Файлды таңдау</button>
+        <input type="file" id="file" accept=".json,application/json" hidden>
+      </div>
+      <p class="muted small" style="margin-top:12px">
+      Балама: қалтада <kbd>python3 build.py</kbd> командасын орындасаңыз, дерегі ішіне ендірілген
+      <kbd>index.html</kbd> қайта жасалады — ол файл сұратпай ашылады.</p>
+    </div>`;
+  const fileEl = $("#file"), drop = $("#drop");
+  $("#pick").onclick = () => fileEl.click();
+  fileEl.onchange = () => fileEl.files[0] && readFile(fileEl.files[0]);
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.add("hot");
+  }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.remove("hot");
+  }));
+  drop.addEventListener("drop", e => {
+    const f = e.dataTransfer.files[0];
+    if (f) readFile(f);
+  });
+}
+function readFile(f) {
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const j = JSON.parse(fr.result);
+      if (!Array.isArray(j) || !j.length) throw new Error("формат дұрыс емес");
+      try { localStorage.setItem(DATA_KEY, JSON.stringify(j)); } catch (e) { toast("Жадқа сақталмады, бірақ жұмыс істейді"); }
+      DATA = j; INDEX = buildIndex(DATA);
+      route();
+      toast("Дерек жүктелді ✓");
+    } catch (e) { toast("Қате: " + e.message); }
+  };
+  fr.readAsText(f, "utf-8");
+}
+
+/* =====================================================================
+   4. Мәтінді көрсету
+   ===================================================================== */
+function qHtml(text) {
+  return esc(text).replace(/_{2,}/g, '<span class="blank"></span>');
+}
+function blanksCount(text) {
+  return (String(text).match(/_{2,}/g) || []).length;
+}
+
+/* =====================================================================
+   5. Item компоненті
+   ===================================================================== */
+function itemHtml(ex, it, opts = {}) {
+  const showUnit = opts.showUnit ? `<span class="badge">${ex.unit}.${esc(ex.number.split(".")[1] || "")}</span>` : "";
+  if (it.isExample) {
+    return `<div class="item">
+      <div class="q"><span class="n">${it.n}</span><div>${qHtml(it.question)}</div></div>
+      <div class="example"><span class="muted small">Кітаптағы үлгі:</span> ${esc(it.answer || "—")}</div>
+    </div>`;
+  }
+  const s = P.items[it.id] || { streak: 0, mastered: false };
+  const dots = `<span class="dots" title="Қатарынан дұрыс: ${s.streak}/${MASTER_STREAK}">${
+    [0, 1, 2].map(i => `<i class="${i < s.streak ? "on" : ""}"></i>`).join("")}</span>`;
+  const nb = blanksCount(it.question);
+  const ph = nb > 1 ? `${nb} жауап (бос орын/үтір арқылы)` : "жауабыңды жаз…";
+  return `<div class="item ${s.mastered ? "mastered" : ""}" data-id="${esc(it.id)}"
+              data-ex="${esc(ex.unit + "|" + ex.number)}" data-n="${it.n}">
+    <div class="q"><span class="n">${it.n}</span><div>${showUnit} ${qHtml(it.question)}
+      ${s.mastered ? '<span class="badge ok" title="Меңгерілген">✓</span>' : dots}</div></div>
+    <div class="ansrow">
+      <input type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${ph}">
+      <button class="mini act-check" title="Тексеру (Enter)">✓</button>
+      <button class="mini act-reveal" title="Жауапты көрсету">👁</button>
+      <button class="mini act-reset" title="Қайтадан">↻</button>
+    </div>
+    <div class="fb"></div>
+  </div>`;
+}
+
+function freeformHtml(ex) {
+  const f = ex.freeform;
+  const s = P.items[f.id] || { streak: 0, mastered: false };
+  return `<div class="item" data-id="${esc(f.id)}" data-free="1">
+    <div class="q"><span class="n">✎</span><div>Тұтас мәтінді жаз, содан кейін кітаптың нұсқасымен салыстыр.
+      ${s.mastered ? '<span class="badge ok">✓</span>' :
+      `<span class="dots">${[0,1,2].map(i=>`<i class="${i<s.streak?"on":""}"></i>`).join("")}</span>`}</div></div>
+    <div class="ansrow"><textarea rows="4" placeholder="жауабыңды осында жаз…"></textarea></div>
+    <div class="row wrap" style="margin-top:6px">
+      <button class="btn act-reveal">Кітаптың жауабын көрсету</button>
+    </div>
+    <div class="fb"></div>
+  </div>`;
+}
+
+/* Item әрекеттері (делегация арқылы) */
+function feedbackEl(item) { return $(".fb", item); }
+
+function setState(item, cls) {
+  item.classList.remove("ok", "bad", "near");
+  if (cls) item.classList.add(cls);
+}
+
+function judgeButtons() {
+  return `<div class="judge">
+    <button class="act-judge-ok">Дұрыс деп есепте</button>
+    <button class="act-judge-bad">Қате деп есепте</button>
+  </div>`;
+}
+
+function findItemData(item) {
+  const id = item.dataset.id;
+  const [unitNo, exNo, n] = id.split("|");
+  const u = INDEX.units.find(x => String(x.unit) === unitNo);
+  const ex = u.exs.find(x => x.number === exNo);
+  if (n === "F") return { ex, it: ex.freeform, free: true };
+  return { ex, it: ex.items.find(i => String(i.n) === n), free: false };
+}
+
+function doCheck(item) {
+  const { ex, it, free } = findItemData(item);
+  const input = $("input,textarea", item);
+  const fb = feedbackEl(item);
+  const val = input.value;
+  if (!val.trim()) { toast("Алдымен жауабыңды жаз"); input.focus(); return; }
+  if (item.dataset.locked === "1") return;
+
+  if (free) {
+    // Тұтас мәтін — өзің салыстырасың
+    item.dataset.locked = "1";
+    setState(item, "near");
+    fb.className = "fb neutral show";
+    fb.innerHTML = `<b>Кітаптың нұсқасы:</b><br>${esc(it.answer)}${judgeButtons()}`;
+    return;
+  }
+
+  const res = checkAnswer(it, val, !!ex.exampleAnswers);
+  item.dataset.locked = "1";
+
+  if (res.verdict === "correct") {
+    record(it.id, true);
+    setState(item, "ok");
+    fb.className = "fb ok show";
+    const s = P.items[it.id];
+    fb.innerHTML = s.mastered
+      ? "Дұрыс ✓ — бұл сөйлем меңгерілді (3 рет қатарынан)"
+      : `Дұрыс ✓ <span class="muted">(қатарынан ${s.streak}/${MASTER_STREAK})</span>`;
+    refreshDots(item);
+    focusNext(item);
+  } else if (res.verdict === "near") {
+    setState(item, "near");
+    fb.className = "fb neutral show";
+    const head = res.exampleNote
+      ? "Бұл жаттығуда <b>үлгі жауап</b> берілген — жалғыз дұрыс нұсқа емес. Салыстырып, өзің шеш:"
+      : "Жауабың дұрысқа өте жақын (әріп қатесі болуы мүмкін):";
+    fb.innerHTML = `${head}<br><b>Кітапта:</b> ${esc(it.answer)}${it.blank ? `<br><span class="muted small">(қысқаша: ${esc(it.blank)})</span>` : ""}${judgeButtons()}`;
+  } else {
+    record(it.id, false);
+    setState(item, "bad");
+    fb.className = "fb bad show";
+    fb.innerHTML = `Қате ✗ — <b>дұрысы:</b> ${esc(it.answer)}${it.blank ? `<br><span class="muted small">(қысқаша: ${esc(it.blank)})</span>` : ""}
+      <div class="judge"><button class="act-judge-ok">Шын мәнінде дұрыс жаздым</button></div>`;
+    refreshDots(item);
+  }
+}
+
+function doReveal(item) {
+  const { it } = findItemData(item);
+  const fb = feedbackEl(item);
+  item.dataset.locked = "1";
+  setState(item, "near");
+  fb.className = "fb neutral show";
+  fb.innerHTML = `<b>Жауабы:</b> ${esc(it.answer)}${it.blank ? `<br><span class="muted small">(қысқаша: ${esc(it.blank)})</span>` : ""}
+    <div class="muted small" style="margin-top:4px">Көрсетілген жауап ұпайға есептелмейді.</div>`;
+}
+
+function doReset(item) {
+  const input = $("input,textarea", item);
+  input.value = "";
+  item.dataset.locked = "";
+  setState(item, null);
+  const fb = feedbackEl(item);
+  fb.className = "fb"; fb.innerHTML = "";
+  input.focus();
+}
+
+function doJudge(item, correct) {
+  const { it } = findItemData(item);
+  record(it.id, correct);
+  setState(item, correct ? "ok" : "bad");
+  const fb = feedbackEl(item);
+  fb.className = `fb ${correct ? "ok" : "bad"} show`;
+  const s = P.items[it.id];
+  fb.innerHTML = correct
+    ? (s.mastered ? "Есептелді ✓ — меңгерілді" : `Есептелді ✓ <span class="muted">(қатарынан ${s.streak}/${MASTER_STREAK})</span>`)
+    : `Қате деп есептелді. <b>Дұрысы:</b> ${esc(it.answer)}`;
+  refreshDots(item);
+  if (correct) focusNext(item);
+}
+
+function refreshDots(item) {
+  const { it } = findItemData(item);
+  const s = P.items[it.id] || { streak: 0, mastered: false };
+  const holder = $(".q > div", item);
+  const old = $(".dots, .badge.ok", holder);
+  const html = s.mastered
+    ? '<span class="badge ok" title="Меңгерілген">✓</span>'
+    : `<span class="dots" title="Қатарынан дұрыс: ${s.streak}/${MASTER_STREAK}">${[0,1,2].map(i=>`<i class="${i<s.streak?"on":""}"></i>`).join("")}</span>`;
+  if (old) old.outerHTML = html; else holder.insertAdjacentHTML("beforeend", " " + html);
+}
+
+function focusNext(item) {
+  const all = $$(".item[data-id]");
+  const i = all.indexOf(item);
+  for (let k = i + 1; k < all.length; k++) {
+    if (all[k].dataset.locked === "1") continue;
+    const inp = $("input,textarea", all[k]);
+    if (inp) { inp.focus(); inp.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+  }
+}
+
+document.addEventListener("click", e => {
+  const item = e.target.closest(".item");
+  if (!item) return;
+  if (e.target.closest(".act-check")) doCheck(item);
+  else if (e.target.closest(".act-reveal")) doReveal(item);
+  else if (e.target.closest(".act-reset")) doReset(item);
+  else if (e.target.closest(".act-judge-ok")) doJudge(item, true);
+  else if (e.target.closest(".act-judge-bad")) doJudge(item, false);
+});
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const item = e.target.closest(".item");
+  if (!item) return;
+  if (e.target.tagName === "TEXTAREA" && !(e.ctrlKey || e.metaKey)) return;
+  e.preventDefault();
+  if (item.dataset.locked === "1") focusNext(item); else doCheck(item);
+});
+let lastFocused = null;
+document.addEventListener("focusin", e => {
+  if (e.target.matches(".ansrow input, .ansrow textarea")) lastFocused = e.target;
+});
+
+/* =====================================================================
+   6. Экрандар
+   ===================================================================== */
+function exerciseCard(ex, opts = {}) {
+  const badges = [];
+  if (ex.overToYou) badges.push(`<span class="badge info">Ашық сұрақ · ұпайсыз</span>`);
+  if (ex.exampleAnswers) badges.push(`<span class="badge info">Үлгі жауаптар</span>`);
+  if (ex.qualityWarning) badges.push(`<span class="badge warn" title="${esc(ex.qualityWarning)}">⚠️ PDF-пен салыстыр</span>`);
+
+  let body = "";
+  if (ex.overToYou) {
+    body = `<div class="selfcheck">Бұл — ашық сұрақ (Over to you). Бекітілген жауап жоқ:
+      өз жауабыңды жазып, PDF-тегі кітаппен салыстыр. Ұпайға есептелмейді.</div>`;
+  } else {
+    body += (ex.items || []).map(it => itemHtml(ex, it, opts)).join("");
+    if (ex.freeform) body += freeformHtml(ex);
+    if (!body) body = `<div class="selfcheck">Бұл жаттығудың мәтіні PDF-те кесте/сурет түрінде берілген —
+      кітаптан орында. (Қосымшада тексерілетін жауап жоқ.)</div>`;
+  }
+
+  const wb = ex.wordBank && ex.wordBank.length
+    ? `<div class="wordbank">${ex.wordBank.map(w => `<button class="chip">${esc(w)}</button>`).join("")}</div>` : "";
+
+  const foot = (!ex.overToYou && (ex.items?.some(i => !i.isExample) || ex.freeform))
+    ? `<div class="row wrap" style="margin-top:10px">
+         <button class="btn act-check-all">Барлығын тексеру</button>
+         <button class="btn ghost act-reveal-all">Жауаптарды көрсету</button>
+         <button class="btn ghost act-reset-all">Тазарту</button>
+       </div>` : "";
+
+  return `<section class="card exercise" data-ex="${esc(ex.unit + "|" + ex.number)}">
+    <div class="ex-head"><span class="ex-num">${esc(ex.number)}</span>${badges.join(" ")}</div>
+    <p class="instr">${qHtml(ex.instructions)}</p>
+    ${wb}
+    ${body}
+    ${foot}
+  </section>`;
+}
+
+function renderHome(filter = "") {
+  const f = filter.trim().toLowerCase();
+  const rows = INDEX.units
+    .filter(u => !f || String(u.unit) === f || u.title.toLowerCase().includes(f))
+    .map(u => {
+      const m = unitMastered(u), t = u.total;
+      const pct = t ? Math.round(m / t * 100) : 0;
+      return `<button class="unit" data-go="#/unit/${u.unit}">
+        <span class="no">${u.unit}</span>
+        <span class="ttl">${esc(u.title)}</span>
+        <span class="bar ${pct === 100 ? "done" : ""}"><i style="width:${pct}%"></i></span>
+        <span class="pct">${m}/${t}</span>
+      </button>`;
+    }).join("");
+
+  const done = INDEX.units.reduce((s, u) => s + unitMastered(u), 0);
+  $("#view").innerHTML = `
+    <div class="card">
+      <h1>Бөлімдер</h1>
+      <div class="row" style="margin:8px 0 10px">
+        <span class="bar ${done === INDEX.total ? "done" : ""}"><i style="width:${INDEX.total ? done / INDEX.total * 100 : 0}%"></i></span>
+        <span class="small muted" style="white-space:nowrap">${done}/${INDEX.total} меңгерілген</span>
+      </div>
+      <input class="searchbox" id="q" placeholder="Бөлім нөмірі немесе атауы бойынша іздеу…" value="${esc(filter)}">
+    </div>
+    <div class="unit-list">${rows || '<p class="muted">Ештеңе табылмады.</p>'}</div>`;
+  const q = $("#q");
+  q.oninput = () => { renderHome(q.value); const n = $("#q"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
+}
+
+function renderUnit(no) {
+  const u = INDEX.units.find(x => String(x.unit) === String(no));
+  if (!u) return renderHome();
+  const m = unitMastered(u), pct = u.total ? Math.round(m / u.total * 100) : 0;
+  $("#view").innerHTML = `
+    <div class="card">
+      <div class="row wrap" style="margin-bottom:6px">
+        <button class="btn" data-go="#/">← Бөлімдер</button>
+        <span class="spacer"></span>
+        <span class="badge">PDF: жаттығу б. ${u.pdfExercisePage}</span>
+        <span class="badge">сөздік б. ${u.pdfReferencePage}</span>
+      </div>
+      <h1>${u.unit}. ${esc(u.title)}</h1>
+      <div class="row" style="margin-top:8px">
+        <span class="bar ${pct === 100 ? "done" : ""}"><i style="width:${pct}%"></i></span>
+        <span class="small muted" style="white-space:nowrap">${m}/${u.total}</span>
+      </div>
+    </div>
+    ${u.exs.map(ex => exerciseCard(ex)).join("")}
+    <div class="row wrap">
+      ${u.unit > 1 ? `<button class="btn" data-go="#/unit/${u.unit - 1}">← ${u.unit - 1}-бөлім</button>` : ""}
+      <span class="spacer"></span>
+      ${u.unit < INDEX.units.length ? `<button class="btn" data-go="#/unit/${u.unit + 1}">${u.unit + 1}-бөлім →</button>` : ""}
+    </div>`;
+  window.scrollTo(0, 0);
+}
+
+function collectReview() {
+  const out = [];
+  for (const u of INDEX.units) {
+    const items = [];
+    for (const ex of u.exs) {
+      for (const it of ex.items) if (it.scorable && needsReview(it.id)) items.push({ ex, it });
+      if (ex.freeform && needsReview(ex.freeform.id)) items.push({ ex, it: ex.freeform, free: true });
+    }
+    if (items.length) out.push({ u, items });
+  }
+  return out;
+}
+
+let reviewSample = null;
+function renderMistakes() {
+  const groups = collectReview();
+  const count = groups.reduce((s, g) => s + g.items.length, 0);
+  if (!count) {
+    $("#view").innerHTML = `<div class="card"><h1>Қателерім</h1>
+      <p class="muted">Қайталауды қажет ететін сөйлем жоқ 🎉<br>
+      Жаттығуларды орындаған сайын әлі меңгерілмеген сөйлемдер осында жиналады.</p>
+      <button class="btn primary" data-go="#/">Бөлімдерге өту</button></div>`;
+    return;
+  }
+  const body = reviewSample
+    ? `<section class="card"><div class="ex-head"><span class="ex-num">Кездейсоқ ${reviewSample.length}</span>
+         <span class="badge info">аралас жаттығу</span></div>
+       ${reviewSample.map(({ ex, it, free }) => free
+        ? freeformHtml(ex)
+        : itemHtml(ex, it, { showUnit: true })).join("")}
+       </section>`
+    : groups.map(g => `<section class="card">
+        <div class="ex-head"><span class="ex-num">${g.u.unit}</span>
+          <span class="muted small">${esc(g.u.title)}</span>
+          <span class="spacer"></span>
+          <button class="btn small" data-go="#/unit/${g.u.unit}">бөлімге →</button></div>
+        ${g.items.map(({ ex, it, free }) => free ? freeformHtml(ex) : itemHtml(ex, it, { showUnit: true })).join("")}
+      </section>`).join("");
+
+  $("#view").innerHTML = `
+    <div class="card">
+      <h1>Қателерім</h1>
+      <p class="muted small">Мұнда қате жауап берілген немесе әлі 3 рет қатарынан дұрыс жазылмаған
+      ${count} сөйлем жинақталған.</p>
+      <div class="row wrap" style="margin-top:8px">
+        <button class="btn ${reviewSample ? "" : "primary"}" id="mode-all">Бөлімдер бойынша</button>
+        <button class="btn ${reviewSample ? "primary" : ""}" id="mode-rnd">Кездейсоқ 20</button>
+      </div>
+    </div>${body}`;
+
+  $("#mode-all").onclick = () => { reviewSample = null; renderMistakes(); };
+  $("#mode-rnd").onclick = () => {
+    const flat = groups.flatMap(g => g.items);
+    for (let i = flat.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0;[flat[i], flat[j]] = [flat[j], flat[i]]; }
+    reviewSample = flat.slice(0, 20);
+    renderMistakes();
+  };
+  window.scrollTo(0, 0);
+}
+
+function renderStats() {
+  const done = INDEX.units.reduce((s, u) => s + unitMastered(u), 0);
+  let tried = 0, correct = 0, wrong = 0;
+  for (const k in P.items) { const s = P.items[k]; if (s.c || s.w) tried++; correct += s.c; wrong += s.w; }
+  const acc = correct + wrong ? Math.round(correct / (correct + wrong) * 100) : 0;
+  const review = collectReview().reduce((s, g) => s + g.items.length, 0);
+
+  // соңғы 14 күн
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = dayKey(d);
+    days.push({ k, ...(P.daily[k] || { c: 0, t: 0 }) });
+  }
+  const max = Math.max(1, ...days.map(d => d.t));
+  const today = P.daily[todayKey()] || { c: 0, t: 0 };
+
+  const rows = INDEX.units.map(u => {
+    const m = unitMastered(u), pct = u.total ? Math.round(m / u.total * 100) : 0;
+    return `<tr><td class="n">${u.unit}</td>
+      <td><button class="btn" style="border:none;padding:0;background:none;text-align:left" data-go="#/unit/${u.unit}">${esc(u.title)}</button></td>
+      <td style="width:90px"><span class="bar ${pct === 100 ? "done" : ""}"><i style="width:${pct}%"></i></span></td>
+      <td class="p">${m}/${u.total}</td></tr>`;
+  }).join("");
+
+  $("#view").innerHTML = `
+    <div class="tiles">
+      <div class="tile"><div class="v">${done}</div><div class="k">меңгерілген (${INDEX.total} ішінен)</div></div>
+      <div class="tile"><div class="v">${INDEX.total ? Math.round(done / INDEX.total * 100) : 0}%</div><div class="k">жалпы прогресс</div></div>
+      <div class="tile"><div class="v">${acc}%</div><div class="k">дұрыс жауап үлесі</div></div>
+      <div class="tile"><div class="v">${review}</div><div class="k">қайталау керек</div></div>
+      <div class="tile"><div class="v">${today.c}/${today.t}</div><div class="k">бүгін дұрыс/барлығы</div></div>
+      <div class="tile"><div class="v">${tried}</div><div class="k">жауап берілген сөйлем</div></div>
+    </div>
+    <div class="card">
+      <h2>Соңғы 14 күн</h2>
+      <div class="spark">${days.map(d => `<div class="${d.t ? "" : "empty"}" style="height:${d.t ? Math.max(6, d.t / max * 100) : 4}%" title="${d.k}: ${d.c}/${d.t}"></div>`).join("")}</div>
+      <div class="row small muted" style="margin-top:6px"><span>${days[0].k.slice(5)}</span><span class="spacer"></span><span>бүгін</span></div>
+    </div>
+    <div class="card">
+      <h2>Бөлімдер бойынша</h2>
+      <table class="stats"><tbody>${rows}</tbody></table>
+    </div>
+    <div class="card">
+      <h2>Прогресс деректері</h2>
+      <p class="muted small">Барлығы браузердің localStorage жадында сақталады. Резервке көшірме жасауға болады.</p>
+      <div class="row wrap">
+        <button class="btn" id="exp">Прогресті жүктеп алу (.json)</button>
+        <button class="btn" id="imp">Прогресті қалпына келтіру</button>
+        <input type="file" id="impf" accept=".json" hidden>
+        <span class="spacer"></span>
+        <button class="btn" id="wipe" style="color:var(--bad)">Бәрін өшіру</button>
+      </div>
+    </div>`;
+
+  $("#exp").onclick = () => {
+    const blob = new Blob([JSON.stringify(P)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `vocab-advanced-progress-${todayKey()}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  $("#imp").onclick = () => $("#impf").click();
+  $("#impf").onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        const p = JSON.parse(fr.result);
+        P = { items: p.items || {}, daily: p.daily || {}, updated: Date.now() };
+        saveProgress(); renderStats(); toast("Прогресс қалпына келтірілді ✓");
+      } catch (err) { toast("Файл оқылмады"); }
+    };
+    fr.readAsText(f);
+  };
+  $("#wipe").onclick = () => {
+    if (!confirm("Бүкіл прогресс өшірілсін бе? Бұл әрекетті кері қайтару мүмкін емес.")) return;
+    P = { items: {}, daily: {}, updated: Date.now() };
+    localStorage.removeItem(STORE_KEY);
+    renderStats(); toast("Прогресс өшірілді");
+  };
+  window.scrollTo(0, 0);
+}
+
+/* =====================================================================
+   7. Топтық батырмалар / чиптер / роутер
+   ===================================================================== */
+document.addEventListener("click", e => {
+  const go = e.target.closest("[data-go]");
+  if (go) { location.hash = go.dataset.go; return; }
+
+  const chip = e.target.closest(".chip");
+  if (chip) {
+    const target = lastFocused && lastFocused.closest(".exercise") === chip.closest(".exercise")
+      ? lastFocused
+      : $(".ansrow input", chip.closest(".exercise"));
+    if (target) {
+      target.value = (target.value ? target.value.trim() + " " : "") + chip.textContent.trim();
+      target.focus();
+    }
+    return;
+  }
+
+  const sec = e.target.closest(".exercise");
+  if (!sec) return;
+  if (e.target.closest(".act-check-all")) {
+    $$(".item[data-id]", sec).forEach(it => {
+      const inp = $("input,textarea", it);
+      if (inp && inp.value.trim() && it.dataset.locked !== "1") doCheck(it);
+    });
+  } else if (e.target.closest(".act-reveal-all")) {
+    $$(".item[data-id]", sec).forEach(it => { if (it.dataset.locked !== "1") doReveal(it); });
+  } else if (e.target.closest(".act-reset-all")) {
+    $$(".item[data-id]", sec).forEach(doReset);
+  }
+});
+
+function route() {
+  if (!INDEX) { renderLoader(); return; }
+  const h = location.hash || "#/";
+  $$("nav button").forEach(b => b.classList.toggle("active",
+    b.dataset.go === h || (b.dataset.go === "#/" && h.startsWith("#/unit"))));
+  if (h.startsWith("#/unit/")) renderUnit(h.split("/")[2]);
+  else if (h === "#/mistakes") { reviewSample = null; renderMistakes(); }
+  else if (h === "#/stats") renderStats();
+  else renderHome();
+}
+window.addEventListener("hashchange", route);
+
+/* =====================================================================
+   8. Іске қосу
+   ===================================================================== */
+(async function init() {
+  loadProgress();
+  DATA = await loadData();
+  if (DATA) {
+    INDEX = buildIndex(DATA);
+    $("#subtitle").textContent = `${INDEX.units.length} бөлім · ${INDEX.total} тексерілетін сөйлем`;
+  }
+  route();
+})();
+</script>
+</body>
+</html>

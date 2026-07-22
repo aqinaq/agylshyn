@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essential Grammar Practice</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button id="menuBtn" class="icon-btn" title="Мәзір">☰</button>
+  <h1>Essential Grammar Practice</h1>
+  <nav class="tabs">
+    <button class="tab active" data-view="units">Units</button>
+    <button class="tab" data-view="errors">Қателер <span id="errBadge" class="badge"></span></button>
+    <button class="tab" data-view="stats">Статистика</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <aside id="sidebar" class="sidebar">
+    <input id="search" class="search" type="search" placeholder="Unit іздеу…" autocomplete="off">
+    <div id="unitList" class="unit-list"></div>
+  </aside>
+
+  <main id="main" class="main">
+    <div id="view"></div>
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

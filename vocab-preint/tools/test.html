@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<title>EVU regression test</title>
+<script>localStorage.clear(); location.hash = '#/unit/5';</script>
+</head>
+<body>
+<!-- Mirrors index.html's skeleton so app.js runs unmodified. Open this file in
+     a browser (or run tools/run_test.sh) — results appear at the bottom. -->
+<header class="topbar">
+  <button id="menuBtn"></button>
+  <nav class="tabs">
+    <a href="#/units" data-tab="units" class="tab">Units</a>
+    <a href="#/errors" data-tab="errors" class="tab">Қателер <span id="errBadge" class="badge" hidden>0</span></a>
+    <a href="#/stats" data-tab="stats" class="tab">Статистика</a>
+  </nav>
+</header>
+<div class="layout">
+  <aside id="sidebar"><div class="search-wrap"><input id="search"></div><ul id="unitList"></ul></aside>
+  <div id="overlay" hidden></div>
+  <main id="main"></main>
+</div>
+<pre id="TESTOUT"></pre>
+
+<script src="../data.js"></script>
+<script src="../app.js"></script>
+<script>
+var log = [], pass = 0, fail = 0;
+function t(name, cond) { (cond ? pass++ : fail++); log.push((cond ? 'PASS ' : 'FAIL ') + name); }
+function row(k) { return document.querySelector('[data-key="' + k + '"]'); }
+function type(k, v) {
+  var r = row(k), i = r.querySelector('input');
+  i.value = v;
+  i.dispatchEvent(new Event('input', { bubbles: true }));
+  i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  return r;
+}
+function hash(h) { location.hash = h; window.dispatchEvent(new HashChangeEvent('hashchange')); }
+function txt() { return document.getElementById('main').textContent; }
+function qOf(k) { return row(k).querySelector('.q').textContent.trim(); }
+
+try {
+/* ---------- app behaviour ---------- */
+t('unit 5 rendered', /Unit 5/.test(document.querySelector('h1').textContent));
+var r = type('5|5.1|2', 'Thai');
+t('correct marks row green', r.classList.contains('correct'));
+t('streak shown', /1\/3/.test(r.textContent));
+type('5|5.1|2', 'Thai');
+r = type('5|5.1|2', 'thai');
+t('3 in a row -> mastered', r.classList.contains('mastered') && /меңгерілді/.test(r.textContent));
+t('punctuation/case ignored', type('5|5.1|3', '  SPANISH!  ').classList.contains('correct'));
+t('slash alternative', type('5|5.2|2', 'the Far East').classList.contains('correct'));
+
+r = type('5|5.1|4', 'nonsense');
+t('wrong marks row red', r.classList.contains('wrong'));
+var ov = [].filter.call(r.querySelectorAll('button'), function (b) { return /дұрыс жаздым/.test(b.textContent); })[0];
+t('override button appears', !!ov);
+ov.click();
+t('override flips to correct', row('5|5.1|4').classList.contains('correct'));
+t('empty input ignored', !type('5|5.1|5', '   ').classList.contains('wrong'));
+
+/* ---------- data: question/answer alignment (was off by one) ---------- */
+hash('#/unit/4');
+t('4.2 item2 is the Seville line', /week\s+Seville/.test(qOf('4|4.2|2')));
+t('4.2 item2 answer "in Seville"', type('4|4.2|2', 'in Seville').classList.contains('correct'));
+t('4.2 item3 answer "took a train"', type('4|4.2|3', 'took a train').classList.contains('correct'));
+
+/* ---------- data: horizontal list split ---------- */
+hash('#/unit/3');
+t('3.2 item2 is its own item', qOf('3|3.2|2') === 'comb');
+t('3.2 item2 checks', type('3|3.2|2', 'comb (b)').classList.contains('correct'));
+
+/* ---------- data: study unit has no theory bleed ---------- */
+hash('#/unit/1');
+t('unit 1 free of theory text', txt().indexOf('Studying a new unit') === -1);
+t('unit 1.4 item2 clean', /permanent job/.test(qOf('1|1.4|2')));
+
+/* ---------- matching options listed once ---------- */
+hash('#/unit/7');
+var opts = document.querySelectorAll('.opt');
+t('7.1 options rendered separately', opts.length >= 7);
+t('7.1 option text correct', /with rain/.test(opts[0].textContent));
+t('7.1 question is clean', qOf('7|7.1|2') === 'heavy');
+t('7.1 letter answer checks', type('7|7.1|2', 'f').classList.contains('correct'));
+
+/* ---------- gap-fill passage ---------- */
+hash('#/unit/19');
+var pas = document.querySelector('.passage');
+t('19.4 passage rendered', !!pas && /saving up/.test(pas.textContent));
+t('19.4 passage keeps gap numbers', /bank\s*2/.test(pas.textContent));
+t('19.4 gap 2 answer "account"', type('19|19.4|2', 'account').classList.contains('correct'));
+t('19.4 gap row labelled', /бос орын/.test(row('19|19.4|3').textContent));
+
+/* ---------- "Over to you" is never auto-checked ---------- */
+hash('#/unit/5');
+var sc = row('5|5.6|1');
+t('Over-to-you is self-check', !/Тексеру/.test(sc.textContent) && /өзің тексер/.test(sc.textContent));
+sc.querySelector('input').value = 'Kazakh';
+[].filter.call(sc.querySelectorAll('button'), function (b) { return /✓/.test(b.textContent); })[0].click();
+t('self-check ✓ works', sc.classList.contains('correct'));
+
+/* ---------- "–" answers routed to self-check ---------- */
+hash('#/unit/20');
+t('u20 "–" is self-check', /өзің тексер/.test(row('20|20.2|6').textContent));
+t('u20 item1 is example', row('20|20.2|1').classList.contains('example'));
+
+/* ---------- freeform + crossword ---------- */
+hash('#/unit/42');
+t('crossword note shown', /кроссворд/i.test(txt()));
+hash('#/unit/2');
+var showBtn = [].filter.call(document.querySelectorAll('button'), function (b) { return /Жауапты көрсету/.test(b.textContent); })[0];
+t('freeform reveal exists', !!showBtn);
+var ansEl = showBtn.closest('.sub').querySelector('.raw.answer');
+t('freeform answer hidden first', ansEl.hidden === true);
+showBtn.click();
+t('freeform answer revealed', ansEl.hidden === false);
+
+/* ---------- clean unit titles ---------- */
+t('unit 25 title clean', window.EVU_DATA.units[24].title === 'Cooking');
+t('unit 54 title clean', window.EVU_DATA.units[53].title === 'Computers');
+
+/* ---------- persistence ---------- */
+hash('#/unit/5');
+t('value restored', row('5|5.1|2').querySelector('input').value === 'thai');
+t('mastered restored', row('5|5.1|2').classList.contains('mastered'));
+
+/* ---------- errors + stats ---------- */
+hash('#/errors');
+t('errors page lists unit 5', /Unit 5/.test(txt()));
+t('errors badge visible', document.getElementById('errBadge').hidden === false);
+hash('#/stats');
+t('stats renders 100 rows', document.querySelectorAll('tbody tr').length === 100);
+
+/* ---------- every unit renders ---------- */
+var broken = [];
+for (var u = 1; u <= 100; u++) {
+  try {
+    hash('#/unit/' + u);
+    if (!document.querySelector('h1')) broken.push(u);
+  } catch (e) { broken.push(u + ':' + e.message); }
+}
+t('all 100 units render', broken.length === 0);
+if (broken.length) log.push('broken: ' + broken.join(','));
+
+} catch (e) { fail++; log.push('EXCEPTION: ' + (e && e.stack ? e.stack : e)); }
+
+function emit() {
+  document.getElementById('TESTOUT').textContent =
+    '\n===TESTS===\n' + log.join('\n') + '\n\nPASS ' + pass + '  FAIL ' + fail + '\n===END===\n';
+}
+emit();
+setTimeout(function () {
+  var p = JSON.parse(localStorage.getItem('evu_v1') || '{}');
+  t('localStorage written', !!p.items);
+  var it = p.items && p.items['5|5.1|2'];
+  t('record persisted', !!it && it.streak === 3 && it.mastered === true);
+  emit();
+}, 300);
+</script>
+</body>
+</html>

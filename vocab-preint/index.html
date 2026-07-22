@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English Vocabulary in Use — Pre-Intermediate</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button id="menuBtn" class="icon-btn" aria-label="Мәзір">☰</button>
+  <div class="brand">
+    <span class="brand-title">Vocabulary in Use</span>
+    <span class="brand-sub">Pre-Intermediate</span>
+  </div>
+  <nav class="tabs">
+    <a href="#/units"  data-tab="units"  class="tab">Units</a>
+    <a href="#/errors" data-tab="errors" class="tab">Қателер <span id="errBadge" class="badge" hidden>0</span></a>
+    <a href="#/stats"  data-tab="stats"  class="tab">Статистика</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <aside id="sidebar" class="sidebar">
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Іздеу: нөмір немесе тақырып…" autocomplete="off">
+    </div>
+    <ul id="unitList" class="unit-list"></ul>
+  </aside>
+
+  <div id="overlay" class="overlay" hidden></div>
+
+  <main id="main" class="main"></main>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

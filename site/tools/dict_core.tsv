@@ -1,0 +1,1398 @@
+# Core glossary: word <TAB> kazakh <TAB> simple english <TAB> pos (optional)
+#
+# Ordered by how often the word appears in the six books, so the top of this
+# file is what a reader meets on almost every page. Inflected forms are only
+# listed when the guesser in dict.js cannot get back to the base (went, took,
+# children) or when the form means something of its own (I'm, don't).
+#
+# Anything not here is fetched online once and cached. To see what is worth
+# adding next:  python3 tools/build_dict.py --missing 200
+#
+# Rebuild after editing:  python3 tools/build_dict.py
+
+the	бұл, осы (белгілі зат)	points to a thing you already know	article
+a	бір (белгісіз зат)	one, any one thing	article
+an	бір (дауыстыдан бұрын)	"a" before a, e, i, o, u	article
+to	-ға, -ге; етістік алдында	shows where you go, or starts a verb	prep
+i	мен	the person speaking	pron
+you	сен, сіз	the person I am talking to	pron
+in	ішінде	inside something	prep
+of	-ның, -нің	belonging to, part of	prep
+is	-дір (ол)	"be" for he, she, it	verb
+and	және	joins two things	conj
+it	ол (зат)	a thing, not a person	pron
+was	еді, болды	past of "is"	verb
+have	бар, ие болу	to own or hold something	verb
+for	үшін	shows who or what gets it	prep
+on	үстінде	touching the top of something	prep
+that	ол, анау; деген	points to a farther thing	pron
+are	-сыз, -сыңдар	"be" for you, we, they	verb
+be	болу	to exist, to be something	verb
+or	немесе	shows a choice	conj
+with	бірге, -мен	together, using	prep
+do	істеу, жасау	to make an action happen	verb
+he	ол (ер адам)	a man or boy	pron
+we	біз	me and other people	pron
+at	-да, -де (нүкте)	in one exact place or time	prep
+she	ол (әйел адам)	a woman or girl	pron
+my	менің	belonging to me	det
+if	егер	when this happens, then	conj
+but	бірақ	shows something different	conj
+what	не	asks about a thing	pron
+very	өте	a lot, to a high degree	adv
+they	олар	those people or things	pron
+as	ретінде, сияқты	in the same way	conj
+not	емес, жоқ	says something is false	adv
+your	сенің, сіздің	belonging to you	det
+from	-дан, -ден	where it starts	prep
+her	оның (әйел)	belonging to her	det
+had	болған, болды	past of "have"	verb
+so	сондықтан, сонша	for that reason	conj
+this	бұл	the thing near me	pron
+me	мені, маған	the speaker, after a verb	pron
+when	қашан, кезде	at what time	conj
+been	болған	past part of "be"	verb
+sentence	сөйлем	words that make a full idea	noun
+don't	жоқ, істеме	short for "do not"	verb
+there	сонда, анда	in that place	adv
+has	бар (ол)	"have" for he, she, it	verb
+go	бару, кету	to move to another place	verb
+complete	толтыру; толық	to finish or fill in	verb
+about	туралы; шамамен	on this topic, or nearly	prep
+can	алу, мүмкін	to be able to	verb
+it's	бұл — ...	short for "it is"	verb
+i'm	мен ...-мын	short for "I am"	verb
+no	жоқ	the opposite of yes	adv
+get	алу; болу	to receive or become	verb
+more	көбірек	a bigger amount	det
+like	ұнату; сияқты	to enjoy, or "similar to"	verb
+up	жоғары	to a higher place	adv
+by	арқылы, жанында	who did it, or next to	prep
+were	едік, едіңдер	past of "are"	verb
+time	уақыт	minutes, hours, days	noun
+all	бәрі, барлық	every one, the whole	det
+some	кейбір, біраз	a few, not all	det
+these	бұлар	the things near me	pron
+will	-мақ (болашақ)	shows the future	verb
+one	бір	the number 1	num
+word	сөз	letters that mean something	noun
+out	сыртқа	not inside	adv
+his	оның (ер)	belonging to him	det
+would	еді (шартты)	shows something not real yet	verb
+use	пайдалану	to do a job with a thing	verb
+going	бара жатқан	moving somewhere now	verb
+got	алды	past of "get"	verb
+them	оларды	those people, after a verb	pron
+which	қайсы	asks you to choose	pron
+how	қалай	asks about the way	adv
+work	жұмыс; істеу	a job, or to do a job	noun
+correct	дұрыс	with no mistakes	adj
+didn't	істемеді	short for "did not"	verb
+did	істеді	past of "do"	verb
+know	білу	to have something in your head	verb
+over	үстінен; аяқталды	above, or finished	prep
+possible	мүмкін	it can happen	adj
+now	қазір	at this moment	adv
+think	ойлау	to use your mind	verb
+new	жаңа	made a short time ago	adj
+who	кім	asks about a person	pron
+any	кез келген	one, it does not matter which	det
+could	алар еді	past of "can"	verb
+good	жақсы	better than bad	adj
+much	көп (саналмайтын)	a large amount	det
+put	қою, салу	to move a thing to a place	verb
+see	көру	to use your eyes	verb
+lot	көп	a large number of things	noun
+two	екі	the number 2	num
+where	қайда	asks about a place	adv
+last	соңғы; созылу	final, or the one before	adj
+using	пайдаланып	doing a job with a thing	verb
+just	жаңа ғана; тек	a moment ago, or only	adv
+should	керек	the right thing to do	verb
+i've	менде бар	short for "I have"	verb
+car	көлік, машина	you drive it on roads	noun
+want	қалау	to wish to have	verb
+each	әрбір	every one, one by one	det
+yes	иә	you agree	adv
+write	жазу	to make words with a pen	verb
+well	жақсы	in a good way	adv
+than	қарағанда	used to compare	conj
+take	алу	to put in your hand	verb
+into	ішіне	to the inside of	prep
+make	жасау	to build or create	verb
+money	ақша	you buy things with it	noun
+need	қажет ету	must have it	verb
+long	ұзын, ұзақ	not short	adj
+their	олардың	belonging to them	det
+said	айтты	past of "say"	verb
+went	барды	past of "go"	verb
+here	мұнда	in this place	adv
+always	әрқашан	every time, all the time	adv
+verb	етістік	a word for an action	noun
+after	кейін	later than	prep
+look	қарау	to turn your eyes to	verb
+our	біздің	belonging to us	det
+day	күн	24 hours	noun
+i'll	мен ...-мын (болашақ)	short for "I will"	verb
+down	төмен	to a lower place	adv
+why	неге	asks about a reason	adv
+can't	алмайды	short for "cannot"	verb
+someone	біреу	a person you do not name	pron
+say	айту	to speak words	verb
+other	басқа	not this one	det
+year	жыл	12 months	noun
+before	бұрын	earlier than	prep
+most	ең көп	more than all others	det
+home	үй	where you live	noun
+things	заттар	objects or ideas	noun
+he's	ол ...	short for "he is/has"	verb
+question	сұрақ	you ask it to learn	noun
+must	міндетті	it is necessary	verb
+used	пайдаланды	past of "use"	verb
+because	өйткені	gives the reason	conj
+first	бірінші	before all others	adj
+back	арт; қайта	the rear, or again	noun
+us	бізді	we, after a verb	pron
+also	сондай-ақ	as well, too	adv
+something	бірдеңе	a thing you do not name	pron
+holiday	демалыс	days off work	noun
+never	ешқашан	not at any time	adv
+many	көп (саналатын)	a large number	det
+opposite	қарама-қарсы	the completely other one	adj
+off	өшірулі; түсіп	away from, or not on	adv
+answer	жауап	what you say to a question	noun
+next	келесі	the one after this	adj
+often	жиі	many times	adv
+find	табу	to see what you looked for	verb
+too	тым; де	more than needed, or also	adv
+she's	ол ...	short for "she is/has"	verb
+only	тек	no more than that	adv
+come	келу	to move to this place	verb
+give	беру	to hand to someone	verb
+week	апта	seven days	noun
+way	жол; тәсіл	a road, or a method	noun
+i'd	мен ...-ер едім	short for "I would/had"	verb
+away	алыс, кетіп	to another place	adv
+left	сол жақ; кетті	the side, or past of leave	adj
+school	мектеп	where children learn	noun
+same	бірдей	not different	adj
+three	үш	the number 3	num
+house	үй	a building you live in	noun
+live	тұру; өмір сүру	to have your home there	verb
+country	ел	a land with its own laws	noun
+really	шынымен	truly, very	adv
+both	екеуі де	the two together	det
+quite	әжептәуір	rather, fairly	adv
+right	дұрыс; оң жақ	correct, or not left	adj
+children	балалар	more than one child	noun
+child	бала	a young person	noun
+might	мүмкін	perhaps it will happen	verb
+help	көмектесу	to make it easier for someone	verb
+few	аз	not many	det
+open	ашу; ашық	not closed	verb
+does	істей ме (ол)	"do" for he, she, it	verb
+room	бөлме	one space inside a house	noun
+may	мүмкін; мамыр	perhaps, or the month	verb
+ask	сұрау	to say a question	verb
+then	сосын	after that	adv
+party	той, кеш	people meeting to have fun	noun
+ok	жарайды	fine, all right	adv
+night	түн	when it is dark	noun
+every	әр	all of them, one by one	det
+usually	әдетте	most of the time	adv
+friend	дос	a person you like	noun
+still	әлі	it has not stopped	adv
+meaning	мағына	what a word says	noun
+company	компания	a business	noun
+necessary	қажет	you must have it	adj
+late	кеш	after the right time	adj
+own	өзінің; иелену	belonging to you alone	adj
+english	ағылшын тілі	the language of England	noun
+being	болу	the -ing form of "be"	verb
+leave	кету; қалдыру	to go away from	verb
+past	өткен	the time before now	noun
+person	адам	one human	noun
+made	жасады	past of "make"	verb
+noun	зат есім	a word for a thing	noun
+different	басқаша	not the same	adj
+box	қорап	a container with sides	noun
+old	кәрі, ескі	not young, not new	adj
+end	соңы	where it stops	noun
+form	түр, форма	the shape or version	noun
+present	осы шақ; сыйлық	now, or a gift	noun
+choose	таңдау	to pick one	verb
+working	жұмыс істеп	doing a job now	verb
+nice	жақсы, жағымды	pleasant	adj
+great	керемет	very good, very big	adj
+morning	таң	the early part of the day	noun
+phone	телефон	you talk to people on it	noun
+page	бет	one side of paper in a book	noun
+keep	сақтау	to hold and not give back	verb
+anything	кез келген нәрсе	any thing at all	pron
+again	қайтадан	one more time	adv
+place	орын	where something is	noun
+eat	жеу	to put food in your mouth	verb
+book	кітап	pages with words, bound	noun
+buy	сатып алу	to get it for money	verb
+you're	сен ...-сың	short for "you are"	verb
+read	оқу	to look at words and understand	verb
+told	айтты	past of "tell"	verb
+looking	қарап	using your eyes now	verb
+able	қабілетті	you can do it	adj
+given	берілген	past part of "give"	verb
+five	бес	the number 5	num
+small	кішкентай	not big	adj
+tell	айту	to give news to a person	verb
+ever	бір кезде	at any time	adv
+won't	болмайды	short for "will not"	verb
+soon	жақында	in a short time	adv
+even	тіпті	makes it stronger	adv
+weather	ауа райы	rain, sun, wind	noun
+today	бүгін	this day	adv
+hard	қиын; қатты	difficult, or not soft	adj
+friends	достар	more than one friend	noun
+number	сан, нөмір	1, 2, 3 and so on	noun
+rather	керісінше; біршама	instead, or fairly	adv
+since	бері	from that time until now	prep
+bad	жаман	not good	adj
+doing	істеп жатқан	making an action now	verb
+bit	біраз	a small amount	noun
+exercise	жаттығу	practice work	noun
+city	қала	a big town	noun
+problem	мәселе	something that is wrong	noun
+sure	сенімді	you have no doubt	adj
+gave	берді	past of "give"	verb
+table	үстел	furniture with a flat top	noun
+better	жақсырақ	more good	adj
+am	-мын (мен)	"be" for I	verb
+having	бар болып	the -ing form of "have"	verb
+train	пойыз	it runs on rails	noun
+stay	қалу	to not leave	verb
+road	жол	cars drive on it	noun
+feel	сезіну	to have a feeling	verb
+play	ойнау	to do a game	verb
+pay	төлеу	to give money for	verb
+try	тырысу	to make an effort	verb
+food	тамақ	what you eat	noun
+information	ақпарат	facts you are told	noun
+match	сәйкестендіру; матч	to pair up, or a game	verb
+similar	ұқсас	almost the same	adj
+less	азырақ	a smaller amount	det
+ten	он	the number 10	num
+remember	есте сақтау	to keep it in your mind	verb
+until	дейін	up to that time	prep
+man	ер адам	a grown male	noun
+police	полиция	they catch criminals	noun
+little	кішкентай; аз	small, or not much	adj
+life	өмір	being alive	noun
+hear	есту	to take in sound	verb
+brackets	жақша	the marks ( )	noun
+shop	дүкен	you buy things there	noun
+between	арасында	in the middle of two	prep
+lost	жоғалтты	past of "lose"	verb
+during	кезінде	all through that time	prep
+tomorrow	ертең	the day after today	adv
+found	тапты	past of "find"	verb
+took	алды	past of "take"	verb
+hour	сағат	sixty minutes	noun
+thought	ойлады; ой	past of "think"	verb
+walk	жаяу жүру	to go on your feet	verb
+mind	ой, сана	where you think	noun
+best	ең жақсы	better than all	adj
+waiting	күтіп	staying until it comes	verb
+love	жақсы көру	to like very much	verb
+world	әлем	the whole earth	noun
+yesterday	кеше	the day before today	adv
+asked	сұрады	past of "ask"	verb
+exam	емтихан	a test at school	noun
+enough	жеткілікті	as much as you need	det
+met	кездесті	past of "meet"	verb
+mean	білдіру	to have this meaning	verb
+dictionary	сөздік	a book of word meanings	noun
+meeting	жиналыс	people talking about work	noun
+meet	кездесу	to come together	verb
+please	өтінемін	a polite word for asking	adv
+change	өзгерту	to make it different	verb
+important	маңызды	it matters a lot	adj
+phrase	сөз тіркесі	a small group of words	noun
+evening	кеш	the end of the day	noun
+stop	тоқтау	to end moving or doing	verb
+formal	ресми	polite and official	adj
+through	арқылы	in one side and out the other	prep
+started	бастады	past of "start"	verb
+another	тағы бір	one more	det
+seen	көрген	past part of "see"	verb
+station	бекет	where trains stop	noun
+door	есік	you open it to go in	noun
+living	тұрып жатқан	having your home there	verb
+speak	сөйлеу	to say words	verb
+student	студент	a person who studies	noun
+done	істелген	past part of "do"	verb
+yet	әлі	up to now	adv
+wish	тілеу	to want something not real	verb
+airport	әуежай	where planes land	noun
+sometimes	кейде	not often, not never	adv
+letter	хат; әріп	a written message, or a, b, c	noun
+moment	сәт	a very short time	noun
+wait	күту	to stay until it happens	verb
+building	ғимарат	a house, office or shop	noun
+wrong	қате	not correct	adj
+course	курс	lessons on one subject	noun
+office	кеңсе	a room where people work	noun
+wanted	қалады	past of "want"	verb
+watch	қарау; сағат	to look at, or a clock	verb
+name	аты	what you call someone	noun
+making	жасап	building something now	verb
+around	айналасында	on every side	prep
+drive	көлік жүргізу	to make a car go	verb
+although	дегенмен	even if that is true	conj
+language	тіл	words people speak	noun
+decided	шешті	past of "decide"	verb
+cold	суық	not warm	adj
+enjoy	рахат алу	to like doing it	verb
+clothes	киім	shirts, trousers, coats	noun
+heard	естіді	past of "hear"	verb
+sorry	кешіріңіз	a word for saying you feel bad	adj
+early	ерте	before the usual time	adj
+restaurant	мейрамхана	you pay to eat there	noun
+accident	жазатайым оқиға	a bad thing nobody planned	noun
+start	бастау	to begin	verb
+far	алыс	a long way away	adv
+true	шын	it really is so	adj
+difficult	қиын	not easy	adj
+rain	жаңбыр	water falling from clouds	noun
+call	телефон соғу; атау	to phone, or to name	verb
+business	бизнес, іс	buying and selling	noun
+hope	үміттену	to want it to happen	verb
+part	бөлік	a piece of the whole	noun
+afraid	қорқады	feeling fear	adj
+prefer	артық көру	to like this one more	verb
+already	әлдеқашан	before now	adv
+simple	қарапайым	easy, not complicated	adj
+called	деп аталады	given this name	verb
+order	тапсырыс; тәртіп	to ask for goods, or the sequence	noun
+married	үйленген	having a husband or wife	adj
+anyone	кез келген адам	any person	pron
+its	оның	belonging to a thing	det
+thing	зат	an object or idea	noun
+tired	шаршаған	needing rest	adj
+flat	пәтер	rooms you live in, in a block	noun
+busy	бос емес	having a lot to do	adj
+later	кейінірек	after this time	adv
+appropriate	қолайлы	right for this situation	adj
+traffic	көлік ағыны	cars moving on the road	noun
+arrived	келді	past of "arrive"	verb
+arrive	жету, келу	to reach a place	verb
+teacher	мұғалім	a person who teaches	noun
+cinema	кинотеатр	where you watch films	noun
+looked	қарады	past of "look"	verb
+travel	саяхаттау	to go from place to place	verb
+email	электрондық хат	a message sent by computer	noun
+four	төрт	the number 4	num
+street	көше	a road in a town	noun
+minute	минут	sixty seconds	noun
+bought	сатып алды	past of "buy"	verb
+wear	кию	to have clothes on you	verb
+somebody	біреу	some person	pron
+study	оқу, зерттеу	to learn about something	verb
+hair	шаш	it grows on your head	noun
+we're	біз ...-мыз	short for "we are"	verb
+perfect	мінсіз	with nothing wrong	adj
+says	дейді	"say" for he, she, it	verb
+gone	кетті	past part of "go"	verb
+expensive	қымбат	costing a lot of money	adj
+month	ай	about 30 days	noun
+fire	өрт, от	hot flames that burn	noun
+bank	банк	it keeps your money	noun
+wouldn't	еткісі келмеді	short for "would not"	verb
+hospital	аурухана	where sick people are treated	noun
+happy	бақытты	feeling good	adj
+decision	шешім	what you choose to do	noun
+news	жаңалық	reports of what happened	noun
+window	терезе	glass in a wall	noun
+shall	-мыз ба	used to offer or suggest	verb
+trying	тырысып	making an effort now	verb
+serious	байыпты; ауыр	not joking, or very bad	adj
+informal	бейресми	relaxed, not official	adj
+happened	болды	past of "happen"	verb
+happen	болу	to take place	verb
+whether	ме, бе	if, one way or the other	conj
+driving	көлік жүргізу	making a car go	verb
+outside	сыртта	not inside	adv
+kind	түр; мейірімді	a type, or nice to people	noun
+came	келді	past of "come"	verb
+internet	интернет	the world computer network	noun
+continuous	созылмалы	going on without stopping	adj
+spend	жұмсау	to use money or time	verb
+picture	сурет	a photo or drawing	noun
+playing	ойнап	doing a game now	verb
+key	кілт; жауап	it opens a lock, or the answers	noun
+following	келесі	coming after this	adj
+false	жалған	not true	adj
+though	дегенмен	even so	conj
+future	болашақ	the time after now	noun
+let	рұқсат ету	to allow	verb
+everything	бәрі	all things	pron
+tennis	теннис	a game with rackets	noun
+bed	төсек	you sleep in it	noun
+water	су	you drink it	noun
+recently	жақында	a short time ago	adv
+however	алайда	but, even so	adv
+music	музыка	sounds you listen to	noun
+team	команда	people playing together	noun
+taking	алып	holding or moving now	verb
+light	жарық; жеңіл	brightness, or not heavy	noun
+completely	мүлдем	fully, in every way	adv
+turn	бұру; кезек	to change direction, or your go	verb
+full	толы	with no space left	adj
+fill	толтыру	to make it full	verb
+centre	орталық	the middle	noun
+shopping	дүкен аралау	buying things in shops	noun
+feeling	сезім	what your heart says	noun
+weekend	демалыс күндері	Saturday and Sunday	noun
+spent	жұмсады	past of "spend"	verb
+once	бір рет	one time	adv
+believe	сену	to think it is true	verb
+suitable	жарамды	right for the job	adj
+run	жүгіру	to move fast on your feet	verb
+woman	әйел	a grown female	noun
+understand	түсіну	to know what it means	verb
+visit	бару, қонаққа бару	to go and see someone	verb
+point	нүкте; көрсету	a fact, or to show with a finger	noun
+hardly	әрең	almost not at all	adv
+family	отбасы	parents and children	noun
+nobody	ешкім	not one person	pron
+second	екінші; секунд	after the first, or a tiny time	adj
+unless	болмаса	if this does not happen	conj
+means	білдіреді	"mean" for he, she, it	verb
+dinner	кешкі ас	the main evening meal	noun
+coming	келе жатқан	moving here now	verb
+finish	аяқтау	to bring to an end	verb
+six	алты	the number 6	num
+mother	ана	your female parent	noun
+nothing	ештеңе	not one thing	pron
+noise	шу	a loud unpleasant sound	noun
+idea	идея, ой	a thought or plan	noun
+either	екеуінің бірі	one or the other	det
+expect	күту	to think it will happen	verb
+broken	сынған	in pieces, not working	adj
+walking	жаяу жүріп	going on foot now	verb
+lunch	түскі ас	the midday meal	noun
+near	жақын	a short way away	prep
+stopped	тоқтады	past of "stop"	verb
+angry	ашулы	feeling very cross	adj
+mark	белгілеу; баға	to write a sign, or a grade	verb
+football	футбол	a game with a ball and feet	noun
+park	саябақ; қою	green land, or to leave a car	noun
+across	арқылы, қарсы бетке	from one side to the other	prep
+cost	тұру, бағасы	how much money it needs	verb
+those	анау	the things over there	pron
+talk	сөйлесу	to speak with someone	verb
+under	астында	below	prep
+whole	бүкіл	all of it	adj
+finished	аяқталды	brought to an end	verb
+beginning	басы	the first part	noun
+close	жабу; жақын	to shut, or near	verb
+compare	салыстыру	to see how two things differ	verb
+cut	кесу	to split with a knife	verb
+forget	ұмыту	to lose it from your mind	verb
+top	жоғарғы жағы	the highest part	noun
+case	жағдай; сөмке	a situation, or a bag	noun
+interested	қызығушылық танытады	wanting to know more	adj
+mistake	қате	something done wrong	noun
+large	үлкен	big	adj
+worked	жұмыс істеді	past of "work"	verb
+sea	теңіз	a lot of salt water	noun
+drink	ішу	to take liquid in your mouth	verb
+neither	екеуі де емес	not one and not the other	det
+writing	жазу	making words with a pen	verb
+saying	айтып	speaking words now	verb
+become	болу	to start to be	verb
+main	басты	the most important	adj
+minister	министр	a top person in government	noun
+ill	ауру	not well	adj
+example	мысал	one thing that shows the rest	noun
+tried	тырысты	past of "try"	verb
+felt	сезінді	past of "feel"	verb
+paper	қағаз	you write on it	noun
+everyone	әркім	all people	pron
+interesting	қызық	it makes you want to know more	adj
+suggested	ұсынды	past of "suggest"	verb
+suggest	ұсыну	to say an idea for someone	verb
+hand	қол	it has five fingers	noun
+borrow	қарызға алу	to take and give back later	verb
+service	қызмет	work done for people	noun
+doctor	дәрігер	they treat sick people	noun
+front	алдыңғы жағы	the part that faces you	noun
+break	сындыру; үзіліс	to make into pieces, or a rest	verb
+free	тегін; бос	no money needed, or not busy	adj
+expression	сөз орамы	a set way of saying something	noun
+negative	болымсыз	saying no, not positive	adj
+famous	әйгілі	known by many people	adj
+floor	еден; қабат	you walk on it, or a storey	noun
+easy	оңай	not difficult	adj
+won	жеңді	past of "win"	verb
+agree	келісу	to think the same	verb
+village	ауыл	a very small town	noun
+sent	жіберді	past of "send"	verb
+taken	алынған	past part of "take"	verb
+expected	күтті	past of "expect"	verb
+garden	бақ, бау	green land by a house	noun
+post	пошта	letters sent by mail	noun
+structure	құрылым	how parts are put together	noun
+sister	әпке, қарындас	your female sibling	noun
+coffee	кофе	a hot dark drink	noun
+lived	тұрды	past of "live"	verb
+seems	көрінеді	it looks that way	verb
+beach	жағажай	sand next to the sea	noun
+decide	шешу	to choose after thinking	verb
+hungry	аш	needing food	adj
+whose	кімнің	asks who owns it	det
+air	ауа	what you breathe	noun
+myself	өзім	me, doing it to me	pron
+sleep	ұйықтау	to rest with eyes closed	verb
+head	бас	the top part of your body	noun
+sit	отыру	to rest on a chair	verb
+speech	сөйлеу; сөз	talking, or a public talk	noun
+art	өнер	painting and drawing	noun
+wearing	киіп	having clothes on now	verb
+animal	жануар	a living thing, not a plant	noun
+allowed	рұқсат етілген	people may do it	adj
+hot	ыстық	very warm	adj
+game	ойын	something you play	noun
+birthday	туған күн	the day you were born	noun
+takes	алады	"take" for he, she, it	verb
+hate	жек көру	to dislike very much	verb
+beautiful	әдемі	very nice to look at	adj
+longer	ұзағырақ	for more time	adv
+sun	күн	the star that gives us light	noun
+swimming	жүзу	moving in water	verb
+unit	бөлім	one part of a book	noun
+ideas	идеялар	thoughts or plans	noun
+boss	бастық	the person in charge	noun
+heavy	ауыр	hard to lift	adj
+forward	алға	towards the front	adv
+moved	көшті	past of "move"	verb
+show	көрсету	to let someone see	verb
+short	қысқа	not long, not tall	adj
+perhaps	мүмкін	maybe	adv
+fact	факт	something that is true	noun
+taxi	такси	a car you pay to ride in	noun
+brother	аға, іні	your male sibling	noun
+walked	жүрді	past of "walk"	verb
+meal	тамақ	food eaten at one time	noun
+tonight	бүгін кешке	this evening	adv
+talking	сөйлесіп	speaking now	verb
+changed	өзгертті	past of "change"	verb
+driver	жүргізуші	the person driving	noun
+staying	қалып	not leaving now	verb
+instead	орнына	in place of that	adv
+public	көпшілік	open to all people	adj
+describe	сипаттау	to say what it is like	verb
+you'll	сен ...-сың	short for "you will"	verb
+staff	қызметкерлер	the people who work there	noun
+mustn't	болмайды	short for "must not"	verb
+kitchen	ас үй	the room for cooking	noun
+museum	мұражай	where old things are shown	noun
+surprised	таңғалды	not expecting it	adj
+river	өзен	water flowing to the sea	noun
+dog	ит	an animal that barks	noun
+alone	жалғыз	with nobody else	adj
+mine	менікі	the thing belonging to me	pron
+send	жіберу	to make it go to someone	verb
+plane	ұшақ	it flies in the sky	noun
+college	колледж	school after high school	noun
+advice	кеңес	what you should do	noun
+area	аудан, аймақ	a part of a place	noun
+fit	сай келу; сымбатты	to be the right size, or healthy	verb
+situation	жағдай	how things are now	noun
+almost	дерлік	very nearly	adv
+couple	жұп, екеу	two, or two people together	noun
+absolutely	мүлдем	completely	adv
+terrible	сұмдық	very bad	adj
+caused	себеп болды	past of "cause"	verb
+local	жергілікті	from near here	adj
+story	әңгіме	what happened, told to you	noun
+written	жазылған	past part of "write"	verb
+class	сынып	students learning together	noun
+learn	үйрену	to get knowledge	verb
+war	соғыс	fighting between countries	noun
+enjoyed	рахат алды	past of "enjoy"	verb
+you've	сенде бар	short for "you have"	verb
+card	карта, ашық хат	stiff paper you write on	noun
+thanks	рақмет	you say it for a favour	noun
+french	француз тілі	the language of France	noun
+needn't	қажет емес	short for "need not"	verb
+piece	бөлік	one part of something	noun
+group	топ	people or things together	noun
+experience	тәжірибе	what you learned by doing	noun
+wedding	үйлену тойы	the day two people marry	noun
+positive	оң, болымды	saying yes, or good	adj
+care	қамқорлық	to look after, to mind	noun
+sitting	отырып	resting on a chair now	verb
+south	оңтүстік	the opposite of north	noun
+touch	тию	to put your hand on	verb
+reply	жауап беру	to answer	verb
+knew	білді	past of "know"	verb
+president	президент	the head of a country	noun
+none	ешқайсысы	not any	pron
+plenty	жеткілікті	more than enough	noun
+breakfast	таңғы ас	the first meal of the day	noun
+anybody	кез келген адам	any person	pron
+education	білім беру	teaching and learning	noun
+paid	төледі	past of "pay"	verb
+age	жас	how old you are	noun
+gap	бос орын	an empty space to fill	noun
+seem	көріну	to look like	verb
+vocabulary	сөздік қор	all the words you know	noun
+badly	нашар	in a bad way	adv
+along	бойымен	from one end towards the other	prep
+quickly	жылдам	in a short time	adv
+win	жеңу	to come first	verb
+half	жарты	one of two equal parts	noun
+yeah	иә	yes, in relaxed speech	adv
+amount	мөлшер	how much there is	noun
+replace	алмастыру	to put a new one in its place	verb
+father	әке	your male parent	noun
+health	денсаулық	how well your body is	noun
+among	арасында	in the middle of many	prep
+aren't	емес	short for "are not"	verb
+bag	сөмке	you carry things in it	noun
+underline	асты сызу	to draw a line under a word	verb
+colour	түс	red, blue, green	noun
+raining	жаңбыр жауып тұр	water is falling from clouds	verb
+further	әрі қарай	more, or farther	adv
+special	ерекше	not like the others	adj
+yours	сенікі	the thing belonging to you	pron
+leaving	кетіп бара жатқан	going away now	verb
+listen	тыңдау	to pay attention to sound	verb
+careful	мұқият	giving attention so nothing goes wrong	adj
+stayed	қалды	past of "stay"	verb
+quiet	тыныш	with little noise	adj
+invited	шақырды	past of "invite"	verb
+invite	шақыру	to ask someone to come	verb
+thinking	ойланып	using your mind now	verb
+travelling	саяхаттап	going from place to place now	verb
+festival	мереке, фестиваль	days of music or celebration	noun
+agreed	келісті	past of "agree"	verb
+afternoon	түстен кейін	after midday	noun
+pass	өту; беру	to go by, or to hand over	verb
+studying	оқып	learning now	verb
+system	жүйе	parts working as one	noun
+type	түр; теру	a kind, or to write on a keyboard	noun
+opinion	пікір	what you think about it	noun
+speaking	сөйлеп	saying words now	verb
+lift	лифт; көтеру	a box that carries you up, or to raise	noun
+move	жылжу, көшу	to change place	verb
+ring	қоңырау шалу; сақина	to phone, or jewellery for a finger	verb
+promised	уәде берді	past of "promise"	verb
+worry	уайымдау	to think about bad things	verb
+huge	алып	very big	adj
+subject	пән; тақырып	what you study or talk about	noun
+plan	жоспар	what you will do	noun
+manager	менеджер	the person who runs the work	noun
+interview	сұхбат	questions asked for a job	noun
+common	жиі кездесетін	seen very often	adj
+offered	ұсынды	past of "offer"	verb
+offer	ұсыну	to say you will give it	verb
+high	биік	far from the ground	adj
+fell	құлады	past of "fall"	verb
+turned	бұрды	past of "turn"	verb
+concert	концерт	live music for people	noun
+event	оқиға	something that happens	noun
+adverb	үстеу	a word that describes a verb	noun
+shoes	аяқ киім	you wear them on your feet	noun
+running	жүгіріп	moving fast on foot now	verb
+broke	сындырды	past of "break"	verb
+born	туған	come into the world	adj
+picture	сурет	a drawing or photo	noun
+wall	қабырға	the side of a room	noun
+united	біріккен	joined together	adj
+newspaper	газет	printed daily news	noun
+hurt	ауыртты	to cause pain	verb
+supposed	тиіс	people expect it	adj
+real	нақты, шынайы	not false	adj
+stand	тұру	to be on your feet	verb
+black	қара	the colour of night	adj
+wants	қалайды	"want" for he, she, it	verb
+view	көрініс; көзқарас	what you see, or an opinion	noun
+fast	жылдам	moving quickly	adj
+flight	рейс	a trip by plane	noun
+held	ұстады	past of "hold"	verb
+space	орын, кеңістік	an empty place	noun
+fruit	жеміс	apples, oranges, bananas	noun
+hurry	асығу	to move fast	verb
+degree	дәреже; диплом	a level, or a university title	noun
+least	ең аз	the smallest amount	det
+reading	оқып	looking at words now	verb
+red	қызыл	the colour of blood	adj
+opened	ашты	past of "open"	verb
+known	белгілі	past part of "know"	verb
+neighbour	көрші	the person living next to you	noun
+somewhere	бір жерде	in some place	adv
+machine	машина, құрылғы	a thing with parts that works	noun
+injured	жарақат алды	hurt in an accident	adj
+winter	қыс	the cold season	noun
+became	болды	past of "become"	verb
+american	американдық	from the USA	adj
+umbrella	қолшатыр	it keeps rain off you	noun
+monday	дүйсенбі	the first work day	noun
+research	зерттеу	careful study to find facts	noun
+useful	пайдалы	it helps you	adj
+british	британдық	from Britain	adj
+deal	келісім	an agreement in business	noun
+everybody	бәрі	all people	pron
+film	фильм	a moving picture story	noun
+result	нәтиже	what came out of it	noun
+flower	гүл	the pretty part of a plant	noun
+pretty	әдемі; әжептәуір	nice to look at, or fairly	adj
+television	теледидар	a screen that shows programmes	noun
+putting	қойып	placing it somewhere now	verb
+built	салды	past of "build"	verb
+several	бірнеше	more than two, not many	det
+check	тексеру	to look if it is right	verb
+note	жазба	a short written message	noun
+journey	сапар	travelling from here to there	noun
+learning	үйреніп	getting knowledge now	verb
+online	желіде	on the internet	adj
+line	сызық, жол	a long thin mark	noun
+position	орын, лауазым	where it is, or a job	noun
+friendly	достық	kind and easy to talk to	adj
+seven	жеті	the number 7	num
+upset	ренжіген	unhappy about something	adj
+spoken	айтылған	past part of "speak"	verb
+missing	жоқ, жоғалған	not there	adj
+explain	түсіндіру	to make it clear	verb
+tree	ағаш	a tall plant with a trunk	noun
+boring	қызықсыз	not interesting	adj
+passive	ырықсыз етіс	the thing receives the action	adj
+article	мақала; артикль	a text, or a/an/the	noun
+starting	бастап	beginning now	verb
+stress	екпін; күйзеліс	the strong part of a word, or worry	noun
+interest	қызығушылық	wanting to know about it	noun
+capital	астана; бас әріп	the main city, or A B C	noun
+sport	спорт	games with the body	noun
+watching	қарап	looking at now	verb
+lose	жоғалту; жеңілу	to not find, or not win	verb
+managed	қолы жетті	succeeded in doing it	verb
+cooking	тамақ пісіру	making food hot	verb
+price	баға	how much money it costs	noun
+major	басты	big and important	adj
+people	адамдар	more than one person	noun
+him	оны (ер)	he, after a verb	pron
+job	жұмыс	the work you are paid for	noun
+hotel	қонақүй	you pay to sleep there	noun
+town	қала	smaller than a city	noun
+text	мәтін	written words together	noun
+parents	ата-ана	your mother and father	noun
+ago	бұрын	back in the past	adv
+else	басқа	other, different	adv
+big	үлкен	large in size	adj
+such	сондай	of this kind	det
+while	кезде	at the same time as	conj
+university	университет	where you study after school	noun
+tv	теледидар	short for television	noun
+without	-сыз	not having it	prep
+bus	автобус	a big vehicle for many people	noun
+saw	көрді	past of "see"	verb
+rewrite	қайта жазу	to write it again	verb
+adjective	сын есім	a word that describes a thing	noun
+government	үкімет	the people who run a country	noun
+computer	компьютер	a machine for work and internet	noun
+against	қарсы	not for it	prep
+preposition	демеулік	a word like in, on, at	noun
+below	төменде	under, lower down	prep
+probably	бәлкім	most likely	adv
+yourself	өзің	you, doing it to you	pron
+round	дөңгелек; айналасында	circle-shaped, or around	adj
+dialogue	диалог	two people talking	noun
+together	бірге	with each other	adv
+set	жинақ; орнату	a group, or to put in place	noun
+o'clock	сағат	used to tell the hour	adv
+pair	жұп	two things that go together	noun
+factory	зауыт	a building where things are made	noun
+add	қосу	to put one more in	verb
+men	ер адамдар	more than one man	noun
+strange	оғаш	unusual, hard to explain	adj
+sound	дыбыс	what you hear	noun
+dark	қараңғы	with no light	adj
+wife	әйелі	the woman a man married	noun
+theatre	театр	where actors play on stage	noun
+fall	құлау; күз	to drop down, or autumn	verb
+north	солтүстік	the opposite of south	noun
+sell	сату	to give it for money	verb
+summer	жаз	the hot season	noun
+washing	жуу	cleaning with water	verb
+bike	велосипед	two wheels you pedal	noun
+paint	бояу	to put colour on it	verb
+drove	жүргізді	past of "drive"	verb
+popular	танымал	liked by many people	adj
+period	кезең	a length of time	noun
+whom	кімді	"who", after a verb	pron
+test	тест, сынақ	questions to check what you know	noun
+transport	көлік	buses, trains, planes	noun
+towards	қарай	in that direction	prep
+ready	дайын	able to start now	adj
+eaten	жеген	past part of "eat"	verb
+fly	ұшу	to move through the air	verb
+mountain	тау	very high land	noun
+return	қайту; қайтару	to come back, or give back	verb
+baby	нәресте	a very young child	noun
+fortunately	бақытымызға орай	luckily	adv
+afford	қаражаты жету	to have enough money for it	verb
+contact	хабарласу	to reach someone	verb
+crime	қылмыс	an act against the law	noun
+phrasal	тіркесті	made of two or more words	adj
+suppose	болжау	to think it is probably so	verb
+report	есеп; хабарлау	a written account	noun
+improve	жақсарту	to make it better	verb
+actually	шын мәнінде	really, in fact	adv
+wonderful	тамаша	very very good	adj
+lend	қарызға беру	to give for a short time	verb
+miss	сағыну; өткізіп алу	to feel sad without, or to not catch	verb
+personal	жеке	about one person only	adj
+single	жалғыз, бір	only one	adj
+chocolate	шоколад	a sweet brown food	noun
+suit	костюм; жарасу	matching clothes, or to look right	noun
+jacket	күрте	a short coat	noun
+address	мекенжай	where a house is, in words	noun
+fine	жақсы; айыппұл	all right, or money you must pay	adj
+income	табыс	money you get regularly	noun
+ice	мұз	frozen water	noun
+chance	мүмкіндік	a possibility	noun
+green	жасыл	the colour of grass	adj
+died	қайтыс болды	past of "die"	verb
+die	өлу	to stop living	verb
+carry	көтеріп жүру	to hold and move it	verb
+rest	демалыс; қалғаны	a break, or what is left	noun
+sort	түр; сұрыптау	a kind, or to put in order	noun
+control	бақылау	to make it do what you want	verb
+join	қосылу	to become part of	verb
+power	күш; қуат	strength or electricity	noun
+coat	пальто	warm clothes for outside	noun
+hit	соғу	to strike hard	verb
+throw	лақтыру	to send it through the air	verb
+despite	қарамастан	even with that	prep
+prison	түрме	where criminals are kept	noun
+spite	өкінішке	used in "in spite of" — despite	noun
+dangerous	қауіпті	it can hurt you	adj
+pick	таңдау; теру	to choose, or to take up	verb
+anywhere	кез келген жерде	in any place	adv
+climate	климат	the usual weather of a place	noun
+list	тізім	names written one under another	noun
+earlier	бұрынырақ	before that time	adv
+comfortable	жайлы	nice to sit or be in	adj
+sales	сату, сатылым	the selling of goods	noun
+national	ұлттық	of the whole country	adj
+diet	диета, ас мәзірі	the food you usually eat	noun
+blue	көк	the colour of the sky	adj
+reduce	азайту	to make it smaller	verb
+favourite	сүйікті	the one you like best	adj
+economy	экономика	a country's money and work	noun
+fairly	едәуір	quite, not very	adv
+uk	Ұлыбритания	the United Kingdom	noun
+cook	пісіру	to make food with heat	verb
+empty	бос	with nothing inside	adj
+based	негізделген	built on that	adj
+matter	мәселе; маңызы болу	a topic, or to be important	noun
+side	жақ	the left or right part	noun
+kept	сақтады	past of "keep"	verb
+bridge	көпір	it crosses a river	noun
+safe	қауіпсіз	nothing can hurt you	adj
+population	халық саны	how many people live there	noun
+political	саяси	about government	adj
+milk	сүт	a white drink from cows	noun
+trip	сапар	a short journey	noun
+novel	роман	a long story book	noun
+energy	қуат, күш	the power to do work	noun
+mile	миля	about 1.6 kilometres	noun
+wind	жел	moving air	noun
+dirty	лас	not clean	adj
+except	басқа	not including	prep
+salary	жалақы	money paid for your job	noun
+above	жоғарыда	higher than	prep
+complain	шағымдану	to say you are not happy	verb
+normally	әдетте	usually	adv
+slowly	баяу	not fast	adv
+clear	анық; таза	easy to understand, or see-through	adj
+homework	үй тапсырмасы	school work done at home	noun
+incorrect	қате	not right	adj
+canada	Канада	a country north of the USA	noun
+bill	шот	the paper saying what you must pay	noun
+extremely	өте қатты	very very much	adv
+attractive	тартымды	nice to look at	adj
+customer	сатып алушы	a person who buys	noun
+meat	ет	food from animals	noun
+industry	өнеркәсіп	making things in factories	noun
+radio	радио	you listen to it	noun
+stupid	ақымақ	not clever	adj
+nervous	қобалжулы	worried before something	adj
+column	баған	a tall narrow part of a page	noun
+promise	уәде беру	to say you will surely do it	verb
+secret	құпия	something nobody should know	noun
+ticket	билет	paper that lets you in	noun
+director	директор	the person in charge	noun
+increase	арттыру	to make it bigger	verb
+certain	белгілі; сенімді	sure, or particular	adj
+provide	қамтамасыз ету	to give what is needed	verb
+final	соңғы	the last one	adj
+weight	салмақ	how heavy it is	noun
+detail	егжей-тегжей	a small fact about it	noun
+imagine	елестету	to see it in your mind	verb
+excellent	өте жақсы	very good	adj
+general	жалпы	about the whole, not the parts	adj
+usual	әдеттегі	what happens most times	adj
+clean	таза	with no dirt	adj
+himself	өзі (ер)	he, doing it to him	pron
+relative	туыс	a person in your family	noun
+saturday	сенбі	the day before Sunday	noun
+apologise	кешірім сұрау	to say you are sorry	verb
+suddenly	кенеттен	very quickly, with no warning	adv
+taste	дәм	what food is like in your mouth	noun
+begin	бастау	to start	verb
+success	табыс, жетістік	getting what you wanted	noun
+japan	Жапония	a country in east Asia	noun
+ground	жер	the surface you walk on	noun
+herself	өзі (әйел)	she, doing it to her	pron
+century	ғасыр	one hundred years	noun
+race	жарыс	a contest of speed	noun
+warm	жылы	a little hot	adj
+access	қолжетімділік	the right or way to get in	noun
+themselves	өздері	they, doing it to them	pron
+strong	күшті	having a lot of power	adj
+science	ғылым	the study of how things work	noun
+eight	сегіз	the number 8	num
+essay	эссе	a short piece of writing	noun
+election	сайлау	when people vote	noun
+notice	байқау; хабарландыру	to see it, or a sign	verb
+missed	жіберіп алды	past of "miss"	verb
+colleague	әріптес	a person you work with	noun
+condition	жағдай; шарт	the state it is in	noun
+club	клуб	a group meeting for one thing	noun
+context	мәнмәтін	the words around it	noun
+awful	сұмдық	very bad	adj
+smell	иіс	what your nose tells you	noun
+luggage	жүк	bags you take on a trip	noun
+avoid	болдырмау	to keep away from	verb
+tick	белгі қою	to mark with ✓	verb
+strike	ереуіл; соғу	stopping work to protest	noun
+lazy	жалқау	not wanting to work	adj
+board	тақта; кеңес	a flat surface, or a group of leaders	noun
+worth	тұрарлық	good enough for the cost	adj
+impossible	мүмкін емес	it cannot happen	adj
+calm	тыныш	not upset, not moving	adj
+account	шот; есеп	money kept at a bank	noun
+straight	түзу	with no bend	adj
+consider	қарастыру	to think about carefully	verb
+dentist	тіс дәрігері	they fix your teeth	noun
+reception	қабылдау бөлмесі	the desk at the entrance	noun
+medicine	дәрі	what you take when ill	noun
+apply	өтініш беру; қолдану	to ask for a job, or to use	verb
+bring	әкелу	to carry it here	verb
+press	басу; баспасөз	to push, or the newspapers	verb
+section	бөлім	one part of a text	noun
+state	мемлекет; жағдай	a country, or how it is	noun
+bird	құс	an animal with wings	noun
+damaged	бүлінген	broken or harmed	adj
+ought	тиіс	should, it is right to	verb
+clause	сөйлем мүшесі	part of a sentence with a verb	noun
+law	заң	a rule of the country	noun
+fish	балық	an animal living in water	noun
+project	жоба	planned work with a goal	noun
+painting	сурет	a picture made with paint	noun
+politics	саясат	how a country is run	noun
+reason	себеп	why it happened	noun
+date	күн, күні	the day, month and year	noun
+grey	сұр	the colour between black and white	adj
+depends	байланысты	it changes with something else	verb
+middle	орта	the centre point	noun
+seat	орындық	a place to sit	noun
+hold	ұстау	to keep in your hand	verb
+ran	жүгірді	past of "run"	verb
+difference	айырмашылық	how two things are not the same	noun
+pool	бассейн	water you swim in	noun
+hundred	жүз	the number 100	num
+finally	ақыры	after a long time	adv
+mum	анашым	an informal word for mother	noun
+sick	ауру	not well	adj
+size	өлшем	how big it is	noun
+programme	бағдарлама	a show, or a plan	noun
+danger	қауіп	a chance of harm	noun
+receive	алу	to get what is sent	verb
+earth	жер	our planet, or soil	noun
+available	қолжетімді	you can get it now	adj
+desk	жазу үстелі	a table for working	noun
+appear	пайда болу; көріну	to come into sight	verb
+choice	таңдау	what you pick	noun
+moon	ай	it shines at night	noun
+modern	заманауи	of today, not old	adj
+square	алаң; шаршы	a shape with 4 equal sides	noun
+follow	еру	to go behind	verb
+luck	сәттілік	good things by chance	noun
+rent	жалдау	to pay to use a home	verb
+connected	байланысты	joined together	adj
+cross	өту; ашулы	to go over, or angry	verb
+warned	ескертті	past of "warn"	verb
+accept	қабылдау	to say yes to it	verb
+france	Франция	a country in Europe	noun
+simply	жай ғана	only, in an easy way	adv
+financial	қаржылық	about money	adj
+support	қолдау	to help and stand with	verb
+unfortunately	өкінішке орай	sadly, it is bad news	adv
+clearly	анық	in a way easy to see	adv
+reliable	сенімді	you can trust it	adj
+hello	сәлем	you say it when you meet	interj
+software	бағдарламалық жасақтама	computer programs	noun
+maths	математика	numbers and shapes	noun
+continue	жалғастыру	to keep going	verb
+fault	кінә; ақау	whose bad act it was	noun
+sold	сатты	past of "sell"	verb
+inside	ішінде	not outside	prep
+snow	қар	soft white ice from the sky	noun
+peace	бейбітшілік	no war, no noise	noun
+keen	құштар	very interested in	adj
+plural	көпше	more than one, like "cats"	adj
+cover	жабу	to put something over it	verb
+earn	табу (ақша)	to get money by working	verb
+piano	фортепиано	a big music instrument with keys	noun
+cat	мысық	a small pet that says meow	noun
+kitten	марғау	kid of a cat	noun
+unusual	ерекше	not seen often	adj
+wet	су, дымқыл	covered with water	adj
+suffer	азап шегу	to feel pain or trouble	verb
+dress	көйлек	clothes a woman wears	noun
+attack	шабуыл	a violent act against	noun
+computers	компьютерлер	more than one computer	noun
+recent	жақындағы	from a short time ago	adj
+typical	тән	the usual kind	adj
+prime	басты	the first in rank	adj
+level	деңгей	how high or how good	noun
+furniture	жиһаз	tables, chairs, beds	noun
+tax	салық	money you pay the state	noun
+professor	профессор	a top university teacher	noun
+knowledge	білім	what you know	noun
+private	жеке	not for everybody	adj
+committee	комитет	a small group that decides	noun
+wonder	таңғалу; ойлану	to want to know	verb
+wide	кең	far from side to side	adj
+issue	мәселе	a problem or topic	noun
+began	бастады	past of "begin"	verb
+human	адам	a person	noun
+entrance	кіреберіс	the way in	noun
+argument	дау	an angry talk	noun
+twice	екі рет	two times	adv
+zero	нөл	the number 0	num
+advantage	артықшылық	a good thing about it	noun
+heating	жылыту	making a room warm	noun
+successful	табысты	it worked well	adj
+bedroom	жатын бөлме	the room you sleep in	noun
+oil	май, мұнай	a thick liquid for cooking or fuel	noun
+value	құндылық	how much it is worth	noun
+tall	биік, ұзын бойлы	high from head to foot	adj
+index	көрсеткіш	a list at the end of a book	noun
+metre	метр	100 centimetres	noun
+message	хабарлама	words sent to someone	noun
+elderly	қарт	polite word for old	adj
+insisted	талап етті	said it firmly again	verb
+alternative	балама	another possible one	noun
+boy	ұл бала	a young male	noun
+progress	ілгерілеу	getting better step by step	noun
+uncle	аға, нағашы	your parent's brother	noun
+website	веб-сайт	pages on the internet	noun
+worse	нашарлау	more bad	adj
+face	бет	the front of your head	noun
+cause	себеп болу	to make it happen	verb
+average	орташа	the usual middle amount	adj
+department	бөлім	one part of a company	noun
+rang	қоңырау шалды	past of "ring"	verb
+glass	шыны, стақан	you see through it, or a cup	noun
+included	қамтылған	counted as part of it	adj
+speed	жылдамдық	how fast it moves	noun
+advised	кеңес берді	past of "advise"	verb
+waste	ысырап ету	to use it badly	verb
+kilometre	километр	1000 metres	noun
+quick	жылдам	taking little time	adj
+behaviour	мінез-құлық	how a person acts	noun
+church	шіркеу	a Christian holy building	noun
+loud	қатты (дыбыс)	making a lot of noise	adj
+alarm	дабыл, оятқыш	a sound that warns you	noun
+rate	мөлшерлеме	how much per unit	noun
+exactly	дәл	with nothing different	adv
+ate	жеді	past of "eat"	verb
+dad	әке	an informal word for father	noun
+international	халықаралық	between countries	adj
+spanish	испан тілі	the language of Spain	noun
+unlikely	екіталай	probably not	adj
+italy	Италия	a country in Europe	noun
+rich	бай	having a lot of money	adj
+library	кітапхана	you borrow books there	noun
+damage	зақым	harm done to a thing	noun
+cup	кесе	you drink tea from it	noun
+item	зат, тармақ	one thing in a list	noun
+apple	алма	a round fruit	noun
+german	неміс тілі	the language of Germany	noun
+sunday	жексенбі	the last day of the week	noun
+june	маусым	the sixth month	noun
+husband	күйеуі	the man a woman married	noun
+trouble	қиындық	problems	noun
+tea	шай	a hot drink from leaves	noun
+camera	фотоаппарат	it takes pictures	noun
+delay	кешігу	being later than planned	noun
+asleep	ұйықтап жатқан	sleeping	adj
+fashion	сән	the clothes that are popular now	noun
+forgotten	ұмытылған	past part of "forget"	verb
+excuse	кешіріңіз; сылтау	a word to get attention, or a reason	noun
+death	өлім	the end of life	noun
+fun	көңілді	enjoyment	noun
+teeth	тістер	more than one tooth	noun
+tooth	тіс	white and hard, in your mouth	noun
+body	дене	all of a person, head to foot	noun
+pronunciation	айтылым	how a word is said	noun
+america	Америка	the USA	noun
+hotels	қонақүйлер	more than one hotel	noun
+young	жас	not old	adj
+england	Англия	the biggest part of Britain	noun
+britain	Британия	England, Scotland and Wales	noun
+europe	Еуропа	the continent west of Asia	noun
+africa	Африка	the continent south of Europe	noun
+australia	Австралия	a country and continent	noun
+spain	Испания	a country in Europe	noun
+usa	АҚШ	the United States of America	noun
+scotland	Шотландия	the north part of Britain	noun
+switzerland	Швейцария	a country in the Alps	noun
+brazil	Бразилия	the biggest country in South America	noun
+london	Лондон	the capital of England	noun
+paris	Париж	the capital of France	noun
+rome	Рим	the capital of Italy	noun
+york	Йорк	a city in England; also New York	noun
+japanese	жапон тілі	the language of Japan	noun
+italian	итальян тілі	the language of Italy	noun
+oh	о!	a sound you make when surprised	interj
+hi	сәлем	an informal hello	interj
+dear	қымбатты	how you start a letter	adj
+warning	ескерту	words that tell you of danger	noun
+cheese	ірімшік	a food made from milk	noun
+catch	ұстау	to take hold of something moving	verb
+wild	жабайы	not kept by people	adj
+escape	қашу	to get away	verb
+worker	жұмысшы	a person who works	noun
+planned	жоспарлады	past of "plan"	verb
+pound	фунт	British money	noun
+heart	жүрек	it pumps your blood	noun
+wrote	жазды	past of "write"	verb
+white	ақ	the colour of snow	adj
+fixed	жөнделген	repaired, or not changing	adj
+sign	белгі; қол қою	a mark, or to write your name	noun
+rise	көтерілу	to go up	verb
+technology	технология	machines and computers	noun
+rarely	сирек	almost never	adv
+anyway	бәрібір	no matter what	adv
+application	өтініш	a written request for a job	noun
+recommended	ұсынды	said it was good	verb
+fancy	қалау	to want, in relaxed speech	verb
+statement	мәлімдеме	a sentence that says a fact	noun
+revise	қайталау	to study again before a test	verb
+save	сақтау; үнемдеу	to keep, or to not waste	verb
+flu	тұмау	an illness with fever	noun
+bold	қалың қаріп	thick, dark letters	adj
+failed	сәтсіз болды	did not succeed	verb
+member	мүше	a person in a group	noun
+solve	шешу	to find the answer	verb
+temperature	температура	how hot or cold it is	noun
+effect	әсер	the change something causes	noun
+frightened	қорыққан	feeling afraid	adj
+whereas	ал	but on the other side	conj
+fair	әділ; жәрмеңке	right for everybody	adj
+market	базар, нарық	where things are sold	noun
+passport	төлқұжат	a book that lets you travel	noun
+laugh	күлу	to make a happy sound	verb
+stolen	ұрланған	taken by a thief	adj
+conference	конференция	a big meeting for work	noun
+million	миллион	the number 1 000 000	num
+disease	ауру	an illness	noun
+lack	жетіспеу	not having enough	noun
+player	ойыншы	a person in a game	noun
+within	ішінде	inside that time or place	prep
+twenty	жиырма	the number 20	num
+tourist	турист	a person travelling for fun	noun
+tidy	жинақы	in good order	adj
+policy	саясат, ереже	a rule a group follows	noun
+army	әскер	the soldiers of a country	noun
+caught	ұстады	past of "catch"	verb
+assistant	көмекші	a person who helps at work	noun
+audience	көрермен	the people watching	noun
+corner	бұрыш	where two lines meet	noun
+tower	мұнара	a tall narrow building	noun
+gallery	галерея	where art is shown	noun
+purpose	мақсат	why you do it	noun
+particular	нақты	this one, not another	adj
+low	төмен	not high	adj
+bored	зеріккен	tired because nothing happens	adj
+brought	әкелді	past of "bring"	verb
+relaxed	бос, тыныш	calm and easy	adj
+firm	фирма; берік	a company, or hard	noun
+term	тоқсан; термин	part of a school year, or a word	noun
+movement	қозғалыс	moving, or a group with a goal	noun
+movie	фильм	a film	noun
+funny	күлкілі	it makes you laugh	adj
+announced	жариялады	told everyone	verb
+dropped	түсіріп алды	past of "drop"	verb
+steal	ұрлау	to take what is not yours	verb
+photo	сурет	a picture from a camera	noun
+action	әрекет	something done	noun
+property	мүлік	what you own	noun
+swim	жүзу	to move in water	verb
+economic	экономикалық	about money and business	adj
+disappointed	көңілі қалды	sad it was not as hoped	adj
+active	белсенді	doing a lot	adj
+equipment	жабдық	the tools you need	noun
+ability	қабілет	being able to do it	noun
+simon	Саймон	a man's name	noun
+cheap	арзан	costing little money	adj
+exciting	қызықты	it makes you feel eager	adj
+agreement	келісім	when people agree	noun
+field	алаң, дала	open land, or an area of study	noun
+poor	кедей	having little money	adj
+participle	есімше	a verb form like "broken"	noun
+dead	өлі	not alive	adj
+involved	қатысты	taking part in it	adj
+discovered	ашты	found for the first time	verb
+object	зат; қарсы болу	a thing, or to say no	noun
+understood	түсінді	past of "understand"	verb
+maybe	мүмкін	perhaps	adv
+poverty	кедейлік	being poor	noun
+atmosphere	атмосфера, көңіл күй	the air, or the feeling of a place	noun
+rule	ереже	what you must do	noun
+determined	бел буған	sure you will do it	adj
+male	еркек	of a man or boy	adj
+female	әйел	of a woman or girl	adj
+hill	төбе	land higher than around it	noun
+social	әлеуметтік	about people together	adj
+thank	алғыс айту	to say thanks	verb
+slightly	сәл	a little bit	adv
+regret	өкіну	to feel sorry about it	verb
+pupil	оқушы	a school child	noun
+apartment	пәтер	a flat	noun
+cannot	алмайды	is not able to	verb
+unpleasant	жағымсыз	not nice	adj
+version	нұсқа	one form of a thing	noun
+bound	міндетті	sure to happen	adj
+aunt	апа, тәте	your parent's sister	noun
+clock	сағат	it shows the time on a wall	noun
+drop	түсіру	to let it fall	verb
+magazine	журнал	a thin book with pictures	noun
+development	даму	growing and getting better	noun
+vote	дауыс беру	to choose in an election	verb
+skiing	шаңғы тебу	moving on snow on skis	noun
+grass	шөп	green plants on the ground	noun
+button	түйме	you press it or fasten it	noun
+copy	көшірме	one made the same as another	noun
+natural	табиғи	made by nature, not people	adj
+act	әрекет ету; ойнау	to do, or to play a part	verb
+resign	қызметтен кету	to leave your job by choice	verb
+nation	ұлт, ел	a country and its people	noun
+cancelled	тоқтатылды	stopped before it happened	adj
+coast	жағалау	land next to the sea	noun
+supermarket	супермаркет	a big food shop	noun
+pen	қалам	you write with it	noun
+terribly	сұмдық	very badly	adv
+grammar	грамматика	the rules of a language	noun
+employee	қызметкер	a person a company pays	noun
+risk	тәуекел	a chance something bad happens	noun
+proposed	ұсынды	suggested it	verb
+normal	қалыпты	usual, not strange	adj
+daughter	қыз (баласы)	your female child	noun
+son	ұл (баласы)	your male child	noun
+opportunity	мүмкіндік	a good chance	noun
+record	жазба; жазып алу	facts kept, or to save sound	noun
+credit	несие	money you can use and pay later	noun
+voice	дауыс	the sound you speak with	noun
+behind	артында	at the back of	prep
+refer	сілтеме жасау	to point to something	verb
+material	материал	what a thing is made of	noun
+hat	бас киім	you wear it on your head	noun
+sad	мұңды	not happy	adj
+attention	назар	looking and listening carefully	noun
+younger	жасырақ	less old	adj
+relax	демалу	to rest and feel calm	verb
+besides	оның үстіне	as well as that	prep
+repaired	жөндеді	fixed what was broken	verb
+raw	шикі	not cooked	adj
+noisy	шулы	making a lot of noise	adj
+activity	әрекет, іс	something people do	noun
+accommodation	тұрғын үй	a place to stay	noun
+august	тамыз	the eighth month	noun
+thousand	мың	the number 1000	num
+illness	ауру	being ill	noun
+learnt	үйренді	past of "learn"	verb
+scientist	ғалым	a person who does science	noun
+intended	ниет етті	planned to do it	verb
+conversation	әңгіме	people talking together	noun
+headache	бас ауруы	pain in your head	noun
+blog	блог	a personal page on the internet	noun
+forgot	ұмытты	past of "forget"	verb
+suitcase	чемодан	a bag for travelling	noun
+ourselves	өзіміз	we, doing it to us	pron
+foot	аяқ	you stand on it	noun
+shown	көрсетілген	past part of "show"	verb
+teach	үйрету	to help someone learn	verb
+patient	науқас; шыдамды	a sick person, or calm waiting	noun
+surprising	таңғаларлық	you did not expect it	adj
+sky	аспан	what is above you outside	noun
+lock	құлыптау	to close with a key	verb
+fridge	тоңазытқыш	it keeps food cold	noun
+otherwise	әйтпесе	if not, then	adv
+introduce	таныстыру	to tell people who someone is	verb
+destroy	жою	to break it completely	verb
+traditional	дәстүрлі	done the old way	adj
+repair	жөндеу	to fix what is broken	verb
+singular	жекеше	only one, like "cat"	adj
+charge	ақы; зарядтау	the price, or to fill with power	noun
+chicken	тауық	a bird people eat	noun
+region	аймақ	a large area	noun
+character	мінез; кейіпкер	what a person is like	noun
+clothing	киім	clothes	noun
+academic	академиялық	about study and school	adj
+addition	қосу	adding, one more thing	noun
+pronoun	есімдік	a word like I, you, it	noun
+horse	жылқы	a big animal you ride	noun
+trade	сауда	buying and selling	noun
+teaching	оқыту	helping people learn	noun
+skin	тері	it covers your body	noun
+complicated	күрделі	with many parts, not simple	adj
+scared	қорыққан	afraid	adj
+beat	жеңу; ұру	to win against, or to hit	verb
+leg	аяқ	you walk on two of them	noun
+weigh	салмағы болу	to have this weight	verb
+grow	өсу	to get bigger	verb
+travelled	саяхаттады	past of "travel"	verb
+queue	кезек	a line of waiting people	noun
+rush	асығу	to move very fast	verb
+jeans	джинсы	trousers of thick blue cloth	noun
+birth	туу	being born	noun
+doubt	күмән	not being sure	noun
+sack	жұмыстан шығару	to make someone leave a job	verb
+immediately	дереу	right now, with no wait	adv
+exhausted	қалжыраған	very very tired	adj
+evidence	дәлел	facts that show it is true	noun
+management	басшылық	the people who run the company	noun
+blood	қан	the red liquid in your body	noun
+build	салу	to make a building	verb
+plant	өсімдік	a living green thing	noun
+create	жасау	to make something new	verb
+planet	планета	a big body going round a star	noun
+crowded	адам көп	full of people	adj
+robbery	тонау	stealing with force	noun
+force	күш	strength used on something	noun
+totally	мүлдем	completely	adv
+shouted	айқайлады	said very loudly	verb
+pocket	қалта	a small bag in your clothes	noun
+basketball	баскетбол	a game with a ball and net	noun
+council	кеңес	a group that runs a town	noun
+resident	тұрғын	a person who lives there	noun
+pilot	ұшқыш	the person flying a plane	noun
+entry	кіру	going in	noun
+trust	сену	to believe someone is good	verb
+discuss	талқылау	to talk about it together	verb
+economics	экономика	the study of money	noun
+current	қазіргі	happening now	adj

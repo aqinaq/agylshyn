@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar Practice — English Grammar in Use</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">EGU</span>
+    <span class="brand-text">Grammar Practice</span>
+  </div>
+  <nav class="tabs">
+    <a href="#/units" data-tab="units">Units</a>
+    <a href="#/errors" data-tab="errors">Қателер <span class="badge" id="err-badge"></span></a>
+    <a href="#/stats" data-tab="stats">Статистика</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="search-wrap">
+      <input type="search" id="unit-search" placeholder="Unit іздеу…" autocomplete="off">
+    </div>
+    <div class="unit-list" id="unit-list"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
