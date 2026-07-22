@@ -26,34 +26,9 @@
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
 }
 
-/* Dark palette. app.js puts data-theme="light|dark" on <html> when the reader
-   picks one explicitly; with no attribute (theme "auto") the OS decides.
-   The two blocks below must stay identical. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f1216;
-    --panel: #171b21;
-    --panel-2: #1c2129;
-    --text: #e6e9ee;
-    --muted: #98a2b3;
-    --line: #2a313b;
-    --line-soft: #232932;
-    --accent: #6f9bf5;
-    --accent-soft: #1e2a41;
-    --ok: #6ede9f;
-    --ok-bg: #16281e;
-    --ok-line: #2f5d43;
-    --bad: #ff9d9d;
-    --bad-bg: #2c1a1a;
-    --bad-line: #6a3737;
-    --gold: #efc663;
-    --gold-bg: #2b2415;
-    --gold-line: #5c4a24;
-    --shadow: 0 1px 2px rgba(0,0,0,.4);
-    color-scheme: dark;
-  }
-}
-
+/* Dark palette. app.js always puts data-theme="light|dark" on <html> — there is
+   no "follow the system" state, so the OS preference only picks the default on
+   a first visit. */
 :root[data-theme="dark"] {
     --bg: #0f1216;
     --panel: #171b21;
@@ -886,11 +861,6 @@ body[data-view="book"] .screen { display: none; }
 .bc-foot .pct { font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; font-weight: 600; color: var(--text); }
 .bc-foot .pct.done { color: var(--ok); font-weight: 700; }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bc-level { color: hsl(var(--hue) 70% 76%); background: hsl(var(--hue) 42% 18%); border-color: hsl(var(--hue) 35% 30%); }
-  :root:not([data-theme="light"]) .book-card:hover { box-shadow: 0 12px 28px -10px hsl(var(--hue) 60% 12% / .9), 0 2px 8px rgba(0,0,0,.45); }
-}
-
 :root[data-theme="dark"] .bc-level { color: hsl(var(--hue) 70% 76%); background: hsl(var(--hue) 42% 18%); border-color: hsl(var(--hue) 35% 30%); }
 :root[data-theme="dark"] .book-card:hover { box-shadow: 0 12px 28px -10px hsl(var(--hue) 60% 12% / .9), 0 2px 8px rgba(0,0,0,.45); }
 
@@ -1013,7 +983,6 @@ body[data-view="book"] .screen { display: none; }
   flex: none;
 }
 .theme-btn:hover { background: var(--panel-2); color: var(--text); }
-.theme-btn.is-set { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
 
 .controls {
   display: inline-flex;
@@ -1208,8 +1177,7 @@ body[data-view="book"] .screen { display: none; }
   color: var(--text);
   animation: wl-in .12s ease-out;
 }
-:root[data-theme="dark"] .wl-pop,
-:root:not([data-theme="light"]) .wl-pop { box-shadow: 0 8px 28px rgba(0,0,0,.55); }
+:root[data-theme="dark"] .wl-pop { box-shadow: 0 8px 28px rgba(0,0,0,.55); }
 
 @keyframes wl-in { from { opacity: 0; transform: translateY(-3px); } }
 .wl-pop.above { animation-name: wl-in-up; }

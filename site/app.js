@@ -8,9 +8,9 @@
   var I18N = window.I18N || { kk: {}, en: {} };
   var STORE_KEY = 'agylshyn_v1';
   var MASTER_STREAK = 3;
-  // 'auto' follows the OS; the other two override it. Cycled in this order.
-  var THEMES = ['auto', 'light', 'dark'];
-  var THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
+  // Two states only. The OS preference just picks the default on a first visit.
+  var THEMES = ['light', 'dark'];
+  var THEME_ICON = { light: '☀', dark: '☾' };
 
   function bookMeta(id) {
     for (var i = 0; i < BOOKS.length; i++) if (BOOKS[i].id === id) return BOOKS[i];
@@ -33,14 +33,22 @@
             books: p.books || {},
             last: p.last || null,
             lang: I18N[p.lang] ? p.lang : defaultLang(),
-            theme: THEMES.indexOf(p.theme) > -1 ? p.theme : 'auto',
+            theme: THEMES.indexOf(p.theme) > -1 ? p.theme : defaultTheme(),
             warnOk: p.warnOk || {},
             ui: p.ui || {}
           };
         }
       }
     } catch (e) { /* corrupt or unavailable storage — start fresh */ }
-    return { v: 1, items: {}, books: {}, last: null, lang: defaultLang(), theme: 'auto', warnOk: {}, ui: {} };
+    return { v: 1, items: {}, books: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, ui: {} };
+  }
+
+  // First visit (or a stored 'auto' from the old three-state toggle): resolve the
+  // OS preference once into a concrete theme, then never consult it again.
+  function defaultTheme() {
+    try {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) { return 'light'; }
   }
 
   // First visit: follow the browser, but only into a language we actually have.
@@ -108,23 +116,20 @@
 
   /* ================= theme ================= */
 
-  // 'auto' removes the attribute entirely, letting prefers-color-scheme decide.
   function applyTheme() {
-    var th = state.theme || 'auto';
-    if (th === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', th);
+    var th = THEMES.indexOf(state.theme) > -1 ? state.theme : defaultTheme();
+    state.theme = th;
+    document.documentElement.setAttribute('data-theme', th);
 
     [].forEach.call(document.querySelectorAll('[data-theme-btn]'), function (b) {
       b.textContent = THEME_ICON[th];
       b.title = t('theme.' + th);
       b.setAttribute('aria-label', t('theme.' + th));
-      b.classList.toggle('is-set', th !== 'auto');
     });
   }
 
   function cycleTheme() {
-    var i = THEMES.indexOf(state.theme || 'auto');
-    state.theme = THEMES[(i + 1) % THEMES.length];
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
     save();
     applyTheme();
   }

@@ -7,15 +7,21 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Ctext x='16' y='23' font-size='19' font-family='-apple-system,Segoe UI,Arial' font-weight='700' fill='%23fff' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <script>
-/* Applies the saved theme before first paint so a dark reader never sees a
-   white flash. Key must match STORE_KEY in app.js. */
+/* Applies the theme before first paint so a dark reader never sees a white
+   flash. The stylesheet has no prefers-color-scheme fallback, so the attribute
+   must always end up set. Key must match STORE_KEY in app.js. */
 (function () {
+  var th = null;
   try {
     var s = JSON.parse(localStorage.getItem('agylshyn_v1') || '{}');
-    if (s.theme === 'light' || s.theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', s.theme);
-    }
-  } catch (e) { /* no storage — fall back to the OS preference */ }
+    if (s.theme === 'light' || s.theme === 'dark') th = s.theme;
+  } catch (e) { /* no storage — fall through to the OS preference */ }
+  if (!th) {
+    try {
+      th = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) { th = 'light'; }
+  }
+  document.documentElement.setAttribute('data-theme', th);
 })();
 </script>
 </head>
