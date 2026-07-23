@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ағылшын — жаттығулар</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Ctext x='16' y='23' font-size='19' font-family='-apple-system,Segoe UI,Arial' font-weight='700' fill='%23fff' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f6feb">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="style.css">
 <script>
 /* Applies the theme before first paint so a dark reader never sees a white
@@ -82,13 +85,13 @@
     <a href="#" data-tab="errors" class="tab" id="tabErrors"><span data-i18n="nav.errors"></span> <span id="errBadge" class="badge" hidden>0</span></a>
     <a href="#" data-tab="stats"  class="tab" id="tabStats" data-i18n="nav.stats"></a>
     <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help">?</button>
-    <div class="controls">
-      <button type="button" class="theme-btn" data-theme-btn></button>
-      <div class="lang-switch">
-        <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
-      </div>
-    </div>
   </nav>
+  <div class="controls">
+    <button type="button" class="theme-btn" data-theme-btn></button>
+    <div class="lang-switch">
+      <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
+    </div>
+  </div>
 </header>
 
 <!-- book on the left, exercises in the middle, unit list on the right:
@@ -137,5 +140,15 @@
 <script src="books.js"></script>
 <script src="dict.js"></script>
 <script src="app.js"></script>
+<script>
+/* Offline support. Registered after load so it never delays first paint, and
+   guarded so opening index.html straight off the filesystem (file://) — where
+   service workers are unavailable — still works. */
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* offline unavailable — no matter */ });
+  });
+}
+</script>
 </body>
 </html>

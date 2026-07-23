@@ -8,6 +8,9 @@
   var I18N = window.I18N || { kk: {}, en: {} };
   var STORE_KEY = 'agylshyn_v1';
   var MASTER_STREAK = 3;
+  // Spaced-review ladder (days). Each correct answer pushes the next review out
+  // further; a wrong answer resets it to "due now".
+  var REVIEW_INTERVALS = [1, 3, 7, 21, 60];
   // Two states only. The OS preference just picks the default on a first visit.
   var THEMES = ['light', 'dark'];
   var THEME_ICON = { light: '☀', dark: '☾' };
@@ -31,6 +34,7 @@
             v: 1,
             items: p.items,
             books: p.books || {},
+            daily: p.daily || {},          // 'YYYY-MM-DD' -> answers that day
             last: p.last || null,
             lang: I18N[p.lang] ? p.lang : defaultLang(),
             theme: THEMES.indexOf(p.theme) > -1 ? p.theme : defaultTheme(),
@@ -40,7 +44,7 @@
         }
       }
     } catch (e) { /* corrupt or unavailable storage — start fresh */ }
-    return { v: 1, items: {}, books: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, ui: {} };
+    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, ui: {} };
   }
 
   // First visit (or a stored 'auto' from the old three-state toggle): resolve the
@@ -58,12 +62,60 @@
   }
 
   var saveTimer = null;
+  function writeNow() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch (e) { /* quota / private mode — keep working in memory */ }
+  }
   function save() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-      catch (e) { /* quota / private mode — keep working in memory */ }
-    }, 120);
+    saveTimer = setTimeout(writeNow, 120);
+  }
+  // Write immediately, cancelling any pending debounce — used when the page is
+  // about to be hidden or closed so the last answer is never lost (AUDIT §Ә1).
+  function flush() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    writeNow();
+  }
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') flush();
+  });
+
+  // A second tab writing the store must not silently wipe this tab's work.
+  // Re-read the disk copy and merge record-by-record, newest write winning
+  // (records carry `ts`); then repaint the open view (AUDIT §Ә2).
+  window.addEventListener('storage', function (e) {
+    if (e.key !== STORE_KEY || !e.newValue) return;
+    try {
+      var disk = JSON.parse(e.newValue);
+      if (!disk || !disk.items) return;
+      mergeInto(state, disk);
+      route();
+    } catch (err) { /* ignore a malformed cross-tab payload */ }
+  });
+
+  function mergeInto(cur, disk) {
+    var di = disk.items || {};
+    for (var k in di) {
+      var a = cur.items[k], b = di[k];
+      if (!a || (b && (b.ts || 0) >= (a.ts || 0))) cur.items[k] = b;
+    }
+    var dd = disk.daily || {};
+    cur.daily = cur.daily || {};
+    for (var d in dd) cur.daily[d] = Math.max(cur.daily[d] || 0, dd[d]);
+    if (disk.last) cur.last = disk.last;
+    cur.books = disk.books || cur.books;
+  }
+
+  function todayKey(ts) {
+    var d = new Date(ts == null ? Date.now() : ts);
+    return d.getFullYear() + '-' +
+      ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function bumpDaily() {
+    var k = todayKey();
+    state.daily[k] = (state.daily[k] || 0) + 1;
   }
 
   function keyOf(bookId, unit, subNum, n) {
@@ -241,13 +293,35 @@
     return set;
   }
 
+  // Many answers are a comma-separated list where order does not matter
+  // ("furniture, information" ≡ "information, furniture"). Compare them as a
+  // set so a correct-but-reordered answer is accepted (AUDIT §3.3, 729 items).
+  // Only kicks in when the book answer really is a list of two or more parts.
+  function listParts(s) {
+    return String(s == null ? '' : s)
+      .split(/\s*[,;]\s*|\s+and\s+|\s*&\s*/i)
+      .map(norm)
+      .filter(function (p) { return p; });
+  }
+  function matchesAsSet(input, answer) {
+    var want = listParts(answer);
+    if (want.length < 2) return false;
+    var got = listParts(input);
+    if (got.length !== want.length) return false;
+    want = want.slice().sort();
+    got = got.slice().sort();
+    for (var i = 0; i < want.length; i++) if (want[i] !== got[i]) return false;
+    return true;
+  }
+
   // Accepts the book answer and, where the source has one, the gap-only form:
   // "He’s tying / He is tying" also accepts "’s tying".
   function isMatch(input, it) {
     var typed = norm(input);
     if (!typed) return false;
     if (buildVariants(it.answer)[typed]) return true;
-    return !!(it.blank && buildVariants(it.blank)[typed]);
+    if (it.blank && buildVariants(it.blank)[typed]) return true;
+    return matchesAsSet(input, it.answer);
   }
 
   /* ================= item classification ================= */
@@ -559,8 +633,10 @@
 
   /* The ? inside a book opens the guide as a dialog: reading it must not cost
      you your place in the unit, which a full page navigation would. */
+  var helpReturnFocus = null;
   function openHelpModal() {
     renderHelpInto(helpModalBody);
+    helpReturnFocus = document.activeElement;   // restore on close
     helpModal.hidden = false;
     var closeBtn = helpModal.querySelector('.modal-close');
     if (closeBtn) closeBtn.focus();
@@ -568,6 +644,8 @@
 
   function closeHelpModal() {
     helpModal.hidden = true;
+    if (helpReturnFocus && helpReturnFocus.focus) helpReturnFocus.focus();
+    helpReturnFocus = null;
   }
 
   document.addEventListener('click', function (e) {
@@ -577,7 +655,16 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !helpModal.hidden) closeHelpModal();
+    if (helpModal.hidden) return;
+    if (e.key === 'Escape') { closeHelpModal(); return; }
+    // Focus trap: keep Tab inside the open dialog (AUDIT §У9).
+    if (e.key !== 'Tab') return;
+    var f = helpModal.querySelectorAll(
+      'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
 
   /* ================= sidebar ================= */
@@ -611,6 +698,7 @@
       var li = el('li');
       var a = el('a', 'unit-link' + (currentUnit === u.unit ? ' current' : ''));
       a.href = '#/b/' + book.id + '/unit/' + u.unit;
+      if (currentUnit === u.unit) a.setAttribute('aria-current', 'page');
       a.appendChild(el('span', 'u-num', String(u.unit)));
       a.appendChild(el('span', 'u-title', unitTitle(u)));
       var full = st.total > 0 && st.pct === 100;
@@ -630,7 +718,10 @@
 
   function setTab(name) {
     [].forEach.call(document.querySelectorAll('.tab'), function (t2) {
-      t2.classList.toggle('active', t2.getAttribute('data-tab') === name);
+      var on = t2.getAttribute('data-tab') === name;
+      t2.classList.toggle('active', on);
+      if (on) t2.setAttribute('aria-current', 'page');
+      else t2.removeAttribute('aria-current');
     });
   }
 
@@ -806,7 +897,11 @@
 
   /* ================= item row ================= */
 
-  function buildRow(unitNo, sub, it) {
+  function buildRow(unitNo, sub, it, opts) {
+    var review = !!(opts && opts.review);        // rendered on the Mistakes page
+    // In review mode the book key stays hidden until the learner answers again
+    // this session — otherwise the answer sits in plain sight (AUDIT §У1).
+    var reveal = !review;
     var key = keyOf(book.id, unitNo, sub.number, it.n);
     var row = el('div', 'row');
     row.setAttribute('data-key', key);
@@ -855,17 +950,32 @@
     input.autocapitalize = 'off';
     input.spellcheck = false;
     input.placeholder = t('row.placeholder');
+    // Screen readers otherwise announce only the placeholder, with no clue
+    // which question this box belongs to (AUDIT §У9).
+    input.setAttribute('aria-label',
+      t('row.aria', { unit: unitNo, sub: sub.number, n: it.n }));
     var r0 = rec(key);
-    if (r0 && r0.val) input.value = r0.val;
+    // On the Mistakes page start from a clean box; the old wrong answer is shown
+    // separately as "last time: …" rather than left sitting in the field.
+    if (r0 && r0.val && !review) input.value = r0.val;
+    if (review && r0 && r0.val) {
+      var prev = el('div', 'prev-answer');
+      prev.appendChild(el('span', 'pa-label', t('row.lastTime')));
+      prev.appendChild(el('span', 'pa-val', r0.val));
+      rbody.appendChild(prev);
+    }
     line.appendChild(input);
 
     var feedback = el('div', 'feedback');
+    feedback.setAttribute('aria-live', 'polite');
 
     function paint() {
       var r = rec(key);
       row.classList.remove('correct', 'wrong', 'mastered');
       clear(feedback);
       if (!r || !r.last) return;
+      // Review mode: no verdict, no key, until the learner tries again here.
+      if (review && !reveal) return;
 
       if (r.mastered) row.classList.add('mastered');
       else row.classList.add(r.last === 'correct' ? 'correct' : 'wrong');
@@ -897,19 +1007,35 @@
     }
 
     function mark(correct, self) {
+      reveal = true;                 // an answer was given — feedback may show
       var r = ensure(key);
+      var now = Date.now();
+      var today = todayKey(now);
       r.val = input.value;
       r.self = !!self;
+      r.ts = now;                                   // when this answer happened
+      r.hist = (r.hist || '').slice(-9) + (correct ? '1' : '0');   // last 10 tries
       if (correct) {
         r.streak = (r.streak || 0) + 1;
         r.last = 'correct';
-        if (r.streak >= MASTER_STREAK) r.mastered = true;
+        // distinct days answered correctly — mastery should survive a night,
+        // not just three taps in one minute (AUDIT §5.2). Old records with no
+        // `cd` keep whatever `mastered` they already earned.
+        if (r.cdDay !== today) { r.cd = (r.cd || 0) + 1; r.cdDay = today; }
+        if (r.streak >= MASTER_STREAK && (r.cd || 1) >= 2) r.mastered = true;
+        // spaced review: schedule the next due date on a widening ladder.
+        var ivl = REVIEW_INTERVALS[Math.min(r.streak - 1, REVIEW_INTERVALS.length - 1)];
+        r.ivl = ivl;
+        r.due = now + ivl * 864e5;
       } else {
         r.streak = 0;
         r.wrong = (r.wrong || 0) + 1;
         r.last = 'wrong';
         r.mastered = false;
+        r.ivl = 0;
+        r.due = now;                                // wrong -> review straight away
       }
+      bumpDaily();
       save();
       paint();
       afterChange();
@@ -1157,17 +1283,33 @@
       // Start on the explanation page: that is where a unit begins. The two
       // page chips jump to either half of the spread.
       var startPage = u.pdfIntroPage != null ? u.pdfIntroPage : u.pdfExercisePage;
-      var toggle = el('button', 'chip chip-btn',
-        pdfOpen() ? t('unit.closePdf') : t('unit.openPdf'));
+      var toggle = el('button', 'chip chip-btn');
       toggle.title = t('unit.openPdfHint');
+      // Shut, this is the one thing the page wants the reader to press, so it
+      // wears the loud red CTA; open, it only means "close" and goes quiet.
+      function syncToggle() {
+        var open = pdfOpen();
+        toggle.textContent = open ? t('unit.closePdf') : t('unit.openPdf');
+        toggle.classList.toggle('chip-cta', !open);
+      }
+      syncToggle();
       toggle.addEventListener('click', function () {
-        if (pdfOpen()) { hidePdf(true); toggle.textContent = t('unit.openPdf'); }
-        else { showPdf(startPage); toggle.textContent = t('unit.closePdf'); }
+        if (pdfOpen()) hidePdf(true); else showPdf(startPage);
+        syncToggle();
       });
       chips.appendChild(toggle);
 
+      // A book flagged `needsPdf` has no question text of its own, so it is
+      // unusable with the pane shut: open it once, before the reader has ever
+      // expressed a preference. Narrow screens keep the drawer shut — there the
+      // pane covers the whole page. `hidePdf` records the choice either way.
+      if (state.ui.pdfOpen == null && book.meta.needsPdf && window.innerWidth >= 1000) {
+        state.ui.pdfOpen = true;
+      }
+
       // reopen where they left off, and follow along as units change
       if (pdfOpen() || state.ui.pdfOpen) showPdf(startPage);
+      syncToggle(); // the chip was built before that, so bring it back in step
     }
     head.appendChild(chips);
 
@@ -1184,6 +1326,11 @@
     var warn = buildWarning();
     if (warn) main.appendChild(warn);
 
+    if (!(u.subExercises && u.subExercises.length)) {
+      // A few Essential Grammar units had no answers in the scan at all; keep
+      // the unit reachable (title + PDF) rather than showing a blank page.
+      main.appendChild(el('div', 'note', t('sub.doInPdf')));
+    }
     (u.subExercises || []).forEach(function (sub) { main.appendChild(buildSub(u.unit, sub)); });
 
     /* footer */
@@ -1280,10 +1427,15 @@
       h.appendChild(el('span', 'meta', meta));
       box.appendChild(h);
 
+      // One instruction heading per exercise, not per question (AUDIT §У3).
+      var lastSub = null;
       g.list.forEach(function (e) {
-        var lbl = el('div', 'instructions', e.sub.number + ' · ' + (e.sub.instructions || ''));
-        box.appendChild(lbl);
-        box.appendChild(buildRow(g.unit.unit, e.sub, e.item));
+        if (e.sub !== lastSub) {
+          box.appendChild(el('div', 'instructions',
+            e.sub.number + (e.sub.instructions ? ' · ' + e.sub.instructions : '')));
+          lastSub = e.sub;
+        }
+        box.appendChild(buildRow(g.unit.unit, e.sub, e.item, { review: true }));
       });
       main.appendChild(box);
     });
@@ -1291,6 +1443,34 @@
     renderSidebar();
     refreshBadge();
     window.scrollTo(0, 0);
+  }
+
+  // Consecutive days (ending today or yesterday) with at least one answer.
+  function dayStreak() {
+    var d = new Date();
+    if (!state.daily[todayKey(d.getTime())]) d.setDate(d.getDate() - 1);  // today not started yet
+    var n = 0;
+    for (var guard = 0; guard < 400; guard++) {
+      if (!state.daily[todayKey(d.getTime())]) break;
+      n++;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+
+  // Answered questions whose spaced-review date has come due (AUDIT §5.2).
+  function dueCount(bk) {
+    var now = Date.now(), n = 0;
+    bk.units.forEach(function (u) {
+      (u.subExercises || []).forEach(function (sub) {
+        (sub.items || []).forEach(function (it) {
+          if (!isTracked(sub, it)) return;
+          var r = rec(keyOf(bk.id, u.unit, sub.number, it.n));
+          if (r && r.last && r.due != null && r.due <= now) n++;
+        });
+      });
+    });
+    return n;
   }
 
   function renderStats() {
@@ -1305,71 +1485,74 @@
       a.mastered += r.st.mastered; a.review += r.st.review;
       return a;
     }, { total: 0, done: 0, correct: 0, mastered: 0, review: 0 });
-    var totalPct = tot.total ? Math.round(tot.correct / tot.total * 100) : 0;
+    var accuracy = tot.done ? Math.round(tot.correct / tot.done * 100) : 0;
+    var coverage = tot.total ? Math.round(tot.done / tot.total * 100) : 0;
+    var masteredPct = tot.total ? Math.round(tot.mastered / tot.total * 100) : 0;
+    var today = state.daily[todayKey()] || 0;
+    var streak = dayStreak();
+    var due = dueCount(book);
 
     var head = el('div', 'page-head');
     head.appendChild(el('h1', null, t('stats.h1')));
     head.appendChild(el('div', 'instructions', (book.meta && book.meta.title) || book.id));
     main.appendChild(head);
 
+    /* ---- headline cards: accuracy is not coverage (AUDIT §Ә3) ---- */
     var cards = el('div', 'cards');
-    function card(k, v, cls) {
+    function card(k, v, sub, cls) {
       var c = el('div', 'card' + (cls ? ' ' + cls : ''));
       c.appendChild(el('div', 'k', k));
       c.appendChild(el('div', 'v', v));
+      if (sub != null) c.appendChild(el('div', 'sub', sub));
       cards.appendChild(c);
     }
-    card(t('stats.total'), totalPct + '%');
-    card(t('stats.done'), tot.done + ' / ' + tot.total);
-    card(t('stats.mastered'), String(tot.mastered), 'gold');
-    card(t('stats.review'), String(tot.review), tot.review ? 'bad' : '');
+    card(t('stats.accuracy'), accuracy + '%', tot.correct + ' / ' + tot.done);
+    card(t('stats.coverage'), coverage + '%', tot.done + ' / ' + tot.total);
+    card(t('stats.mastered'), String(tot.mastered), masteredPct + '%', 'gold');
+    card(t('stats.today'),
+      num(today),
+      streak ? t('stats.streak', { n: streak }) : t('stats.streakNone'),
+      streak ? 'hot' : '');
     main.appendChild(cards);
 
-    var active = rows.filter(function (r) { return r.st.done > 0; })
-      .sort(function (a, b) { return a.st.pct - b.st.pct || a.u.unit - b.u.unit; });
-    var idle = rows.filter(function (r) { return r.st.done === 0; });
-
-    var wrap = el('div', 'table-wrap');
-    var table = el('table');
-    var thead = el('thead');
-    var trh = el('tr');
-    ['unit', 'title', 'done', 'correct', 'review', 'mastered', 'progress']
-      .forEach(function (h, i) {
-        trh.appendChild(el('th', i >= 2 && i <= 5 ? 'num' : null, t('stats.th.' + h)));
-      });
-    thead.appendChild(trh);
-    table.appendChild(thead);
-
-    var tbody = el('tbody');
-    function addRow(r, dim) {
-      var tr = el('tr', dim ? 'untouched' : null);
-      tr.addEventListener('click', function () { location.hash = '#/b/' + book.id + '/unit/' + r.u.unit; });
-      tr.appendChild(el('td', 'num', String(r.u.unit)));
-      tr.appendChild(el('td', 't-title', unitTitle(r.u)));
-      tr.appendChild(el('td', 'num', r.st.done + '/' + r.st.total));
-      tr.appendChild(el('td', 'num', String(r.st.correct)));
-      tr.appendChild(el('td', 'num', r.st.review ? String(r.st.review) : '—'));
-      tr.appendChild(el('td', 'num', r.st.mastered ? String(r.st.mastered) : '—'));
-      var td = el('td');
-      var bar = el('div', 'bar' + (r.st.pct === 100 ? ' full' : ''));
-      var f = el('i');
-      f.style.width = r.st.pct + '%';
-      bar.appendChild(f);
-      td.appendChild(bar);
-      td.appendChild(document.createTextNode(' ' + r.st.pct + '%'));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
+    /* ---- due-for-review banner ---- */
+    if (due > 0) {
+      var banner = el('div', 'due-banner');
+      banner.appendChild(el('span', 'due-n', num(due)));
+      banner.appendChild(el('span', null, ' ' + t('stats.dueText')));
+      var go = el('a', 'btn small', t('stats.dueGo'));
+      go.href = '#/b/' + book.id + '/errors';
+      banner.appendChild(go);
+      main.appendChild(banner);
     }
-    active.forEach(function (r) { addRow(r, false); });
-    idle.forEach(function (r) { addRow(r, true); });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
 
-    if (active.length) main.appendChild(el('div', 'section-title', t('stats.section')));
-    main.appendChild(wrap);
+    /* ---- 30-day activity sparkline ---- */
+    main.appendChild(el('div', 'section-title', t('stats.last30')));
+    main.appendChild(buildSparkline(30));
+
+    /* ---- section breakdown (books whose Contents we parsed) ---- */
+    var secBox = buildSectionBreakdown(rows);
+    if (secBox) {
+      main.appendChild(el('div', 'section-title', t('stats.sections')));
+      main.appendChild(secBox);
+    }
+
+    /* ---- sortable unit table ---- */
+    main.appendChild(el('div', 'section-title', t('stats.section')));
+    main.appendChild(buildStatsTable(rows));
+
+    /* ---- backup + reset ---- */
+    var tools = el('div', 'stats-tools');
+    var exp = el('button', 'btn', t('stats.export'));
+    exp.addEventListener('click', exportProgress);
+    var imp = el('button', 'btn', t('stats.import'));
+    imp.addEventListener('click', importProgress);
+    tools.appendChild(exp);
+    tools.appendChild(imp);
+    main.appendChild(tools);
 
     var reset = el('button', 'btn danger', t('stats.reset'));
-    reset.style.marginTop = '20px';
+    reset.style.marginTop = '14px';
     reset.addEventListener('click', function () {
       if (!confirm(t('stats.confirm', { book: (book.meta && book.meta.title) || book.id }))) return;
       var prefix = book.id + '|';
@@ -1387,6 +1570,179 @@
     renderSidebar();
     refreshBadge();
     window.scrollTo(0, 0);
+  }
+
+  // Tiny inline bar chart of the last `days` days of activity.
+  function buildSparkline(days) {
+    var wrap = el('div', 'spark');
+    var vals = [];
+    var d = new Date();
+    d.setDate(d.getDate() - (days - 1));
+    for (var i = 0; i < days; i++) {
+      vals.push({ k: todayKey(d.getTime()), v: state.daily[todayKey(d.getTime())] || 0 });
+      d.setDate(d.getDate() + 1);
+    }
+    var max = vals.reduce(function (m, x) { return Math.max(m, x.v); }, 0) || 1;
+    vals.forEach(function (x) {
+      var col = el('div', 'spark-col' + (x.v ? '' : ' empty'));
+      var bar = el('i');
+      bar.style.height = (x.v ? Math.max(8, Math.round(x.v / max * 100)) : 2) + '%';
+      col.title = x.k + ' · ' + x.v;
+      col.setAttribute('aria-label', x.k + ': ' + x.v);
+      col.appendChild(bar);
+      wrap.appendChild(col);
+    });
+    return wrap;
+  }
+
+  // Roll unit stats up by the unit's `section` (only some books carry it).
+  function buildSectionBreakdown(rows) {
+    var order = [], map = {};
+    rows.forEach(function (r) {
+      var s = r.u.section;
+      if (!s) return;
+      if (!map[s]) { map[s] = { total: 0, correct: 0, done: 0 }; order.push(s); }
+      map[s].total += r.st.total; map[s].correct += r.st.correct; map[s].done += r.st.done;
+    });
+    if (!order.length) return null;
+    var box = el('div', 'sections');
+    // sort weakest (lowest accuracy among started) first so gaps stand out
+    order.sort(function (a, b) {
+      var pa = map[a].done ? map[a].correct / map[a].done : 2;
+      var pb = map[b].done ? map[b].correct / map[b].done : 2;
+      return pa - pb;
+    });
+    order.forEach(function (s) {
+      var m = map[s];
+      var pct = m.done ? Math.round(m.correct / m.done * 100) : 0;
+      var rowEl = el('div', 'sec-row');
+      rowEl.appendChild(el('span', 'sec-name', s));
+      var bar = el('div', 'bar' + (pct === 100 ? ' full' : ''));
+      var f = el('i'); f.style.width = (m.done ? pct : 0) + '%';
+      bar.appendChild(f);
+      rowEl.appendChild(bar);
+      rowEl.appendChild(el('span', 'sec-pct', m.done ? pct + '%' : '—'));
+      box.appendChild(rowEl);
+    });
+    return box;
+  }
+
+  var statsSort = { key: 'unit', dir: 1 };
+
+  function buildStatsTable(rows) {
+    var wrap = el('div', 'table-wrap');
+    var table = el('table');
+    var cols = ['unit', 'title', 'done', 'correct', 'review', 'mastered', 'progress'];
+    var thead = el('thead');
+    var trh = el('tr');
+    cols.forEach(function (h, i) {
+      var th = el('th', (i >= 2 && i <= 5 ? 'num ' : '') + 'sortable', t('stats.th.' + h));
+      if (statsSort.key === h) th.classList.add(statsSort.dir > 0 ? 'asc' : 'desc');
+      th.setAttribute('tabindex', '0');
+      th.setAttribute('role', 'button');
+      function sort() {
+        statsSort.dir = statsSort.key === h ? -statsSort.dir : 1;
+        statsSort.key = h;
+        var fresh = buildStatsTable(rows);
+        wrap.replaceWith(fresh);
+      }
+      th.addEventListener('click', sort);
+      th.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sort(); }
+      });
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    table.appendChild(thead);
+
+    function val(r, k) {
+      if (k === 'unit') return r.u.unit;
+      if (k === 'title') return unitTitle(r.u).toLowerCase();
+      if (k === 'progress') return r.st.pct;
+      return r.st[k] || 0;
+    }
+    var sorted = rows.slice().sort(function (a, b) {
+      // untouched units always sink to the bottom regardless of direction
+      var ad = a.st.done > 0, bd = b.st.done > 0;
+      if (ad !== bd) return ad ? -1 : 1;
+      var va = val(a, statsSort.key), vb = val(b, statsSort.key);
+      if (va < vb) return -statsSort.dir;
+      if (va > vb) return statsSort.dir;
+      return a.u.unit - b.u.unit;
+    });
+
+    var tbody = el('tbody');
+    sorted.forEach(function (r) {
+      var tr = el('tr', r.st.done ? null : 'untouched');
+      tr.setAttribute('tabindex', '0');
+      tr.setAttribute('role', 'link');
+      function open() { location.hash = '#/b/' + book.id + '/unit/' + r.u.unit; }
+      tr.addEventListener('click', open);
+      tr.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); open(); }
+      });
+      tr.appendChild(el('td', 'num', String(r.u.unit)));
+      tr.appendChild(el('td', 't-title', unitTitle(r.u)));
+      tr.appendChild(el('td', 'num', r.st.done + '/' + r.st.total));
+      tr.appendChild(el('td', 'num', String(r.st.correct)));
+      tr.appendChild(el('td', 'num', r.st.review ? String(r.st.review) : '—'));
+      tr.appendChild(el('td', 'num', r.st.mastered ? String(r.st.mastered) : '—'));
+      var td = el('td');
+      var bar = el('div', 'bar' + (r.st.pct === 100 ? ' full' : ''));
+      var f = el('i');
+      f.style.width = r.st.pct + '%';
+      bar.appendChild(f);
+      td.appendChild(bar);
+      td.appendChild(document.createTextNode(' ' + r.st.pct + '%'));
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  /* ================= progress backup ================= */
+
+  // The whole progress lives in one browser's localStorage; a wipe or a new
+  // device loses everything. A plain JSON file closes that risk (AUDIT §5.6).
+  function exportProgress() {
+    try {
+      var blob = new Blob([JSON.stringify(state)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'agylshyn-progress-' + todayKey() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) { alert(t('stats.exportBad')); }
+  }
+
+  function importProgress() {
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'application/json,.json';
+    inp.addEventListener('change', function () {
+      var file = inp.files && inp.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var incoming = JSON.parse(reader.result);
+          if (!incoming || !incoming.items) throw new Error('bad');
+          if (!confirm(t('stats.importConfirm'))) return;
+          mergeInto(state, incoming);      // newest answer per question wins
+          state.books = {};                // force a recount from merged items
+          flush();
+          route();
+          alert(t('stats.importOk'));
+        } catch (e) { alert(t('stats.importBad')); }
+      };
+      reader.readAsText(file);
+    });
+    inp.click();
   }
 
   /* ================= routing ================= */

@@ -18,6 +18,11 @@
   --gold: #a8730a;
   --gold-bg: #fdf3dc;
   --gold-line: #e9cf8e;
+  /* the loud "open the PDF" call to action — deliberately not --bad, which
+     means "wrong answer" everywhere else */
+  --cta: #d92d20;
+  --cta-hi: #b42318;
+  --cta-ring: rgba(217, 45, 32, .18);
   --topbar-h: 49px;   /* measured at runtime by app.js */
   --sidebar-w: 268px; /* both set by the draggers, persisted in localStorage */
   --pdf-w: 520px;
@@ -48,6 +53,9 @@
     --gold: #efc663;
     --gold-bg: #2b2415;
     --gold-line: #5c4a24;
+    --cta: #d63a34;
+    --cta-hi: #e8524c;
+    --cta-ring: rgba(230, 82, 76, .22);
     --shadow: 0 1px 2px rgba(0,0,0,.4);
     color-scheme: dark;
 }
@@ -187,8 +195,11 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 .main { flex: 1 1 0; min-width: 0; padding: 22px 26px 80px; }
-/* only cap the reading column when the book pane is not taking the space */
-body:not(.pdf-open) .main { max-width: 900px; }
+/* Only cap the reading column when the book pane is not taking the space — but
+   cap the blocks inside .main, not .main itself. Capping .main makes the flex
+   row stop short of the window, which leaves the unit list stranded in the
+   middle of a wide screen with dead space to its right. */
+body:not(.pdf-open) .main > * { max-width: 900px; margin-inline: auto; }
 
 /* ===== Drag handles between panels ===== */
 .dragger {
@@ -529,6 +540,45 @@ td .bar { width: 90px; display: inline-block; vertical-align: middle; }
 
 .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 22px 0 8px; font-weight: 600; }
 
+/* ---- richer statistics ---- */
+.card .sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.card.hot .sub { color: var(--accent); }
+
+.due-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--accent-soft); border: 1px solid var(--accent-soft);
+  border-radius: var(--radius); padding: 11px 15px; margin-bottom: 18px; font-size: 14px;
+}
+.due-banner .due-n { font-weight: 700; font-size: 18px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.due-banner .btn { margin-left: auto; }
+
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 72px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 10px 12px; box-shadow: var(--shadow); }
+.spark-col { flex: 1 1 0; display: flex; align-items: flex-end; height: 100%; min-width: 3px; }
+.spark-col > i { display: block; width: 100%; background: var(--accent); border-radius: 2px; min-height: 2px; }
+.spark-col.empty > i { background: var(--line); }
+
+.sections { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px 14px; }
+.sec-row { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line-soft); }
+.sec-row:last-child { border-bottom: 0; }
+.sec-name { flex: 0 0 42%; font-size: 13px; }
+.sec-row .bar { flex: 1; }
+.sec-pct { flex: 0 0 42px; text-align: right; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.stats-tools { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--fg); }
+th.sortable.asc::after { content: ' ▲'; font-size: 9px; }
+th.sortable.desc::after { content: ' ▼'; font-size: 9px; }
+th.sortable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* previous wrong answer shown on the Mistakes page, key stays hidden */
+.prev-answer { font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
+.prev-answer .pa-val { text-decoration: line-through; opacity: .8; }
+
 /* ===== Responsive ===== */
 @media (max-width: 860px) {
   .icon-btn { display: block; }
@@ -552,15 +602,37 @@ td .bar { width: 90px; display: inline-block; vertical-align: middle; }
     transition: transform .18s ease;
     box-shadow: 0 8px 24px rgba(0,0,0,.2);
   }
-  /* the drawer opens from the right now, so put its button on that side.
-     .tabs keeps its auto margin, so the bar stays on two rows. */
-  #menuBtn { order: 9; }
-  .brand { min-width: 0; }
+  /* The topbar stays one row — menu, book title, theme/lang — and the section
+     tabs move to a fixed bottom bar so the title is never squeezed to three
+     rows or clipped to "English G…" (AUDIT §У4). */
+  #menuBtn { order: -1; }
+  .brand { min-width: 0; flex: 1; }
   .brand-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .home-link { display: none; }
   .sidebar.open { transform: translateX(0); }
-  .main { padding: 16px 14px 70px; }
-  .tab { padding: 5px 7px; font-size: 12px; }
-  .tabs { gap: 3px; }
+  .main { padding: 16px 14px 78px; }
+
+  .tabs {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    margin: 0;
+    z-index: 40;
+    display: flex;
+    gap: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    padding: 4px max(6px, env(safe-area-inset-left)) calc(4px + env(safe-area-inset-bottom));
+    flex-wrap: nowrap;
+  }
+  .tab {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 4px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+  .pdf-pane { inset: var(--topbar-h) 0 0 0; }   /* bottom bar sits above it */
+  .unit-list { padding-bottom: 64px; }          /* clear the fixed bottom bar */
 }
 
 /* ===================================================================
@@ -952,6 +1024,24 @@ body[data-view="book"] .screen { display: none; }
   font-weight: 550;
 }
 .chip-btn:hover { filter: brightness(1.05); }
+
+/* Opening the book is the one action this page is really asking for, so while
+   the pane is shut the chip is filled red instead of sitting quietly in accent
+   blue next to the two page chips. app.js drops the class once it is open. */
+.chip-btn.chip-cta {
+  color: #fff;
+  background: var(--cta);
+  border-color: var(--cta);
+  font-weight: 650;
+  padding: 4px 12px;
+  box-shadow: 0 0 0 3px var(--cta-ring);
+}
+.chip-btn.chip-cta:hover {
+  filter: none;
+  background: var(--cta-hi);
+  border-color: var(--cta-hi);
+}
+.chip-btn.chip-cta:active { transform: translateY(1px); }
 
 .tab-help {
   font-weight: 700;

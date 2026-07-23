@@ -36,11 +36,16 @@ python3 site/tools/build_data.py
 Алты кітапты біркелкі схемаға келтіреді:
 
 ```
-{unit, title, pdfExercisePage?, pdfPages?, pdfIntroPage?,
+{unit, title, section?, pdfExercisePage?, pdfPages?, pdfIntroPage?,
  subExercises: [{number, type, instructions?, note?, wordBank?, options?,
                  passage?, rawQuestion?, rawAnswer?,
                  items: [{n, question?, answer?, isExample?, exampleAnswers?}]}]}
 ```
+
+`section` — кітаптың Contents-індегі бөлім (мыс. «Modals»). grammar мен
+vocab-upint-те бар; статистика бетінде бөлім бойынша жинақ көрсетіледі.
+grammar атаулары мен бөлімдері `tools/grammar_titles.json`-нан, vocab-upint
+бөлімдері `tools/vocab_upint_sections.json`-нан алынады.
 
 `type`: `items` | `text` | `open` | `freeform` | `crossword`.
 

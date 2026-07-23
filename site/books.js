@@ -14,6 +14,9 @@ window.BOOKS = [
     },
     pdf: 'pdf/essential-grammar.pdf',
     hue: 152,
+    // No question text in the data, so the reader has to have the book open —
+    // app.js opens the pane by default on a wide screen because of this.
+    needsPdf: true,
     // This book's PDF is a pure scan, so its data came out thinner than the
     // rest. Shown on the card and once inside the book.
     warning: {
@@ -83,7 +86,7 @@ window.BOOKS = [
   },
   {
     id: 'vocab-preint',
-    title: 'Vocabulary in Use',
+    title: 'Vocabulary in Use — Pre-Intermediate',
     author: 'Cambridge · 4th edition',
     level: 'A2–B1',
     kind: 'vocab',
@@ -97,11 +100,11 @@ window.BOOKS = [
   },
   {
     id: 'vocab-upint',
-    title: 'Vocabulary in Use',
+    title: 'Vocabulary in Use — Upper-Intermediate',
     author: 'Cambridge · 4th edition',
     level: 'B2',
     kind: 'vocab',
-    units: 100,
+    units: 101,
     blurb: {
       kk: 'Upper-Intermediate. Идиомалар, фразалық етістіктер, тіркестер.',
       en: 'Upper-Intermediate. Idioms, phrasal verbs and collocations.'
@@ -111,7 +114,7 @@ window.BOOKS = [
   },
   {
     id: 'vocab-adv',
-    title: 'Vocabulary in Use',
+    title: 'Vocabulary in Use — Advanced',
     author: 'McCarthy & O’Dell',
     level: 'C1–C2',
     kind: 'vocab',

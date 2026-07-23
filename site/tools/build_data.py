@@ -82,6 +82,19 @@ def clean_title(title, unit):
     return RECOVERED_TITLES.get(str(unit)) or 'Unit %d' % unit
 
 
+# A handful of answers picked up the running page footer ("… 337 Key to
+# Exercises …") when the key column was read off the scan (AUDIT §3.3). It can
+# never be typed, so cut the answer off where the footer begins.
+_FOOTER = re.compile(r'\s*\d+\s+Key to (?:Exercises|Additional).*$', re.I | re.S)
+
+
+def clean_answer(a):
+    if not a:
+        return a
+    a = _FOOTER.sub('', str(a)).strip()
+    return a or None
+
+
 def norm_items(raw):
     items = []
     for it in raw or []:
@@ -93,8 +106,8 @@ def norm_items(raw):
         items.append({
             'n': it.get('n'),
             'question': it.get('question'),
-            'answer': it.get('answer'),
-            'blank': blank,
+            'answer': clean_answer(it.get('answer')),
+            'blank': clean_answer(blank),
             'isExample': it.get('isExample') is True,
             'exampleAnswers': it.get('exampleAnswers') is True,
         })
@@ -109,19 +122,43 @@ def build_vocab_preint():
 
 # ----------------------------------------------------------------- vocab upint
 def build_vocab_upint():
-    """Same shape as preint (no passage/options ever used).
-
-    The source stops at unit 100, but the book has 101 — "US English" was
-    never extracted. It is transcribed in tools/vocab_upint_unit101.json and
-    appended here; its pages are already true PDF pages."""
-    units = read('vocab-upint', 'exercises.json')['units']
-    if not any(u.get('unit') == 101 for u in units):
+    """Fourth-Edition Upper-Intermediate, extracted straight from its own PDF
+    answer key (exercises-8). Schema is vocab-adv's `exercises` array, so it is
+    converted the same way. The printed page numbers already equal true PDF
+    pages (offset 0), and all 101 units are present — no unit-101 patch needed."""
+    try:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               'vocab_upint_unit101.json'), encoding='utf-8') as f:
-            extra = json.load(f)
-        extra.pop('_note', None)
-        extra['pdfNoShift'] = True          # already correct PDF pages
-        units.append(extra)
+                               'vocab_upint_sections.json'), encoding='utf-8') as f:
+            sections = json.load(f)
+    except (IOError, ValueError):
+        sections = {}
+    units = []
+    for u in read('vocab-upint', 'exercises.json')['units']:
+        subs = []
+        first_page = None
+        for s in u.get('exercises', []) or []:
+            items = norm_items(s.get('items'))
+            if s.get('exampleAnswers') is True:
+                for it in items:
+                    if not it['isExample']:
+                        it['exampleAnswers'] = True
+            page = s.get('pdfExercisePage')
+            if first_page is None and page is not None:
+                first_page = page
+            subs.append({
+                'number': s.get('number'),
+                'type': 'items',
+                'instructions': s.get('instructions'),
+                'wordBank': norm_wordbank(s.get('wordBank')),
+                'items': items,
+            })
+        units.append({
+            'unit': u.get('unit'),
+            'title': u.get('title'),
+            'section': sections.get(str(u.get('unit'))),
+            'pdfExercisePage': first_page,
+            'subExercises': subs,
+        })
     return units
 
 
@@ -243,6 +280,19 @@ def build_advanced_grammar():
     return units
 
 
+# Unit titles + sections read off the PDF Contents pages (tools/grammar_titles.py).
+# The source file took titles from arbitrary page text, so 36 came out wrong
+# (AUDIT §3.2); the Contents is the book's own authoritative list.
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           'grammar_titles.json'), encoding='utf-8') as _f:
+        _GT = json.load(_f)
+        GRAMMAR_TITLES = {int(k): v for k, v in _GT.get('titles', {}).items()}
+        GRAMMAR_SECTIONS = {int(k): v for k, v in _GT.get('sections', {}).items()}
+except (IOError, ValueError):
+    GRAMMAR_TITLES, GRAMMAR_SECTIONS = {}, {}
+
+
 # ------------------------------------------------------------- english grammar
 def build_grammar():
     """exercises -> subExercises; options dict {a: ...} -> [{letter, text}]."""
@@ -261,9 +311,11 @@ def build_grammar():
                 'items': norm_items(s.get('items')),
             })
         pages = u.get('pdfPages') or []
+        n = u.get('unit')
         units.append({
-            'unit': u.get('unit'),
-            'title': u.get('title'),
+            'unit': n,
+            'title': GRAMMAR_TITLES.get(n) or u.get('title'),
+            'section': GRAMMAR_SECTIONS.get(n),
             'pdfExercisePage': pages[0] if pages else None,
             'pdfPages': pages,
             'subExercises': subs,
@@ -284,6 +336,14 @@ def build_essential_grammar():
                 for it in items:
                     if not it['isExample']:
                         it['exampleAnswers'] = True
+            # Drop "ghost" rows the OCR left behind: no answer AND no question
+            # text. They can never be answered, yet counted in the denominator,
+            # so 100% was unreachable and stats read falsely low (AUDIT §3.1).
+            items = [it for it in items if it.get('isExample')
+                     or (it.get('answer') or '').strip()
+                     or (it.get('question') or '').strip()]
+            if not items:
+                continue
             subs.append({
                 'number': s.get('number'),
                 'type': 'items',

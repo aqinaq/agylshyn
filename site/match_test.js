@@ -7,7 +7,9 @@ function expandParens(s){let out=[s];for(let g=0;g<8;g++){let next=[],grew=false
 function splitAlternatives(s){return String(s).split(/\s*\/\s*|\s+or\s+/i).filter(p=>p&&p.trim());}
 function expandSlashTokens(s){const t=String(s).trim().split(/\s+/);let out=[''];for(const tk of t){const ch=tk.indexOf('/')>-1?tk.split('/').filter(c=>c):[tk];if(!ch.length)continue;const nx=[];for(const a of out)for(const b of ch)nx.push(a?a+' '+b:b);out=nx.slice(0,64);}return out;}
 function buildVariants(ans){const set=Object.create(null);const add=v=>{const k=norm(v);if(k)set[k]=1;};const raw=String(ans==null?'':ans);const bases=dedupe([raw].concat(expandSlashTokens(raw)));for(const b of bases){for(const w of expandParens(b)){add(w);for(const a of splitAlternatives(w))add(a);}}return set;}
-function isMatch(input,it){const t=norm(input);if(!t)return false;if(buildVariants(it.answer)[t])return true;return !!(it.blank&&buildVariants(it.blank)[t]);}
+function listParts(s){return String(s==null?'':s).split(/\s*[,;]\s*|\s+and\s+|\s*&\s*/i).map(norm).filter(p=>p);}
+function matchesAsSet(input,answer){const want=listParts(answer);if(want.length<2)return false;const got=listParts(input);if(got.length!==want.length)return false;const a=want.slice().sort(),b=got.slice().sort();for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;}
+function isMatch(input,it){const t=norm(input);if(!t)return false;if(buildVariants(it.answer)[t])return true;if(it.blank&&buildVariants(it.blank)[t])return true;return matchesAsSet(input,it.answer);}
 
 const BOOKS=['essential-grammar','grammar','advanced-grammar','vocab-preint','vocab-upint','vocab-adv'];
 // learner-input transforms that SHOULD still count as correct
