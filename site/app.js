@@ -15,6 +15,18 @@
   var THEMES = ['light', 'dark'];
   var THEME_ICON = { light: '☀', dark: '☾' };
 
+  // First PDF page (true #page=) of each book's printed answer key. Powers the
+  // "answer key" chip: when a key is prose, a crossword, a self-check item or
+  // otherwise not auto-checkable, the learner opens the back of the book in one
+  // click. Books without a machine-locatable key (IELTS 19/20, Collins) are
+  // omitted — no chip is shown for them.
+  var ANSWER_KEY_PAGE = {
+    'essential-grammar': 263, 'grammar': 348, 'advanced-grammar': 263,
+    'vocab-preint': 209, 'vocab-upint': 211, 'vocab-adv': 212,
+    'vocab-elem': 129, 'collocations': 130, 'academic': 134, 'business': 144,
+    'ielts-21': 118
+  };
+
   function bookMeta(id) {
     for (var i = 0; i < BOOKS.length; i++) if (BOOKS[i].id === id) return BOOKS[i];
     return null;
@@ -1913,6 +1925,18 @@
       var pages = (u.pdfPages && u.pdfPages.length > 1)
         ? u.pdfPages.join('–') : String(u.pdfExercisePage);
       chips.appendChild(pageChip(t('unit.exercisePage'), pages, u.pdfExercisePage));
+    }
+    // The answer key in the back of the book, one click away — for self-check
+    // items, crosswords and prose answers the app cannot grade automatically.
+    var akPage = ANSWER_KEY_PAGE[book.id];
+    if (akPage != null && book.meta && book.meta.pdf) {
+      var akChip = el('button', 'chip pdf-link');
+      akChip.type = 'button';
+      akChip.title = t('unit.answerKeyHint');
+      akChip.appendChild(document.createTextNode('📗 '));
+      akChip.appendChild(el('strong', null, t('unit.answerKey')));
+      akChip.addEventListener('click', function () { showPdf(akPage); });
+      chips.appendChild(akChip);
     }
     if (book.meta && book.meta.pdf) {
       // Start on the explanation page: that is where a unit begins. The two

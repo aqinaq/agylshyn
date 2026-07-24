@@ -195,6 +195,8 @@ window.I18N = {
 
     'unit.exercisePage': '📄 Жаттығу беті',
     'unit.introPage': '📖 Теория беті',
+    'unit.answerKey': 'Жауап кілті',
+    'unit.answerKeyHint': 'Кітаптың соңындағы жауап кілтін оң жақ панельде ашады — өзің тексеретін немесе түсініксіз жауаптарды тексеруге',
     'unit.checkAll': 'Барлығын тексеру',
     'unit.openPdf': '📕 PDF-ті ашу',
     'unit.openPdfHint': 'Кітапты осы юниттің түсініктеме бетінен, оң жақ панельде ашады',
@@ -450,6 +452,8 @@ window.I18N = {
 
     'unit.exercisePage': '📄 Exercise page',
     'unit.introPage': '📖 Reference page',
+    'unit.answerKey': 'Answer key',
+    'unit.answerKeyHint': 'Opens the answer key from the back of the book in the right-hand panel — for self-check or unclear answers',
     'unit.checkAll': 'Check everything',
     'unit.openPdf': '📕 Open the PDF',
     'unit.openPdfHint': 'Shows the book at this unit’s explanation page, in the panel on the right',

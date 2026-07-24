@@ -442,6 +442,58 @@ BOOKS = [
 ]
 
 
+# A few Advanced Grammar pages carry a broken font ToUnicode map, so their text
+# came out shifted three letters ("WKH" for "the"). Detected by the shifted
+# forms of very common words; the field is unreadable and gets dropped.
+_SHIFT_WORDS = re.compile(
+    r'\b(WKH|DQG|ZDV|WKDW|RXW|LQJ|YRX|WLPH|KDYH|ZLOO|WKLV|IURP|EHHQ|QRW|DUH|IRU|WKHLU)\b')
+
+# A handful of crossword answers were extracted as spaced-out single letters
+# with trailing junk ("c r i t i c s u h b a l"). They cannot be matched.
+_SPACED_LETTERS = re.compile(r'(?:\b[A-Za-z]\s){4,}')
+
+
+def _is_shifted(s):
+    return bool(s) and len(_SHIFT_WORDS.findall(s)) >= 3
+
+
+def scrub(units):
+    """Post-process shared by every book, applied after page fixing:
+
+    1. Drop shift-garbled text (instructions/passage/note and any garbled
+       item text) but keep the exercise's clean items — the learner reads the
+       passage from the PDF and its answer key. (AUDIT: adv-grammar 11/15/49/74)
+    2. Turn spaced-letter garbled answers into self-check rows, so a broken key
+       never marks a right answer wrong — the PDF answer key is one click away.
+    3. Remove tracked rows the extractor created past the real questions: no
+       question and no answer, so they can never be completed yet still count
+       toward the total — which is why a book could never reach 100 %.
+    """
+    for u in units:
+        for s in u.get('subExercises', []) or []:
+            for f in ('instructions', 'passage', 'note'):
+                if _is_shifted(s.get(f)):
+                    s[f] = None
+            for it in s.get('items', []) or []:
+                if _is_shifted(it.get('question')):
+                    it['question'] = None
+                if _is_shifted(it.get('answer')):
+                    it['answer'] = it['blank'] = None
+                elif it.get('answer') and _SPACED_LETTERS.search(it['answer']):
+                    it['answer'] = it['blank'] = None
+                    it['selfCheck'] = True
+
+            if s.get('type') in ('items', 'text'):
+                s['items'] = [
+                    it for it in (s.get('items') or [])
+                    if it.get('isExample')
+                    or (it.get('question') or '').strip()
+                    or (it.get('answer') or '').strip()
+                    or it.get('selfCheck')
+                ]
+    return units
+
+
 def tracked(units):
     """Questions that count towards progress — must match isTracked() in app.js."""
     n = 0
@@ -459,7 +511,7 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     index = []
     for bid, fn in BOOKS:
-        units = clean(fix_pages(bid, fn()))
+        units = clean(scrub(fix_pages(bid, fn())))
         path = os.path.join(OUT, bid + '.json')
         with open(path, 'w', encoding='utf-8') as f:
             json.dump({'id': bid, 'units': units}, f, ensure_ascii=False,
