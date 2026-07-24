@@ -33,6 +33,7 @@
 <!-- ================= home: intro + book picker ================= -->
 <section id="home" class="screen">
   <div class="controls floating">
+    <button type="button" class="theme-btn" data-open-find data-i18n-aria="find.open">🔎</button>
     <button type="button" class="theme-btn" data-theme-btn></button>
     <div class="lang-switch">
       <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
@@ -48,17 +49,24 @@
       </div>
       <div class="hh-side">
         <div class="hero-stats">
-          <div><div class="v">6</div><div class="k" data-i18n="hero.books"></div></div>
+          <div><div class="v" id="hsBooks">—</div><div class="k" data-i18n="hero.books"></div></div>
           <div><div class="v" id="hsUnits">—</div><div class="k" data-i18n="hero.units"></div></div>
           <div><div class="v" id="hsItems">—</div><div class="k" data-i18n="hero.questions"></div></div>
           <div><div class="v" id="hsDone">—</div><div class="k" data-i18n="hero.done"></div></div>
         </div>
         <div id="heroResume" class="hero-resume" hidden></div>
+        <div id="heroDrill" class="hero-drill"></div>
       </div>
     </header>
 
-    <p class="home-choose" data-i18n="home.choose"></p>
-    <div id="bookGrid"></div>
+    <button type="button" class="home-help home-start" id="homeStart" data-open-place>
+      <span class="hh-icon">🧭</span>
+      <span class="hh-text">
+        <b data-i18n="plc.homeTitle"></b>
+        <span id="homeStartSub" data-i18n="plc.homeSub"></span>
+      </span>
+      <span class="hh-go">→</span>
+    </button>
 
     <button type="button" class="home-help" data-open-help>
       <span class="hh-icon">📘</span>
@@ -68,6 +76,16 @@
       </span>
       <span class="hh-go">→</span>
     </button>
+
+    <div class="home-body">
+      <div class="home-main">
+        <div id="bookGrid"></div>
+      </div>
+
+      <aside class="home-aside" id="homeAside">
+        <div id="asideDyn"></div>
+      </aside>
+    </div>
 
   </div>
 </section>
@@ -84,6 +102,8 @@
     <a href="#" data-tab="units"  class="tab" id="tabUnits" data-i18n="nav.units"></a>
     <a href="#" data-tab="errors" class="tab" id="tabErrors"><span data-i18n="nav.errors"></span> <span id="errBadge" class="badge" hidden>0</span></a>
     <a href="#" data-tab="stats"  class="tab" id="tabStats" data-i18n="nav.stats"></a>
+    <a href="#/drill" class="tab tab-drill" id="tabDrill" data-i18n-aria="drill.title">⚡</a>
+    <button type="button" class="tab tab-find" data-open-find data-i18n-aria="find.open">🔎</button>
     <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help">?</button>
   </nav>
   <div class="controls">
@@ -135,18 +155,62 @@
   </div>
 </div>
 
+<!-- ================= placement: "where do I start?" quiz ================= -->
+<div id="placeModal" class="modal" hidden>
+  <div class="modal-backdrop" data-close-place></div>
+  <div class="modal-panel place-panel" role="dialog" aria-modal="true" aria-labelledby="placeTitle">
+    <div class="modal-head">
+      <h2 id="placeTitle" data-i18n="plc.title"></h2>
+      <button type="button" class="modal-close" data-close-place data-i18n-aria="plc.close">✕</button>
+    </div>
+    <div id="placeBody" class="modal-body place-body"></div>
+  </div>
+</div>
+
+<!-- ================= find: search questions across books (Ctrl+K) ========= -->
+<div id="findModal" class="modal" hidden>
+  <div class="modal-backdrop" data-close-find></div>
+  <div class="modal-panel find-panel" role="dialog" aria-modal="true" aria-labelledby="findTitle">
+    <div class="modal-head">
+      <h2 id="findTitle" data-i18n="find.title"></h2>
+      <button type="button" class="modal-close" data-close-find data-i18n-aria="find.close">✕</button>
+    </div>
+    <div class="find-bar">
+      <input id="findInput" type="search" autocomplete="off" spellcheck="false"
+             data-i18n-placeholder="find.placeholder" data-i18n-aria="find.title">
+      <div id="findScope" class="find-scope"></div>
+    </div>
+    <div id="findResults" class="find-results"></div>
+    <div id="findFoot" class="find-foot"></div>
+  </div>
+</div>
+
 <script src="i18n.js"></script>
 <script src="help.js"></script>
 <script src="books.js"></script>
+<script src="placement.js"></script>
 <script src="dict.js"></script>
 <script src="app.js"></script>
 <script>
 /* Offline support. Registered after load so it never delays first paint, and
    guarded so opening index.html straight off the filesystem (file://) — where
-   service workers are unavailable — still works. */
+   service workers are unavailable — still works.
+
+   Self-healing: check for a new service worker on every load, and when a new
+   one takes control (e.g. after the cache-first→network-first switch) reload
+   once so the freshly-cached app.js/CSS actually run. Without this, a reader
+   whose old worker cached stale JS would be stuck on it until a manual purge. */
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  var reloadedBySW = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (reloadedBySW) return;
+    reloadedBySW = true;
+    window.location.reload();
+  });
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () { /* offline unavailable — no matter */ });
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      reg.update();          // pull the latest sw.js right away
+    }).catch(function () { /* offline unavailable — no matter */ });
   });
 }
 </script>

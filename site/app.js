@@ -1,4 +1,4 @@
-/* Grammar & Vocabulary in Use — six books, one practice app.
+/* Grammar & Vocabulary in Use — every book in one practice app.
    Engine is vocab-preint's, generalised over a book id.
    UI is bilingual (kk / en); strings live in i18n.js. */
 (function () {
@@ -39,12 +39,13 @@
             lang: I18N[p.lang] ? p.lang : defaultLang(),
             theme: THEMES.indexOf(p.theme) > -1 ? p.theme : defaultTheme(),
             warnOk: p.warnOk || {},
+            placement: p.placement || null,   // {track,band,score,ts} from the quiz
             ui: p.ui || {}
           };
         }
       }
     } catch (e) { /* corrupt or unavailable storage — start fresh */ }
-    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, ui: {} };
+    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, ui: {} };
   }
 
   // First visit (or a stored 'auto' from the old three-state toggle): resolve the
@@ -105,6 +106,10 @@
     cur.daily = cur.daily || {};
     for (var d in dd) cur.daily[d] = Math.max(cur.daily[d] || 0, dd[d]);
     if (disk.last) cur.last = disk.last;
+    // placement is a one-off preference — let the newest write win across tabs
+    if (disk.placement && (!cur.placement || (disk.placement.ts || 0) > (cur.placement.ts || 0))) {
+      cur.placement = disk.placement;
+    }
     cur.books = disk.books || cur.books;
   }
 
@@ -145,6 +150,83 @@
   function num(n) {
     try { return Number(n).toLocaleString(t('locale')); }
     catch (e) { return String(n); }
+  }
+
+  /* ================= speech ================= */
+
+  // Hearing the sentence matters as much as reading it, and the browser's own
+  // voices cost nothing: no download, no API key, works offline. A browser
+  // without an engine simply gets no speaker buttons — never a dead one.
+  var Speech = (function () {
+    var synth = window.speechSynthesis;
+    var ok = !!(synth && window.SpeechSynthesisUtterance);
+    var voice = null;
+
+    // Prefer a real English voice; the default one is often the OS language,
+    // which reads English text with a Kazakh/Russian accent.
+    function pick() {
+      var list = (ok && synth.getVoices && synth.getVoices()) || [];
+      var en = list.filter(function (v) { return /^en/i.test(v.lang || ''); });
+      if (!en.length) return null;
+      var pref = ['Samantha', 'Daniel', 'Google UK English', 'Google US English', 'Microsoft'];
+      for (var i = 0; i < pref.length; i++) {
+        for (var j = 0; j < en.length; j++) {
+          if ((en[j].name || '').indexOf(pref[i]) === 0) return en[j];
+        }
+      }
+      return en[0];
+    }
+
+    if (ok) {
+      voice = pick();
+      // Chrome fills the voice list asynchronously, after the first paint.
+      try { synth.addEventListener('voiceschanged', function () { voice = pick(); }); }
+      catch (e) { /* older engines expose the list synchronously */ }
+    }
+
+    // Gaps are printed as dots or underscores; read as-is they become noise, so
+    // they turn into a short pause instead.
+    function clean(text) {
+      return String(text == null ? '' : text)
+        .replace(/[._]{2,}/g, ' … ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 300);
+    }
+
+    function speak(text) {
+      var say = clean(text);
+      if (!ok || !say) return;
+      try {
+        synth.cancel();                  // one sentence at a time
+        var u = new SpeechSynthesisUtterance(say);
+        if (!voice) voice = pick();
+        if (voice) u.voice = voice;
+        u.lang = (voice && voice.lang) || 'en-GB';
+        u.rate = 0.92;                   // learner pace, not newsreader pace
+        synth.speak(u);
+      } catch (e) { /* engine died — silence is an acceptable fallback */ }
+    }
+
+    function stop() { try { if (ok) synth.cancel(); } catch (e) {} }
+
+    return { ok: ok, speak: speak, stop: stop };
+  })();
+  window.Speech = Speech;   // dict.js falls back to it when a word has no audio
+
+  // 🔊 button for a piece of English text. Null when the browser cannot speak.
+  function speakBtn(getText, cls) {
+    if (!Speech.ok) return null;
+    var b = el('button', 'speak' + (cls ? ' ' + cls : ''), '🔊');
+    b.type = 'button';
+    b.title = t('speak.title');
+    b.setAttribute('aria-label', t('speak.title'));
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      Speech.speak(getText());
+    });
+    return b;
   }
 
   // Fills every element carrying a data-i18n* attribute in the static shell.
@@ -197,6 +279,7 @@
     save();
     applyStatic();
     if (!helpModal.hidden) renderHelpInto(helpModalBody);
+    if (placeModal && !placeModal.hidden && placeRepaint) placeRepaint();
     route();          // re-render whatever view is open, in the new language
   }
 
@@ -314,6 +397,35 @@
     return true;
   }
 
+  function editDistance(a, b) {
+    var m = a.length, n = b.length, prev = [], cur = [], i, j;
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+      cur[0] = i;
+      for (j = 1; j <= n; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
+          prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+      }
+      for (j = 0; j <= n; j++) prev[j] = cur[j];
+    }
+    return prev[n];
+  }
+
+  // True when every comma-part is the same word said twice or in a close
+  // variant form: "generates, generates", "indentified, identified",
+  // "underlines / underlined". A genuine two-item list ("furniture,
+  // information") has unrelated parts and returns false, so it still needs both.
+  function sameWordVariants(parts) {
+    for (var i = 1; i < parts.length; i++) {
+      var a = parts[0], b = parts[i];
+      var lcp = 0;
+      while (lcp < a.length && lcp < b.length && a.charAt(lcp) === b.charAt(lcp)) lcp++;
+      var near = lcp >= 4 || editDistance(a, b) <= 2;
+      if (!near) return false;
+    }
+    return true;
+  }
+
   // Accepts the book answer and, where the source has one, the gap-only form:
   // "He’s tying / He is tying" also accepts "’s tying".
   function isMatch(input, it) {
@@ -321,7 +433,53 @@
     if (!typed) return false;
     if (buildVariants(it.answer)[typed]) return true;
     if (it.blank && buildVariants(it.blank)[typed]) return true;
-    return matchesAsSet(input, it.answer);
+    if (matchesAsSet(input, it.answer)) return true;
+    // A "same word" pair answer ("generates, generates"; "indentified,
+    // identified"; "confirmed, confirms / confirmed") should accept the one
+    // word on its own — but only when the parts really are variants of one
+    // word, not a list of two different ones.
+    var parts = listParts(it.answer);
+    if (parts.length >= 2 && sameWordVariants(parts)) {
+      var forms = Object.create(null);
+      String(it.answer).split(/\s*[,;]\s*|\s+and\s+|\s*&\s*/i).forEach(function (p) {
+        splitAlternatives(p).forEach(function (alt) { var k = norm(alt); if (k) forms[k] = 1; });
+      });
+      if (forms[typed]) return true;
+    }
+    return false;
+  }
+
+  /* ================= hints ================= */
+
+  // What a hint is built from: the first accepted alternative, with the
+  // optional "(any)" brackets dropped — the shortest thing that would pass.
+  function hintBase(answer) {
+    var first = splitAlternatives(String(answer == null ? '' : answer))[0] || '';
+    return first.replace(/\([^()]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  // Level 1 shows the shape ("•••• ••"), level 2 opens the first letter of each
+  // word ("t••• ••"). Level 3 is the answer itself and is printed by the caller.
+  function hintMask(answer, level) {
+    var base = hintBase(answer);
+    if (!base) return '';
+    return base.split(/\s+/).map(function (w) {
+      var out = '';
+      for (var i = 0; i < w.length; i++) {
+        var ch = w.charAt(i);
+        var letter = /[\p{L}\p{N}]/u.test(ch);
+        out += (!letter || (level >= 2 && i === 0)) ? ch : '•';
+      }
+      return out;
+    }).join(' ');
+  }
+
+  function hintLetters(answer) {
+    return hintBase(answer).replace(/[^\p{L}\p{N}]/gu, '').length;
+  }
+
+  function hasHint(it) {
+    return isAuto(it) && !!hintBase(it.answer);
   }
 
   /* ================= item classification ================= */
@@ -336,6 +494,57 @@
   // Counted towards progress — must match tracked() in tools/build_data.py.
   function isTracked(sub, it) {
     return (sub.type === 'items' || sub.type === 'text') && !isExample(it);
+  }
+
+  /* ================= recording a verdict ================= */
+
+  // The one place a verdict becomes a stored record: mastery, the spaced-review
+  // ladder and the daily counter all live here, so the unit page, the mistakes
+  // page and the drill session can never drift apart.
+  function applyAnswer(key, correct, opts) {
+    opts = opts || {};
+    var r = ensure(key);
+    var now = Date.now();
+    var today = todayKey(now);
+    if (opts.val != null) r.val = opts.val;
+    r.self = !!opts.self;
+    r.ts = now;                                   // when this answer happened
+    r.hist = (r.hist || '').slice(-9) + (correct ? '1' : '0');   // last 10 tries
+    if (correct && opts.hinted) {
+      // Answered with a hint: it was recognition, not recall. It counts as
+      // practice, but it buys neither the mastery streak nor a long holiday
+      // from review — the question comes back tomorrow.
+      r.hinted = true;
+      r.streak = 0;
+      r.last = 'correct';
+      r.mastered = false;
+      r.ivl = 1;
+      r.due = now + 864e5;
+    } else if (correct) {
+      r.hinted = false;
+      r.streak = (r.streak || 0) + 1;
+      r.last = 'correct';
+      // distinct days answered correctly — mastery should survive a night,
+      // not just three taps in one minute (AUDIT §5.2). Old records with no
+      // `cd` keep whatever `mastered` they already earned.
+      if (r.cdDay !== today) { r.cd = (r.cd || 0) + 1; r.cdDay = today; }
+      if (r.streak >= MASTER_STREAK && (r.cd || 1) >= 2) r.mastered = true;
+      // spaced review: schedule the next due date on a widening ladder.
+      var ivl = REVIEW_INTERVALS[Math.min(r.streak - 1, REVIEW_INTERVALS.length - 1)];
+      r.ivl = ivl;
+      r.due = now + ivl * 864e5;
+    } else {
+      r.hinted = false;
+      r.streak = 0;
+      r.wrong = (r.wrong || 0) + 1;
+      r.last = 'wrong';
+      r.mastered = false;
+      r.ivl = 0;
+      r.due = now;                                // wrong -> review straight away
+    }
+    bumpDaily();
+    save();
+    return r;
   }
 
   function unitStats(bookId, u) {
@@ -413,6 +622,29 @@
       correct: Math.min(correct, total),
       mastered: 0, review: 0
     };
+  }
+
+  // Outstanding mistakes for a book, from the stored records alone — so the
+  // library page can badge every book without loading all six data files.
+  function bookMistakes(id) {
+    var prefix = id + '|', n = 0;
+    for (var k in state.items) {
+      if (k.lastIndexOf(prefix, 0) !== 0) continue;
+      var r = state.items[k];
+      if (r && r.wrong > 0 && !r.mastered) n++;
+    }
+    return n;
+  }
+
+  // Total answers over the last `days` calendar days (today back), from the
+  // per-day activity log.
+  function lastNDaysCount(days) {
+    var total = 0, d = new Date();
+    for (var i = 0; i < days; i++) {
+      total += state.daily[todayKey(d.getTime())] || 0;
+      d.setDate(d.getDate() - 1);
+    }
+    return total;
   }
 
   /* ================= tiny DOM helpers ================= */
@@ -510,9 +742,14 @@
     var units = 0, items = 0;
     for (var id in INDEX) { units += INDEX[id].units; items += INDEX[id].tracked; }
 
-    var done = 0;
-    BOOKS.forEach(function (b) { done += roughBookStats(b.id).done; });
+    var done = 0, correct = 0, mistakes = 0;
+    BOOKS.forEach(function (b) {
+      var st = roughBookStats(b.id);
+      done += st.done; correct += st.correct;
+      mistakes += bookMistakes(b.id);
+    });
 
+    document.getElementById('hsBooks').textContent = num(BOOKS.length);
     document.getElementById('hsUnits').textContent = units ? num(units) : '—';
     document.getElementById('hsItems').textContent = items ? num(items) : '—';
     document.getElementById('hsDone').textContent = num(done);
@@ -530,8 +767,62 @@
       resume.hidden = true;
     }
 
+    // The one button that always has something to do: whatever is wrong or due
+    // across every book, mixed into one run. Counted from the stored records
+    // alone, so no data file has to be downloaded to show it.
+    var drillBox = document.getElementById('heroDrill');
+    if (drillBox) {
+      clear(drillBox);
+      var dueAll = dueAllCount();
+      var dcta = el('a', 'drill-cta');
+      dcta.href = '#/drill';
+      dcta.appendChild(el('span', 'dc-ico', '⚡'));
+      var dtxt = el('span', 'dc-txt');
+      dtxt.appendChild(el('b', null, t('drill.cta')));
+      dtxt.appendChild(el('span', null,
+        dueAll ? t('drill.ctaSub', { n: num(dueAll) }) : t('drill.ctaSubNew')));
+      dcta.appendChild(dtxt);
+      dcta.appendChild(el('span', 'dc-go', '→'));
+      drillBox.appendChild(dcta);
+    }
+
+    // Right-hand sidebar: the month calendar always, plus a cross-book snapshot
+    // once there is progress. Books stay on the left, so the page fills its
+    // width instead of leaving big empty margins.
+    var aside = document.getElementById('asideDyn');
+    if (aside) {
+      clear(aside);
+      if (done > 0) {
+        aside.appendChild(el('div', 'aside-title', t('home.snapshot')));
+        var ovCards = el('div', 'ov-cards');
+        function ovCard(k, v, sub, cls) {
+          var c = el('div', 'ov-card' + (cls ? ' ' + cls : ''));
+          c.appendChild(el('div', 'ov-v', v));
+          c.appendChild(el('div', 'ov-k', k));
+          if (sub != null) c.appendChild(el('div', 'ov-sub', sub));
+          ovCards.appendChild(c);
+        }
+        var acc = done ? Math.round(correct / done * 100) : 0;
+        var streak = dayStreak();
+        ovCard(t('home.ovAccuracy'), acc + '%', correct + ' / ' + done);
+        ovCard(t('home.ovToday'), num(state.daily[todayKey()] || 0),
+          streak ? t('stats.streak', { n: streak }) : t('stats.streakNone'), streak ? 'hot' : '');
+        ovCard(t('home.ovWeek'), num(lastNDaysCount(7)), t('home.ovWeekSub'));
+        ovCard(t('home.ovMistakes'), num(mistakes), null, mistakes ? 'bad' : '');
+        aside.appendChild(ovCards);
+      }
+      aside.appendChild(el('div', 'aside-title', t('stats.activity')));
+      aside.appendChild(buildMonthCalendar());
+    }
+
     clear(bookGrid);
-    ['grammar', 'vocab'].forEach(function (kind) {
+    // Group order follows books.js, so adding a book with a new kind can never
+    // drop it off this page silently.
+    var kinds = [];
+    BOOKS.forEach(function (b) {
+      if (kinds.indexOf(b.kind) < 0) kinds.push(b.kind);
+    });
+    kinds.forEach(function (kind) {
       var list = BOOKS.filter(function (b) { return b.kind === kind; });
       if (!list.length) return;
       bookGrid.appendChild(el('div', 'lib-group', t('lib.group.' + kind)));
@@ -539,6 +830,7 @@
       list.forEach(function (b) { grid.appendChild(bookCard(b)); });
       bookGrid.appendChild(grid);
     });
+    paintStartBand();
     window.scrollTo(0, 0);
   }
 
@@ -581,6 +873,19 @@
     card.appendChild(el('div', 'bc-title', b.title));
     card.appendChild(el('div', 'bc-author', b.author));
     card.appendChild(el('div', 'bc-blurb', b.blurb[state.lang] || b.blurb.kk));
+
+    // How many mistakes are still waiting in this book — the one number a
+    // learner deciding "which book needs me" actually wants. It sits above the
+    // progress bar, in the blurb's half of the card: the footer is the card's
+    // one fixed row, and a line hanging below it left every card a different
+    // height.
+    var miss = bookMistakes(b.id);
+    if (miss > 0) {
+      var mline = el('div', 'bc-miss');
+      mline.appendChild(el('span', 'bc-miss-n', String(miss)));
+      mline.appendChild(document.createTextNode(' ' + t('card.mistakes')));
+      card.appendChild(mline);
+    }
 
     var foot = el('div', 'bc-foot');
     foot.appendChild(el('span', null, st.done ? st.done + '/' + st.total : t('card.notStarted')));
@@ -667,6 +972,220 @@
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
 
+  /* ================= placement quiz ("where do I start?") ================= */
+
+  var placeModal = document.getElementById('placeModal');
+  var placeBody = document.getElementById('placeBody');
+  var placeReturnFocus = null;
+  var placeState = null;      // { i, answers[] } while a run is in progress
+  var placeRepaint = null;    // re-renders the current screen (for a language switch)
+
+  // A raw score (correct answers) maps to exactly one track band.
+  function placeTrack(score) {
+    var tr = (window.PLACEMENT && PLACEMENT.tracks) || [];
+    for (var i = 0; i < tr.length; i++) {
+      if (score >= tr[i].min && score <= tr[i].max) return tr[i];
+    }
+    return tr[tr.length - 1] || null;
+  }
+
+  function openPlaceModal() {
+    if (!placeModal) return;
+    placeReturnFocus = document.activeElement;
+    placeState = null;
+    renderPlaceIntro();
+    placeModal.hidden = false;
+    var c = placeModal.querySelector('.modal-close');
+    if (c) c.focus();
+  }
+  function closePlaceModal() {
+    if (!placeModal || placeModal.hidden) return;
+    placeModal.hidden = true;
+    placeRepaint = null;
+    if (placeReturnFocus && placeReturnFocus.focus) placeReturnFocus.focus();
+    placeReturnFocus = null;
+  }
+
+  function renderPlaceIntro() {
+    placeRepaint = renderPlaceIntro;
+    clear(placeBody);
+    var wrap = el('div', 'plc-intro');
+    wrap.appendChild(el('h3', 'plc-h', t('plc.introH')));
+    wrap.appendChild(el('p', 'plc-p', t('plc.introP')));
+    var start = el('button', 'plc-primary', t('plc.start'));
+    start.type = 'button';
+    start.addEventListener('click', function () {
+      placeState = { i: 0, answers: [] };
+      renderPlaceQuestion();
+    });
+    wrap.appendChild(start);
+    placeBody.appendChild(wrap);
+  }
+
+  function renderPlaceQuestion() {
+    placeRepaint = renderPlaceQuestion;
+    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
+    if (!placeState) { renderPlaceIntro(); return; }
+    var i = placeState.i;
+    clear(placeBody);
+
+    var head = el('div', 'plc-qhead');
+    head.appendChild(el('span', 'plc-count', t('plc.progress', { i: i + 1, n: qs.length })));
+    var bar = el('div', 'plc-bar');
+    var fill = el('i');
+    fill.style.width = Math.round(i / qs.length * 100) + '%';
+    bar.appendChild(fill);
+    head.appendChild(bar);
+    placeBody.appendChild(head);
+
+    var q = qs[i];
+    placeBody.appendChild(el('p', 'plc-pick', t('plc.pick')));
+    placeBody.appendChild(el('p', 'plc-q', q.q));
+
+    var opts = el('div', 'plc-opts');
+    q.options.forEach(function (opt, idx) {
+      var b = el('button', 'plc-opt', opt);
+      b.type = 'button';
+      b.addEventListener('click', function () { answerPlace(idx); });
+      opts.appendChild(b);
+    });
+    placeBody.appendChild(opts);
+
+    var skip = el('button', 'plc-skip', t('plc.dontKnow'));
+    skip.type = 'button';
+    skip.addEventListener('click', function () { answerPlace(-1); });
+    placeBody.appendChild(skip);
+
+    var first = opts.querySelector('.plc-opt');
+    if (first) first.focus();
+  }
+
+  function answerPlace(idx) {
+    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
+    if (!placeState) return;
+    placeState.answers.push(idx);
+    if (placeState.i < qs.length - 1) { placeState.i++; renderPlaceQuestion(); }
+    else finishPlace();
+  }
+
+  function finishPlace() {
+    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
+    var score = 0;
+    placeState.answers.forEach(function (a, i) { if (qs[i] && a === qs[i].a) score++; });
+    var track = placeTrack(score);
+    state.placement = {
+      track: track ? track.id : null,
+      band: track ? track.band : '',
+      score: score, ts: Date.now()
+    };
+    save();
+    paintStartBand();
+    renderPlaceResult(score, track);
+  }
+
+  // A recommended-book card inside the result — links into the book and closes.
+  function placeRecCard(b) {
+    var a = el('a', 'plc-rec');
+    a.href = '#/b/' + b.id;
+    a.style.setProperty('--hue', b.hue);
+    a.appendChild(el('span', 'plc-rec-kind', t('lib.group.' + b.kind)));
+    a.appendChild(el('span', 'plc-rec-title', b.title));
+    a.appendChild(el('span', 'plc-rec-lvl', b.level));
+    a.appendChild(el('span', 'plc-rec-blurb', b.blurb[state.lang] || b.blurb.kk));
+    a.appendChild(el('span', 'plc-rec-go', t('plc.openBook')));
+    a.addEventListener('click', closePlaceModal);
+    return a;
+  }
+
+  function renderPlaceResult(score, track) {
+    placeRepaint = function () { renderPlaceResult(score, track); };
+    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
+    clear(placeBody);
+    var res = el('div', 'plc-result');
+
+    res.appendChild(el('h3', 'plc-resh', t('plc.resultH', { band: track ? track.band : '—' })));
+    res.appendChild(el('p', 'plc-scoreline', t('plc.score', { c: score, n: qs.length })));
+    if (track) res.appendChild(el('p', 'plc-why', t('plc.track.' + track.id)));
+
+    res.appendChild(el('div', 'plc-rec-hd', t('plc.startWith')));
+    var recs = el('div', 'plc-recs');
+    [track && track.grammar, track && track.vocab].forEach(function (id) {
+      var b = id && bookMeta(id);
+      if (b) recs.appendChild(placeRecCard(b));
+    });
+    res.appendChild(recs);
+
+    var goals = (window.PLACEMENT && PLACEMENT.goals) || [];
+    if (goals.length) {
+      res.appendChild(el('div', 'plc-goals-hd', t('plc.goalsH')));
+      var grow = el('div', 'plc-goals');
+      goals.forEach(function (g) {
+        var b = bookMeta(g.book);
+        if (!b) return;
+        var a = el('a', 'plc-goal');
+        a.href = '#/b/' + b.id;
+        a.style.setProperty('--hue', b.hue);
+        a.appendChild(el('b', null, t('plc.goal.' + g.id)));
+        a.appendChild(el('span', null, b.title + ' · ' + b.level));
+        a.addEventListener('click', closePlaceModal);
+        grow.appendChild(a);
+      });
+      res.appendChild(grow);
+    }
+
+    var foot = el('div', 'plc-resfoot');
+    var retake = el('button', 'plc-retake', t('plc.retake'));
+    retake.type = 'button';
+    retake.addEventListener('click', function () { placeState = null; renderPlaceIntro(); });
+    foot.appendChild(retake);
+    var lib = el('button', 'plc-tolib', t('plc.toLib'));
+    lib.type = 'button';
+    lib.addEventListener('click', closePlaceModal);
+    foot.appendChild(lib);
+    res.appendChild(foot);
+
+    placeBody.appendChild(res);
+    var r0 = placeBody.querySelector('.plc-recs a');
+    if (r0) r0.focus();
+  }
+
+  // Home "where do I start?" band: once the quiz has been taken, swap the
+  // generic prompt for the learner's level and the book we point them at.
+  function paintStartBand() {
+    var sub = document.getElementById('homeStartSub');
+    var band = document.getElementById('homeStart');
+    if (!sub || !band) return;
+    var p = state.placement;
+    var tr = p && p.track ? placeTrack(p.score) : null;
+    var g = tr && bookMeta(tr.grammar);
+    if (p && p.band && g) {
+      sub.textContent = t('plc.resultH', { band: p.band }) + ' · ' +
+        t('plc.homeRec', { book: g.title }) + ' · ' + t('plc.again');
+      band.classList.add('taken');
+    } else {
+      sub.textContent = t('plc.homeSub');
+      band.classList.remove('taken');
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    if (e.target.closest('[data-open-place]')) { openPlaceModal(); return; }
+    if (e.target.closest('[data-close-place]')) closePlaceModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!placeModal || placeModal.hidden) return;
+    if (e.key === 'Escape') { closePlaceModal(); return; }
+    if (e.key !== 'Tab') return;
+    var f = placeModal.querySelectorAll(
+      'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
   /* ================= sidebar ================= */
 
   var book = null;         // currently open book
@@ -736,6 +1255,9 @@
     document.getElementById('tabUnits').href = '#/b/' + bid;
     document.getElementById('tabErrors').href = '#/b/' + bid + '/errors';
     document.getElementById('tabStats').href = '#/b/' + bid + '/stats';
+    // ⚡ inside a book means "practise this book"; the library's button is the
+    // cross-book one.
+    document.getElementById('tabDrill').href = '#/drill/' + bid;
   }
 
   /* ================= resizable panels ================= */
@@ -926,21 +1448,33 @@
     }
 
     /* --- question text --- */
-    var q = el('div', 'q');
-    if (it.question) {
-      q.textContent = it.question;
-    } else if (sub.type === 'text') {
-      q.className = 'q none';
-      q.textContent = t('row.gap', { n: it.n });
-    } else {
-      q.className = 'q none';
-      q.textContent = t('row.fromPdf', { n: it.n });
+    // An answer-sheet book has no question text by design, and its number is
+    // already in the column to the left, so "see the question in the PDF" on
+    // every one of forty rows would only be noise.
+    var sheet = !!(book.meta && book.meta.answerSheet);
+    var q = null;
+    if (it.question || !sheet) {
+      q = el('div', 'q');
+      if (it.question) {
+        q.textContent = it.question;
+      } else if (sub.type === 'text') {
+        q.className = 'q none';
+        q.textContent = t('row.gap', { n: it.n });
+      } else {
+        q.className = 'q none';
+        q.textContent = t('row.fromPdf', { n: it.n });
+      }
+      if (it.question) {
+        var qSay = speakBtn(function () { return it.question; });
+        if (qSay) q.appendChild(qSay);
+      }
+      rbody.appendChild(q);
     }
     if (isManual(it)) {
       var tg = el('span', 'tag self', t('row.self'));
-      q.insertBefore(tg, q.firstChild);
+      if (q) q.insertBefore(tg, q.firstChild);
+      else rbody.appendChild(tg);
     }
-    rbody.appendChild(q);
 
     /* --- input + buttons --- */
     var line = el('div', 'answer-line');
@@ -969,6 +1503,31 @@
     var feedback = el('div', 'feedback');
     feedback.setAttribute('aria-live', 'polite');
 
+    // Hint ladder, per attempt: shape -> first letters -> the answer. Nothing
+    // is stored until an answer is actually given; `hintLevel` then travels
+    // into applyAnswer so a hinted "correct" cannot buy mastery.
+    var hintLevel = 0;
+    var hintBox = el('div', 'hint');
+    hintBox.hidden = true;
+
+    function showHint() {
+      if (hintLevel >= 3) return;
+      hintLevel++;
+      clear(hintBox);
+      hintBox.hidden = false;
+      hintBox.appendChild(el('span', 'hint-ico', '💡'));
+      if (hintLevel === 1) {
+        hintBox.appendChild(el('code', 'hint-mask', hintMask(it.answer, 1)));
+        hintBox.appendChild(el('span', 'hint-meta', t('hint.letters', { n: hintLetters(it.answer) })));
+      } else if (hintLevel === 2) {
+        hintBox.appendChild(el('code', 'hint-mask', hintMask(it.answer, 2)));
+      } else {
+        hintBox.appendChild(el('b', 'hint-full', hintBase(it.answer)));
+      }
+      if (hintBtn) hintBtn.textContent = hintLevel >= 3 ? t('hint.done') : t('hint.more');
+      input.focus();
+    }
+
     function paint() {
       var r = rec(key);
       row.classList.remove('correct', 'wrong', 'mastered');
@@ -995,9 +1554,13 @@
         k.appendChild(document.createTextNode(t('row.bookKey')));
         var kb = el('b'); kb.textContent = it.answer;
         k.appendChild(kb);
+        // Hearing the right answer is half the point of getting it wrong.
+        var kSay = speakBtn(function () { return hintBase(it.answer) || it.answer; });
+        if (kSay) k.appendChild(kSay);
         feedback.appendChild(k);
       }
       if (r.self) feedback.appendChild(el('span', 'key', t('row.selfMarked')));
+      if (r.hinted) feedback.appendChild(el('span', 'key hinted', t('hint.used')));
 
       if (r.last === 'wrong') {
         var ov = el('button', 'btn small ok', t('row.override'));
@@ -1008,35 +1571,10 @@
 
     function mark(correct, self) {
       reveal = true;                 // an answer was given — feedback may show
-      var r = ensure(key);
-      var now = Date.now();
-      var today = todayKey(now);
-      r.val = input.value;
-      r.self = !!self;
-      r.ts = now;                                   // when this answer happened
-      r.hist = (r.hist || '').slice(-9) + (correct ? '1' : '0');   // last 10 tries
-      if (correct) {
-        r.streak = (r.streak || 0) + 1;
-        r.last = 'correct';
-        // distinct days answered correctly — mastery should survive a night,
-        // not just three taps in one minute (AUDIT §5.2). Old records with no
-        // `cd` keep whatever `mastered` they already earned.
-        if (r.cdDay !== today) { r.cd = (r.cd || 0) + 1; r.cdDay = today; }
-        if (r.streak >= MASTER_STREAK && (r.cd || 1) >= 2) r.mastered = true;
-        // spaced review: schedule the next due date on a widening ladder.
-        var ivl = REVIEW_INTERVALS[Math.min(r.streak - 1, REVIEW_INTERVALS.length - 1)];
-        r.ivl = ivl;
-        r.due = now + ivl * 864e5;
-      } else {
-        r.streak = 0;
-        r.wrong = (r.wrong || 0) + 1;
-        r.last = 'wrong';
-        r.mastered = false;
-        r.ivl = 0;
-        r.due = now;                                // wrong -> review straight away
-      }
-      bumpDaily();
-      save();
+      applyAnswer(key, correct, { val: input.value, self: self, hinted: hintLevel > 0 });
+      hintLevel = 0;
+      hintBox.hidden = true;
+      if (hintBtn) hintBtn.textContent = t('hint.btn');
       paint();
       afterChange();
     }
@@ -1050,6 +1588,7 @@
     }
     row._check = check;
 
+    var hintBtn = null;
     if (isManual(it)) {
       var okB = el('button', 'btn small ok', t('btn.correct'));
       var badB = el('button', 'btn small bad', t('btn.wrong'));
@@ -1061,6 +1600,14 @@
       var chk = el('button', 'btn small primary', t('btn.check'));
       chk.addEventListener('click', function () { check(); });
       line.appendChild(chk);
+      // Stuck is better than quitting: three steps, each one giving away a
+      // little more than the last.
+      if (hasHint(it)) {
+        hintBtn = el('button', 'btn small hint-btn', t('hint.btn'));
+        hintBtn.title = t('hint.title');
+        hintBtn.addEventListener('click', showHint);
+        line.appendChild(hintBtn);
+      }
     }
 
     input.addEventListener('input', function () {
@@ -1075,6 +1622,7 @@
     });
 
     rbody.appendChild(line);
+    rbody.appendChild(hintBox);
     rbody.appendChild(feedback);
     paint();
     return row;
@@ -1102,10 +1650,15 @@
 
     var head = el('div', 'sub-head');
     head.appendChild(el('span', 'sub-num', sub.number));
-    head.appendChild(el('span', 'type-tag', t('type.' + sub.type)));
+    // The IELTS books name the task the exam calls it — "TRUE / FALSE / NOT
+    // GIVEN" rather than the engine's own "exercise".
+    head.appendChild(el('span', 'type-tag', t('type.' + (sub.kind || sub.type))));
     box.appendChild(head);
 
     if (sub.instructions) box.appendChild(el('div', 'instructions', sub.instructions));
+
+    // the heading printed above a note or table, e.g. "Reclaiming urban rivers"
+    if (sub.title) box.appendChild(el('div', 'sub-title', sub.title));
 
     // gap-fill passage: shown once, the gaps are numbered in the text
     if (sub.passage) box.appendChild(el('div', 'passage', sub.passage));
@@ -1254,6 +1807,85 @@
     return box;
   }
 
+  /* ================= IELTS: audio and reading passages ================= */
+
+  /* The recording for one Listening part, shown directly above that part's
+     questions. A part is sometimes cut into two files, so the player takes a
+     list and moves to the next when one ends — otherwise the reader would have
+     to press play again mid-question. */
+  function buildAudio(p) {
+    var box = el('div', 'ielts-audio');
+    var head = el('div', 'ia-head');
+    head.appendChild(el('span', 'ia-label', t('ielts.audio')));
+    head.appendChild(el('b', null, t('ielts.part', { n: p.part })));
+    head.appendChild(el('span', 'muted', t('ielts.questions', { a: p.from, b: p.to })));
+    box.appendChild(head);
+
+    if (!p.files || !p.files.length) {
+      box.appendChild(el('div', 'note', t('ielts.noAudio')));
+      return box;
+    }
+
+    var at = 0;
+    var audio = document.createElement('audio');
+    audio.controls = true;
+    audio.preload = 'none';
+    audio.src = p.files[0];
+    audio.addEventListener('ended', function () {
+      if (at + 1 >= p.files.length) return;
+      at++;
+      audio.src = p.files[at];
+      audio.play().catch(function () { /* autoplay blocked — reader presses play */ });
+    });
+    box.appendChild(audio);
+    // A missing file fails silently on <audio>, so say so rather than leaving
+    // a player that does nothing when pressed.
+    audio.addEventListener('error', function () {
+      if (box.querySelector('.note')) return;
+      box.appendChild(el('div', 'note', t('ielts.noAudio')));
+    });
+    return box;
+  }
+
+  /* A unit's audio as a labelled list of players — one per track, each loaded
+     only when pressed. Used by Collins Listening, where the book prints the
+     track number ("CD1 · 03") beside each exercise. */
+  function buildTrackList(tracks) {
+    var box = el('div', 'ielts-audio');
+    box.appendChild(el('div', 'ia-label', t('ielts.audio')));
+    var list = el('div', 'track-list');
+    tracks.forEach(function (tr) {
+      var row = el('div', 'track');
+      row.appendChild(el('span', 'track-label', tr.label));
+      var audio = document.createElement('audio');
+      audio.controls = true;
+      audio.preload = 'none';
+      audio.src = tr.file;
+      row.appendChild(audio);
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    return box;
+  }
+
+  /* One Reading passage, above the questions asked about it. Collapsible: it
+     is long, and once it has been read the reader wants the boxes, not to
+     scroll past the whole text again. */
+  function buildPassage(p) {
+    var wrap = el('details', 'ip');
+    wrap.open = true;
+    var sum = el('summary', 'ip-head');
+    sum.appendChild(el('span', 'ip-num', t('ielts.passage', { n: p.passage })));
+    sum.appendChild(el('b', 'ip-title', p.title || ''));
+    sum.appendChild(el('span', 'muted', t('ielts.questions', { a: p.from, b: p.to })));
+    wrap.appendChild(sum);
+    var body = el('div', 'ip-body');
+    if (p.subtitle) body.appendChild(el('p', 'ip-sub', p.subtitle));
+    (p.text || []).forEach(function (para) { body.appendChild(el('p', null, para)); });
+    wrap.appendChild(body);
+    return wrap;
+  }
+
   function renderUnit(no) {
     var u = null;
     for (var i = 0; i < book.units.length; i++) {
@@ -1268,7 +1900,10 @@
     clear(main);
 
     var head = el('div', 'page-head');
-    head.appendChild(el('h1', null, 'Unit ' + u.unit + ' — ' + unitTitle(u)));
+    // An IELTS unit is a test section, and its title already says so
+    // ("Test 1 — Listening"); "Unit 1 — " in front of that reads as noise.
+    head.appendChild(el('h1', null,
+      u.skill ? unitTitle(u) : 'Unit ' + u.unit + ' — ' + unitTitle(u)));
 
     var chips = el('div', 'chips');
     if (u.pdfIntroPage != null) {
@@ -1326,12 +1961,25 @@
     var warn = buildWarning();
     if (warn) main.appendChild(warn);
 
+    // Collins Listening cues each exercise with a track number printed in the
+    // book ("CD1 · 03"), so the whole unit's tracks sit at the top as a labelled
+    // list of players and the learner picks the one the exercise names.
+    if (u.audio && u.audio.tracks && u.audio.tracks.length) {
+      main.appendChild(buildTrackList(u.audio.tracks));
+    }
+
     if (!(u.subExercises && u.subExercises.length)) {
       // A few Essential Grammar units had no answers in the scan at all; keep
       // the unit reachable (title + PDF) rather than showing a blank page.
       main.appendChild(el('div', 'note', t('sub.doInPdf')));
     }
-    (u.subExercises || []).forEach(function (sub) { main.appendChild(buildSub(u.unit, sub)); });
+    (u.subExercises || []).forEach(function (sub) {
+      // An IELTS group opens the part it belongs to, so its recording or its
+      // reading passage goes in front of it rather than at the top of the page.
+      if (sub.audio) main.appendChild(buildAudio(sub.audio));
+      if (sub.reading) main.appendChild(buildPassage(sub.reading));
+      main.appendChild(buildSub(u.unit, sub));
+    });
 
     /* footer */
     var foot = el('div', 'unit-foot');
@@ -1379,7 +2027,7 @@
     }
     afterChange = refresh;
     refresh();
-    window.scrollTo(0, 0);
+    focusPending();
   }
 
   function renderNotFound(no) {
@@ -1412,6 +2060,14 @@
     }
 
     head.appendChild(el('div', 'instructions', t('err.intro', { n: MASTER_STREAK })));
+
+    // Working through a long list by hand is a chore; one button turns it into
+    // a timed-feeling run instead.
+    var runBar = el('div', 'sub-actions err-run');
+    var run = el('a', 'btn primary', t('drill.startHere'));
+    run.href = '#/drill/' + book.id;
+    runBar.appendChild(run);
+    main.appendChild(runBar);
 
     groups.forEach(function (g) {
       var box = el('div', 'sub err-group');
@@ -1520,15 +2176,18 @@
       var banner = el('div', 'due-banner');
       banner.appendChild(el('span', 'due-n', num(due)));
       banner.appendChild(el('span', null, ' ' + t('stats.dueText')));
+      var goDrill = el('a', 'btn small primary', t('drill.startHere'));
+      goDrill.href = '#/drill/' + book.id;
+      banner.appendChild(goDrill);
       var go = el('a', 'btn small', t('stats.dueGo'));
       go.href = '#/b/' + book.id + '/errors';
       banner.appendChild(go);
       main.appendChild(banner);
     }
 
-    /* ---- 30-day activity sparkline ---- */
-    main.appendChild(el('div', 'section-title', t('stats.last30')));
-    main.appendChild(buildSparkline(30));
+    /* ---- monthly activity calendar ---- */
+    main.appendChild(el('div', 'section-title', t('stats.activity')));
+    main.appendChild(buildMonthCalendar());
 
     /* ---- section breakdown (books whose Contents we parsed) ---- */
     var secBox = buildSectionBreakdown(rows);
@@ -1572,26 +2231,128 @@
     window.scrollTo(0, 0);
   }
 
-  // Tiny inline bar chart of the last `days` days of activity.
-  function buildSparkline(days) {
-    var wrap = el('div', 'spark');
-    var vals = [];
-    var d = new Date();
-    d.setDate(d.getDate() - (days - 1));
-    for (var i = 0; i < days; i++) {
-      vals.push({ k: todayKey(d.getTime()), v: state.daily[todayKey(d.getTime())] || 0 });
-      d.setDate(d.getDate() + 1);
+  // Colour bucket for a day's answer count — a GitHub-style five-step scale.
+  function activityLevel(v) {
+    if (!v) return 0;
+    if (v <= 2) return 1;
+    if (v <= 5) return 2;
+    if (v <= 10) return 3;
+    return 4;
+  }
+
+  function monthLabel(d) {
+    try { return d.toLocaleDateString(t('locale'), { month: 'long', year: 'numeric' }); }
+    catch (e) { return (d.getMonth() + 1) + '/' + d.getFullYear(); }
+  }
+
+  // One month of activity as a calendar heat-map. Arrows or a horizontal swipe
+  // move between months; the future is blocked past the current month.
+  function buildMonthCalendar() {
+    var view = new Date();
+    view.setDate(1);
+    var wrap = el('div', 'cal');
+
+    function atCurrentMonth() {
+      var now = new Date();
+      return view.getFullYear() === now.getFullYear() && view.getMonth() === now.getMonth();
     }
-    var max = vals.reduce(function (m, x) { return Math.max(m, x.v); }, 0) || 1;
-    vals.forEach(function (x) {
-      var col = el('div', 'spark-col' + (x.v ? '' : ' empty'));
-      var bar = el('i');
-      bar.style.height = (x.v ? Math.max(8, Math.round(x.v / max * 100)) : 2) + '%';
-      col.title = x.k + ' · ' + x.v;
-      col.setAttribute('aria-label', x.k + ': ' + x.v);
-      col.appendChild(bar);
-      wrap.appendChild(col);
-    });
+    function step(delta) {
+      if (delta > 0 && atCurrentMonth()) return;   // no future months
+      view.setMonth(view.getMonth() + delta);
+      render();
+    }
+
+    function render() {
+      clear(wrap);
+      var y = view.getFullYear(), mo = view.getMonth();
+
+      var head = el('div', 'cal-head');
+      var prev = el('button', 'cal-nav', '‹');
+      prev.type = 'button';
+      prev.setAttribute('aria-label', t('cal.prev'));
+      prev.addEventListener('click', function () { step(-1); });
+      var next = el('button', 'cal-nav', '›');
+      next.type = 'button';
+      next.setAttribute('aria-label', t('cal.next'));
+      next.disabled = atCurrentMonth();
+      next.addEventListener('click', function () { step(1); });
+      head.appendChild(prev);
+      head.appendChild(el('div', 'cal-title', monthLabel(view)));
+      head.appendChild(next);
+      wrap.appendChild(head);
+
+      var wl = el('div', 'cal-week');
+      t('cal.days').split(',').forEach(function (d) { wl.appendChild(el('span', null, d)); });
+      wrap.appendChild(wl);
+
+      var grid = el('div', 'cal-grid');
+
+      // One floating tooltip, shown just above whichever day the pointer rests
+      // on for a moment (or a day is tapped / focused on touch + keyboard).
+      var tip = el('div', 'cal-tip');
+      tip.hidden = true;
+      var hoverTimer = null;
+      function dayText(ddate, dv) {
+        var label;
+        try { label = ddate.toLocaleDateString(t('locale'), { day: 'numeric', month: 'long' }); }
+        catch (e) { label = String(ddate.getDate()); }
+        return t('cal.dayCount', { date: label, n: dv });
+      }
+      function showTip(dcell, ddate, dv) {
+        tip.textContent = dayText(ddate, dv);
+        tip.style.left = (dcell.offsetLeft + dcell.offsetWidth / 2) + 'px';
+        tip.style.top = (dcell.offsetTop - 6) + 'px';
+        tip.hidden = false;
+      }
+      function hideTip() { clearTimeout(hoverTimer); tip.hidden = true; }
+
+      var lead = (new Date(y, mo, 1).getDay() + 6) % 7;   // Monday-first offset
+      for (var i = 0; i < lead; i++) grid.appendChild(el('span', 'cal-cell blank'));
+      var daysInMonth = new Date(y, mo + 1, 0).getDate();
+      var total = 0;
+      for (var d = 1; d <= daysInMonth; d++) {
+        var date = new Date(y, mo, d);
+        var key = todayKey(date.getTime());
+        var v = state.daily[key] || 0;
+        total += v;
+        var cell = el('span', 'cal-cell cal-l' + activityLevel(v), String(d));
+        if (key === todayKey()) cell.classList.add('today');
+        cell.setAttribute('aria-label', key + ': ' + v);
+        (function (dv, ddate, dcell) {
+          dcell.setAttribute('tabindex', '0');
+          dcell.addEventListener('mouseenter', function () {
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(function () { showTip(dcell, ddate, dv); }, 120);
+          });
+          dcell.addEventListener('mouseleave', hideTip);
+          dcell.addEventListener('focus', function () { showTip(dcell, ddate, dv); });
+          dcell.addEventListener('blur', hideTip);
+          // touch: a tap flashes the tooltip (no hover on phones)
+          dcell.addEventListener('click', function () { showTip(dcell, ddate, dv); });
+        })(v, date, cell);
+        grid.appendChild(cell);
+      }
+      // Pad to a full 6-week grid (42 cells) so the calendar is the same height
+      // every month — no jump when navigating between a 5- and a 6-row month.
+      for (var pad = lead + daysInMonth; pad < 42; pad++) {
+        grid.appendChild(el('span', 'cal-cell blank'));
+      }
+      grid.appendChild(tip);        // positioned relative to the grid
+      wrap.appendChild(grid);
+      wrap.appendChild(el('div', 'cal-foot', t('cal.total', { n: total })));
+    }
+
+    var sx = null;
+    wrap.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+    wrap.addEventListener('touchend', function (e) {
+      if (sx == null) return;
+      var dx = e.changedTouches[0].clientX - sx;
+      sx = null;
+      if (Math.abs(dx) < 40) return;
+      step(dx < 0 ? 1 : -1);      // swipe left = forward in time
+    }, { passive: true });
+
+    render();
     return wrap;
   }
 
@@ -1702,6 +2463,537 @@
     return wrap;
   }
 
+  /* ================= drill session ================= */
+
+  // A mixed run through one book or all six: mistakes first, then whatever the
+  // review ladder says is due, then new questions. Until now the spaced-review
+  // data was only ever reported on; this is the page that actually uses it.
+
+  var DRILL_SIZES = [10, 20, 50];
+  var drill = null;          // live session, or null
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  // Outstanding work across every book, straight from the stored records — so
+  // the library page can offer a session without downloading a data file.
+  function dueAllCount() {
+    var now = Date.now(), n = 0;
+    for (var k in state.items) {
+      var r = state.items[k];
+      if (!r || !r.last) continue;
+      if ((r.wrong > 0 && !r.mastered) || (r.due != null && r.due <= now)) n++;
+    }
+    return n;
+  }
+
+  function drillPool(books) {
+    var now = Date.now();
+    var wrong = [], due = [], fresh = [], touched = {};
+    books.forEach(function (bk) {
+      (bk.units || []).forEach(function (u) {
+        (u.subExercises || []).forEach(function (sub) {
+          (sub.items || []).forEach(function (it) {
+            // A drill card stands on its own: it needs printed question text
+            // and a key that can be checked without the learner's judgement.
+            if (!isTracked(sub, it) || !isAuto(it) || !it.question) return;
+            var card = {
+              bookId: bk.id, book: bk, unit: u, sub: sub, item: it,
+              key: keyOf(bk.id, u.unit, sub.number, it.n)
+            };
+            var r = rec(card.key);
+            if (!r || !r.last) { fresh.push(card); return; }
+            touched[bk.id + '|' + u.unit] = 1;
+            if (r.wrong > 0 && !r.mastered) { card.due = r.due || 0; wrong.push(card); }
+            else if (r.due != null && r.due <= now) { card.due = r.due; due.push(card); }
+          });
+        });
+      });
+    });
+    var byDue = function (a, b) { return (a.due || 0) - (b.due || 0); };
+    wrong.sort(byDue);
+    due.sort(byDue);
+    // New questions are drawn from where the reader already is: units they have
+    // started, and only then the ones further down the book.
+    fresh.sort(function (a, b) {
+      var ta = touched[a.bookId + '|' + a.unit.unit] ? 0 : 1;
+      var tb = touched[b.bookId + '|' + b.unit.unit] ? 0 : 1;
+      if (ta !== tb) return ta - tb;
+      return a.unit.unit - b.unit.unit;
+    });
+    return { wrong: wrong, due: due, fresh: fresh };
+  }
+
+  function drillQueue(pool, size) {
+    var q = pool.wrong.slice(0, size);
+    if (q.length < size) q = q.concat(pool.due.slice(0, size - q.length));
+    if (q.length < size) q = q.concat(pool.fresh.slice(0, size - q.length));
+    return shuffle(q);
+  }
+
+  function paintDrillChrome(scope) {
+    var m = scope === 'all' ? null : bookMeta(scope);
+    document.getElementById('brandTitle').textContent = t('drill.title');
+    document.getElementById('brandSub').textContent =
+      m ? (m.title + (m.level ? ' · ' + m.level : '')) : t('drill.allBooks');
+  }
+
+  // #/drill or #/drill/<book>
+  function openDrill(scope) {
+    if (scope !== 'all' && !bookMeta(scope)) { location.hash = '#/drill'; return; }
+    setView('drill');
+    paintDrillChrome(scope);
+    // A session in progress survives leaving the page and coming back.
+    if (drill && drill.scope === scope && !drill.done) { paintDrill(); return; }
+    drill = null;
+
+    clear(main);
+    var wait = el('div', 'empty-state');
+    wait.appendChild(el('span', 'big', '⚡'));
+    wait.appendChild(el('div', null, t('drill.loading')));
+    main.appendChild(wait);
+
+    var ids = scope === 'all' ? BOOKS.map(function (b) { return b.id; }) : [scope];
+    Promise.all(ids.map(loadBook)).then(function (bks) {
+      var r = parseHash(location.hash);
+      if (r.view !== 'drill' || r.id !== scope) return;   // navigated away meanwhile
+      renderDrillSetup(scope, bks);
+    }, function (e) {
+      // showError's retry belongs to the book view; here the same hash is the
+      // retry, so the message stays plain.
+      clear(main);
+      var s = el('div', 'empty-state');
+      s.appendChild(el('span', 'big', '⚠️'));
+      s.appendChild(el('div', null, t('load.failed', { id: t('drill.title') })));
+      s.appendChild(el('div', 'instructions', String((e && e.message) || e)));
+      var row = el('div', 'sub-actions');
+      row.style.justifyContent = 'center';
+      var again = el('button', 'btn primary', t('load.retry'));
+      again.addEventListener('click', function () { openDrill(scope); });
+      row.appendChild(again);
+      var back = el('a', 'btn', t('load.back'));
+      back.href = '#/';
+      row.appendChild(back);
+      s.appendChild(row);
+      main.appendChild(s);
+    });
+  }
+
+  function renderDrillSetup(scope, books) {
+    clear(main);
+    var pool = drillPool(books);
+    var total = pool.wrong.length + pool.due.length + pool.fresh.length;
+
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null, t('drill.setupH')));
+    head.appendChild(el('div', 'instructions', t('drill.setupP')));
+    var today = state.daily[todayKey()] || 0;
+    var streak = dayStreak();
+    var line = el('div', 'drill-today');
+    line.appendChild(el('span', null, t('drill.today', { n: num(today) })));
+    if (streak) line.appendChild(el('span', 'dt-streak', t('stats.streak', { n: streak })));
+    head.appendChild(line);
+    main.appendChild(head);
+
+    if (!total) {
+      var s = el('div', 'empty-state');
+      s.appendChild(el('span', 'big', '🎉'));
+      s.appendChild(el('div', null, t('drill.empty')));
+      var back = el('a', 'btn', t('drill.home'));
+      back.href = '#/';
+      s.appendChild(back);
+      main.appendChild(s);
+      return;
+    }
+
+    var cards = el('div', 'cards');
+    function pc(k, v, cls) {
+      var c = el('div', 'card' + (cls ? ' ' + cls : ''));
+      c.appendChild(el('div', 'k', k));
+      c.appendChild(el('div', 'v', num(v)));
+      cards.appendChild(c);
+    }
+    pc(t('drill.poolWrong'), pool.wrong.length, pool.wrong.length ? 'bad' : '');
+    pc(t('drill.poolDue'), pool.due.length);
+    pc(t('drill.poolNew'), pool.fresh.length);
+    main.appendChild(cards);
+
+    var box = el('div', 'drill-setup');
+    box.appendChild(el('div', 'ds-label', t('drill.size')));
+    var row = el('div', 'ds-sizes');
+    DRILL_SIZES.forEach(function (n) {
+      var b = el('button', 'btn' + (n === 20 ? ' primary' : ''), t('drill.sizeN', { n: n }));
+      b.addEventListener('click', function () { startDrill(scope, books, n); });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+    main.appendChild(box);
+
+    if (scope !== 'all') {
+      var all = el('a', 'btn drill-alt', t('drill.goAll'));
+      all.href = '#/drill';
+      main.appendChild(all);
+    }
+
+    // Across all the books "7 mistakes" says nothing about where they are. The
+    // breakdown answers that before the run starts, not after it.
+    if (books.length > 1) {
+      var per = {};
+      function bump(list, field) {
+        list.forEach(function (c) {
+          var row = per[c.bookId] || (per[c.bookId] = { book: c.book, wrong: 0, due: 0, fresh: 0 });
+          row[field]++;
+        });
+      }
+      bump(pool.wrong, 'wrong');
+      bump(pool.due, 'due');
+      bump(pool.fresh, 'fresh');
+
+      var rows = BOOKS.map(function (b) { return per[b.id]; }).filter(Boolean);
+      if (rows.length) {
+        main.appendChild(el('div', 'section-title', t('drill.fromBooks')));
+        var list = el('div', 'drill-books');
+        rows.forEach(function (r) {
+          var row = el('div', 'db-row');
+          var link = el('a', 'db-name', (r.book.meta && r.book.meta.title) || r.book.id);
+          link.href = '#/drill/' + r.book.id;
+          link.title = t('drill.onlyThis');
+          row.appendChild(link);
+          var counts = el('div', 'db-counts');
+          if (r.wrong) counts.appendChild(el('span', 'db-wrong', r.wrong + ' ' + t('drill.poolWrong').toLowerCase()));
+          if (r.due) counts.appendChild(el('span', 'db-due', r.due + ' ' + t('drill.poolDue').toLowerCase()));
+          counts.appendChild(el('span', 'db-fresh', num(r.fresh) + ' ' + t('drill.poolNew').toLowerCase()));
+          row.appendChild(counts);
+          list.appendChild(row);
+        });
+        main.appendChild(list);
+      }
+    }
+
+    /* ---- what a run actually looks like ---- */
+    main.appendChild(el('div', 'section-title', t('drill.how')));
+    var how = el('div', 'drill-how');
+    [['⌨️', t('drill.how1')], ['💡', t('drill.how2')],
+     // only promised where the browser can actually speak
+     Speech.ok ? ['🔊', t('drill.how3')] : null,
+     ['🎯', t('drill.how4')]].filter(Boolean).forEach(function (h) {
+      var row = el('div', 'dh-row');
+      row.appendChild(el('span', 'dh-ico', h[0]));
+      row.appendChild(el('span', 'dh-txt', h[1]));
+      how.appendChild(row);
+    });
+    main.appendChild(how);
+    window.scrollTo(0, 0);
+  }
+
+  function startDrill(scope, books, size) {
+    var cards = drillQueue(drillPool(books), size);
+    if (!cards.length) { renderDrillSetup(scope, books); return; }
+    drill = {
+      scope: scope, books: books, cards: cards,
+      i: 0, right: 0, missed: [], done: false
+    };
+    paintDrill();
+  }
+
+  function paintDrill() {
+    if (!drill) return;
+    if (drill.done) renderDrillEnd(); else renderDrillCard();
+  }
+
+  function finishDrill() {
+    drill.done = true;
+    // The library page reads cached per-book totals; a session just changed them.
+    drill.books.forEach(function (bk) { cacheBookStats(bk); });
+    renderDrillEnd();
+  }
+
+  function renderDrillCard() {
+    Speech.stop();
+    clear(main);
+    var c = drill.cards[drill.i];
+    var n = drill.cards.length;
+    var it = c.item;
+
+    var wrap = el('div', 'drill');
+
+    /* --- progress strip --- */
+    var top = el('div', 'drill-top');
+    var bar = el('div', 'drill-bar');
+    var fill = el('i');
+    fill.style.width = Math.round(drill.i / n * 100) + '%';
+    bar.appendChild(fill);
+    top.appendChild(bar);
+
+    var meta = el('div', 'drill-meta');
+    meta.appendChild(el('span', 'dm-i', t('drill.progress', { i: drill.i + 1, n: n })));
+    var okCount = el('span', 'dm-ok', '✓ ' + drill.right);
+    var badCount = el('span', 'dm-bad', '✗ ' + drill.missed.length);
+    meta.appendChild(okCount);
+    meta.appendChild(badCount);
+    var quit = el('button', 'btn small dm-quit', t('drill.quit'));
+    quit.addEventListener('click', finishDrill);
+    meta.appendChild(quit);
+    top.appendChild(meta);
+    wrap.appendChild(top);
+
+    /* --- the question --- */
+    var box = el('div', 'drill-card');
+    var src = el('div', 'dc-src');
+    src.textContent = ((c.book.meta && c.book.meta.title) || c.bookId) +
+      ' · Unit ' + c.unit.unit + ' · ' + c.sub.number;
+    box.appendChild(src);
+    if (c.sub.instructions) box.appendChild(el('div', 'dc-instr', c.sub.instructions));
+
+    // Some exercises are unanswerable without their word pool, so it comes along.
+    var bank = c.sub.wordBank;
+    if (typeof bank === 'string') bank = bank.split(/\s+/).filter(Boolean);
+    if (bank && bank.length && bank.length <= 24) {
+      var wb = el('div', 'wordbank');
+      bank.forEach(function (w) { wb.appendChild(el('span', 'wb', w)); });
+      box.appendChild(wb);
+    }
+    if (c.sub.options && c.sub.options.length && c.sub.options.length <= 12) {
+      var ol = el('div', 'options');
+      c.sub.options.forEach(function (o) {
+        var chip = el('span', 'opt');
+        chip.appendChild(el('b', null, o.letter));
+        chip.appendChild(document.createTextNode(' ' + o.text));
+        ol.appendChild(chip);
+      });
+      box.appendChild(ol);
+    }
+
+    var q = el('div', 'dc-q');
+    q.textContent = it.question;
+    var qSay = speakBtn(function () { return it.question; });
+    if (qSay) q.appendChild(qSay);
+    box.appendChild(q);
+
+    /* --- answer --- */
+    var line = el('div', 'answer-line');
+    var input = el('input');
+    input.type = 'text';
+    input.autocomplete = 'off';
+    input.autocapitalize = 'off';
+    input.spellcheck = false;
+    input.placeholder = t('row.placeholder');
+    input.setAttribute('aria-label', t('row.aria', { unit: c.unit.unit, sub: c.sub.number, n: it.n }));
+    line.appendChild(input);
+
+    var chk = el('button', 'btn primary', t('btn.check'));
+    line.appendChild(chk);
+
+    var hintLevel = 0;
+    var hintBox = el('div', 'hint');
+    hintBox.hidden = true;
+    var hintBtn = null;
+    if (hasHint(it)) {
+      hintBtn = el('button', 'btn hint-btn', t('hint.btn'));
+      hintBtn.addEventListener('click', function () {
+        if (answered || hintLevel >= 3) return;
+        hintLevel++;
+        clear(hintBox);
+        hintBox.hidden = false;
+        hintBox.appendChild(el('span', 'hint-ico', '💡'));
+        if (hintLevel === 1) {
+          hintBox.appendChild(el('code', 'hint-mask', hintMask(it.answer, 1)));
+          hintBox.appendChild(el('span', 'hint-meta', t('hint.letters', { n: hintLetters(it.answer) })));
+        } else if (hintLevel === 2) {
+          hintBox.appendChild(el('code', 'hint-mask', hintMask(it.answer, 2)));
+        } else {
+          hintBox.appendChild(el('b', 'hint-full', hintBase(it.answer)));
+        }
+        hintBtn.textContent = hintLevel >= 3 ? t('hint.done') : t('hint.more');
+        input.focus();
+      });
+      line.appendChild(hintBtn);
+    }
+    box.appendChild(line);
+    box.appendChild(hintBox);
+
+    var feedback = el('div', 'dc-feedback');
+    feedback.setAttribute('aria-live', 'polite');
+    box.appendChild(feedback);
+
+    var nav = el('div', 'dc-nav');
+    var nextBtn = el('button', 'btn primary',
+      drill.i + 1 >= n ? t('drill.finish') : t('drill.next'));
+    nextBtn.hidden = true;
+    nav.appendChild(nextBtn);
+    box.appendChild(nav);
+
+    wrap.appendChild(box);
+    main.appendChild(wrap);
+
+    var answered = false;
+
+    function verdict(correct, self) {
+      // The tally sits above the card and must move with the answer, not wait
+      // for the next question to redraw it.
+      okCount.textContent = '✓ ' + drill.right;
+      badCount.textContent = '✗ ' + drill.missed.length;
+      clear(feedback);
+      box.classList.remove('ok', 'bad');
+      box.classList.add(correct ? 'ok' : 'bad');
+      feedback.appendChild(el('div', 'dc-verdict ' + (correct ? 'ok' : 'bad'),
+        correct ? t('drill.right') : t('drill.wrongV')));
+
+      var k = el('div', 'dc-key');
+      k.appendChild(document.createTextNode(t('row.bookKey')));
+      k.appendChild(el('b', null, it.answer));
+      var kSay = speakBtn(function () { return hintBase(it.answer) || it.answer; });
+      if (kSay) k.appendChild(kSay);
+      feedback.appendChild(k);
+
+      if (!correct && input.value.trim()) {
+        var yours = el('div', 'dc-yours');
+        yours.appendChild(document.createTextNode(t('drill.yours')));
+        yours.appendChild(el('b', null, input.value));
+        feedback.appendChild(yours);
+      }
+      if (hintLevel > 0 && correct) feedback.appendChild(el('div', 'dc-hinted', t('hint.used')));
+      if (self) feedback.appendChild(el('div', 'dc-hinted', t('row.selfMarked')));
+
+      // Matching is good but not perfect; the learner keeps the last word.
+      if (!correct && !self) {
+        var ov = el('button', 'btn small ok', t('row.override'));
+        ov.addEventListener('click', override);
+        feedback.appendChild(ov);
+      }
+
+      input.disabled = true;
+      chk.hidden = true;
+      if (hintBtn) hintBtn.hidden = true;
+      nextBtn.hidden = false;
+      nextBtn.focus();
+    }
+
+    function commit(correct) {
+      if (answered) return;
+      answered = true;
+      // Remembered on the card, not just in this closure: switching language
+      // (or a write from another tab) redraws the screen, and the answer must
+      // not be counted a second time.
+      c.answered = true;
+      c.correct = correct;
+      c.val = input.value;
+      applyAnswer(c.key, correct, { val: input.value, hinted: hintLevel > 0 });
+      if (correct) drill.right++;
+      else drill.missed.push({ card: c, val: input.value });
+      verdict(correct, false);
+    }
+
+    function override() {
+      c.correct = true;
+      c.self = true;
+      applyAnswer(c.key, true, { val: input.value, self: true, hinted: hintLevel > 0 });
+      for (var i = drill.missed.length - 1; i >= 0; i--) {
+        if (drill.missed[i].card === c) { drill.missed.splice(i, 1); break; }
+      }
+      drill.right++;
+      verdict(true, true);
+    }
+
+    function next() {
+      Speech.stop();
+      drill.i++;
+      if (drill.i >= drill.cards.length) finishDrill();
+      else renderDrillCard();
+    }
+
+    chk.addEventListener('click', function () {
+      if (!input.value.trim()) { input.focus(); return; }
+      commit(isMatch(input.value, it));
+    });
+    nextBtn.addEventListener('click', next);
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (!input.value.trim()) return;
+      commit(isMatch(input.value, it));
+    });
+    // Enter again moves on — the whole run should be doable from the keyboard.
+    nextBtn.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); next(); }
+    });
+
+    // Redrawn after it was already answered: restore the verdict rather than
+    // offering the question again.
+    if (c.answered) {
+      answered = true;
+      input.value = c.val || '';
+      verdict(c.correct === true, c.self === true);
+    } else {
+      input.focus();
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function renderDrillEnd() {
+    clear(main);
+    var answered = drill.right + drill.missed.length;
+    var pct = answered ? Math.round(drill.right / answered * 100) : 0;
+
+    var s = el('div', 'drill-end');
+    s.appendChild(el('div', 'de-mark', drill.missed.length === 0 && answered ? '🏆' : '🎯'));
+    s.appendChild(el('h1', null, t('drill.doneH')));
+    s.appendChild(el('div', 'de-score', t('drill.score', { c: drill.right, n: answered })));
+    s.appendChild(el('div', 'de-pct', pct + '%'));
+    if (answered && !drill.missed.length) s.appendChild(el('div', 'de-perfect', t('drill.perfect')));
+
+    var acts = el('div', 'de-acts');
+    var again = el('button', 'btn primary', t('drill.again'));
+    again.addEventListener('click', function () {
+      var scope = drill.scope, books = drill.books;
+      drill = null;
+      renderDrillSetup(scope, books);
+    });
+    acts.appendChild(again);
+    var home = el('a', 'btn', t('drill.home'));
+    home.href = '#/';
+    acts.appendChild(home);
+    s.appendChild(acts);
+    main.appendChild(s);
+
+    if (drill.missed.length) {
+      main.appendChild(el('div', 'section-title', t('drill.missed')));
+      var list = el('div', 'de-missed');
+      drill.missed.forEach(function (m) {
+        var c = m.card;
+        var row = el('div', 'de-row');
+        row.appendChild(el('div', 'de-src',
+          ((c.book.meta && c.book.meta.title) || c.bookId) + ' · Unit ' + c.unit.unit));
+        var q = el('div', 'de-q', c.item.question);
+        var say = speakBtn(function () { return c.item.question; });
+        if (say) q.appendChild(say);
+        row.appendChild(q);
+        if (m.val) {
+          var y = el('div', 'de-yours');
+          y.appendChild(document.createTextNode(t('drill.yours')));
+          y.appendChild(el('b', null, m.val));
+          row.appendChild(y);
+        }
+        var k = el('div', 'de-key');
+        k.appendChild(document.createTextNode(t('row.bookKey')));
+        k.appendChild(el('b', null, c.item.answer));
+        row.appendChild(k);
+        var go = el('a', 'de-go', t('drill.openUnit'));
+        go.href = '#/b/' + c.bookId + '/unit/' + c.unit.unit;
+        go.addEventListener('click', function () { pendingFocus = c.key; });
+        row.appendChild(go);
+        list.appendChild(row);
+      });
+      main.appendChild(list);
+    }
+    window.scrollTo(0, 0);
+  }
+
   /* ================= progress backup ================= */
 
   // The whole progress lives in one browser's localStorage; a wipe or a new
@@ -1743,6 +3035,230 @@
       reader.readAsText(file);
     });
     inp.click();
+  }
+
+  /* ================= find (Ctrl+K) ================= */
+
+  // The sidebar filter only ever knew unit numbers and titles. This one reads
+  // the questions themselves, so "where do I practise *used to*?" has an answer.
+  var findModal = document.getElementById('findModal');
+  var findInput = document.getElementById('findInput');
+  var findResults = document.getElementById('findResults');
+  var findScopeRow = document.getElementById('findScope');
+  var findFoot = document.getElementById('findFoot');
+  var findScope = 'book';         // 'all' searches every book, once loaded
+  var findLoading = false;
+  var findReturnFocus = null;
+  var findTimer = null;
+  var pendingFocus = null;        // row key to jump to once a unit is rendered
+  var FIND_MAX = 40;
+
+  // `book` keeps pointing at the last book opened even after a return to the
+  // library, so "am I in a book?" has to come from the route, not from it.
+  function inBook() {
+    return !!book && parseHash(location.hash).view === 'book';
+  }
+
+  function findBooks() {
+    if (findScope === 'all' || !inBook()) {
+      return BOOKS.map(function (b) { return cache[b.id]; }).filter(Boolean);
+    }
+    return [book];
+  }
+
+  function findAllLoaded() {
+    return BOOKS.every(function (b) { return !!cache[b.id]; });
+  }
+
+  function findSearch(q) {
+    var out = [], seen = 0;
+    var books = findBooks();
+    for (var bi = 0; bi < books.length && out.length < FIND_MAX * 3; bi++) {
+      var bk = books[bi];
+      var title = (bk.meta && bk.meta.title) || bk.id;
+      for (var ui = 0; ui < bk.units.length; ui++) {
+        var u = bk.units[ui];
+        var ut = unitTitle(u);
+        if (ut && ut.toLowerCase().indexOf(q) > -1) {
+          out.push({ rank: 0, bookId: bk.id, bookTitle: title, unit: u.unit, text: 'Unit ' + u.unit + ' — ' + ut });
+        }
+        var subs = u.subExercises || [];
+        for (var si = 0; si < subs.length; si++) {
+          var sub = subs[si];
+          var items = sub.items || [];
+          for (var ii = 0; ii < items.length; ii++) {
+            var it = items[ii];
+            seen++;
+            var hay = (it.question || '');
+            var inQ = hay && hay.toLowerCase().indexOf(q) > -1;
+            var inA = !inQ && it.answer && String(it.answer).toLowerCase().indexOf(q) > -1;
+            if (!inQ && !inA) continue;
+            out.push({
+              rank: inQ ? 1 : 2,
+              bookId: bk.id, bookTitle: title, unit: u.unit,
+              sub: sub.number,
+              key: keyOf(bk.id, u.unit, sub.number, it.n),
+              text: inQ ? hay : String(it.answer),
+              note: inA ? t('find.inAnswer') : ''
+            });
+            if (out.length >= FIND_MAX * 3) break;
+          }
+          if (out.length >= FIND_MAX * 3) break;
+        }
+      }
+    }
+    out.sort(function (a, b) { return a.rank - b.rank; });
+    return { list: out.slice(0, FIND_MAX), more: Math.max(0, out.length - FIND_MAX), scanned: seen };
+  }
+
+  // Show the match in place, with the hit picked out, rather than a bare snippet.
+  function findSnippet(text, q) {
+    var wrap = el('div', 'fr-text');
+    var low = text.toLowerCase();
+    var at = low.indexOf(q);
+    if (at < 0) { wrap.textContent = text; return wrap; }
+    var from = Math.max(0, at - 40);
+    if (from > 0) wrap.appendChild(document.createTextNode('…'));
+    wrap.appendChild(document.createTextNode(text.slice(from, at)));
+    wrap.appendChild(el('mark', null, text.slice(at, at + q.length)));
+    var tail = text.slice(at + q.length);
+    wrap.appendChild(document.createTextNode(tail.length > 90 ? tail.slice(0, 90) + '…' : tail));
+    return wrap;
+  }
+
+  function findGo(r) {
+    pendingFocus = r.key || null;
+    closeFind();
+    var target = '#/b/' + r.bookId + '/unit/' + r.unit;
+    if (location.hash === target) route(); else location.hash = target;
+  }
+
+  function findRender() {
+    clear(findResults);
+    clear(findFoot);
+    var q = (findInput.value || '').trim().toLowerCase();
+
+    if (findLoading) {
+      findResults.appendChild(el('div', 'find-note', t('find.loading')));
+      return;
+    }
+    if (q.length < 2) {
+      findResults.appendChild(el('div', 'find-note', t('find.hint')));
+      return;
+    }
+    if (!findBooks().length) {
+      findResults.appendChild(el('div', 'find-note', t('find.noBooks')));
+      return;
+    }
+
+    var res = findSearch(q);
+    if (!res.list.length) {
+      findResults.appendChild(el('div', 'find-note', t('find.none')));
+      return;
+    }
+    res.list.forEach(function (r) {
+      var row = el('button', 'find-row');
+      row.type = 'button';
+      var src = el('div', 'fr-src');
+      src.appendChild(el('span', 'fr-book', r.bookTitle));
+      src.appendChild(el('span', 'fr-unit', 'Unit ' + r.unit + (r.sub ? ' · ' + r.sub : '')));
+      if (r.note) src.appendChild(el('span', 'fr-note', r.note));
+      row.appendChild(src);
+      row.appendChild(findSnippet(r.text, q));
+      row.addEventListener('click', function () { findGo(r); });
+      findResults.appendChild(row);
+    });
+    if (res.more) findFoot.appendChild(el('span', null, t('find.more', { n: res.more })));
+  }
+
+  function findSetScope(scope) {
+    if (scope === 'all' && !findAllLoaded()) {
+      findLoading = true;
+      findScope = 'all';
+      findPaintScope();
+      findRender();
+      Promise.all(BOOKS.map(function (b) { return loadBook(b.id).catch(function () { return null; }); }))
+        .then(function () {
+          findLoading = false;
+          if (!findModal.hidden) { findPaintScope(); findRender(); }
+        });
+      return;
+    }
+    findScope = scope;
+    findPaintScope();
+    findRender();
+  }
+
+  function findPaintScope() {
+    clear(findScopeRow);
+    if (!inBook()) return;      // outside a book there is nothing else to pick
+    [['book', t('find.scopeBook')], ['all', t('find.scopeAll')]].forEach(function (o) {
+      var b = el('button', 'fs' + (findScope === o[0] ? ' on' : ''), o[1]);
+      b.type = 'button';
+      b.addEventListener('click', function () { findSetScope(o[0]); });
+      findScopeRow.appendChild(b);
+    });
+  }
+
+  function openFind() {
+    if (!findModal) return;
+    findReturnFocus = document.activeElement;
+    // Inside a book, start with that book; from the library there is no other
+    // sensible scope, so everything gets pulled in.
+    findScope = inBook() ? 'book' : 'all';
+    findModal.hidden = false;
+    findPaintScope();
+    if (findScope === 'all') findSetScope('all'); else findRender();
+    findInput.value = '';
+    findInput.focus();
+  }
+
+  function closeFind() {
+    if (!findModal || findModal.hidden) return;
+    findModal.hidden = true;
+    if (findReturnFocus && findReturnFocus.focus) findReturnFocus.focus();
+    findReturnFocus = null;
+  }
+
+  if (findModal) {
+    findInput.addEventListener('input', function () {
+      clearTimeout(findTimer);
+      findTimer = setTimeout(findRender, 120);
+    });
+    // Enter opens the first hit — search, glance, jump, without the mouse.
+    findInput.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      var first = findResults.querySelector('.find-row');
+      if (first) { e.preventDefault(); first.click(); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest) return;
+      if (e.target.closest('[data-open-find]')) { openFind(); return; }
+      if (e.target.closest('[data-close-find]')) closeFind();
+    });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      if (findModal && findModal.hidden) openFind(); else closeFind();
+      return;
+    }
+    if (e.key === 'Escape') closeFind();
+  });
+
+  // After a jump from search or from a drill summary, land on the exact row
+  // rather than at the top of a forty-question unit.
+  function focusPending() {
+    var key = pendingFocus;
+    pendingFocus = null;
+    var row = key && main.querySelector('.row[data-key="' + key + '"]');
+    if (!row) { window.scrollTo(0, 0); return; }
+    row.scrollIntoView({ block: 'center' });
+    row.classList.add('flash');
+    setTimeout(function () { row.classList.remove('flash'); }, 1800);
+    var inp = row.querySelector('input');
+    if (inp) inp.focus();
   }
 
   /* ================= routing ================= */
@@ -1817,6 +3333,9 @@
 
   function parseHash(h) {
     h = h || '';
+    // '#/drill' is cross-book; '#/drill/<book>' narrows it to one.
+    var d = /^#\/drill(?:\/([a-z0-9-]+))?/.exec(h);
+    if (d) return { view: 'drill', id: d[1] || 'all' };
     var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)|\/(errors|stats))?/.exec(h);
     if (m) {
       return {
@@ -1835,6 +3354,8 @@
     closeSidebar();
     if (window.WordLookup) window.WordLookup.hide();
     var r = parseHash(location.hash);
+    if (r.view !== 'drill') Speech.stop();
+    if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();

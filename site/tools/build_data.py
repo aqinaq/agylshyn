@@ -360,6 +360,33 @@ def build_essential_grammar():
     return units
 
 
+def build_from_extractor(name):
+    """The two newest books have no hand-made source folder: they are pulled
+    straight out of their PDF by tools/build_vocab_elem.py and
+    tools/build_collocations.py, which already emit the shared unit schema.
+    Re-run those scripts when the extraction changes; this only re-reads them.
+    """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+    with open(path, encoding='utf-8') as f:
+        return json.load(f)['units']
+
+
+def build_vocab_elem():
+    return build_from_extractor('vocab_elem_exercises.json')
+
+
+def build_collocations():
+    return build_from_extractor('collocations_exercises.json')
+
+
+def build_academic():
+    return build_from_extractor('academic_exercises.json')
+
+
+def build_business():
+    return build_from_extractor('business_exercises.json')
+
+
 # The page numbers in the source files were recorded against different
 # front-matter assumptions, so each book needs shifting onto true PDF pages.
 # Measured by locating each unit's exercise numbers in the shipped PDF —
@@ -371,6 +398,11 @@ PDF_PAGE_OFFSET = {
     'vocab-preint': 0,
     'vocab-upint': 0,
     'vocab-adv': 2,
+    # these two are read straight off their own PDF, so they are already true
+    'vocab-elem': 0,
+    'collocations': 0,
+    'academic': 0,
+    'business': 0,
 }
 
 
@@ -403,6 +435,10 @@ BOOKS = [
     ('vocab-preint', build_vocab_preint),
     ('vocab-upint', build_vocab_upint),
     ('vocab-adv', build_vocab_adv),
+    ('vocab-elem', build_vocab_elem),
+    ('collocations', build_collocations),
+    ('academic', build_academic),
+    ('business', build_business),
 ]
 
 

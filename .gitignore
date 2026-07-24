@@ -1,0 +1,5 @@
+.DS_Store
+
+# Listening audio — ~490 MB, too large for the repo.
+# Ships alongside the site instead; site/data/*.json only stores the paths.
+site/audio/

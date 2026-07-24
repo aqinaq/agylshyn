@@ -1,15 +1,19 @@
 /* Service worker: makes the whole app usable offline (AUDIT §Т2).
 
    Strategy, by kind of request:
-   - app shell (html/js/css/manifest/icon) — cache-first, refreshed in the
-     background; bump SHELL_VERSION when any of these files change so the new
-     copy actually ships.
+   - app shell (html/js/css/manifest/icon) — NETWORK-first, cache fallback.
+     app.js and data must stay in lock-step, so an online reader always gets the
+     current build; the cache is only there to keep things working offline.
+     (Cache-first would strand a reader on a stale app.js after any update.)
    - data/*.json — network-first, falling back to cache. A rebuilt data file
      must reach a returning reader, so the network wins when it is available.
    - pdf/*.pdf — cache-first at runtime. They are large (25–70 MB) and never
      change, so once fetched they stay; nothing is pre-cached.
 */
-var SHELL_VERSION = 'v1';
+// Bump on every shell change (html/js/css). activate() deletes caches whose
+// key no longer matches, so a returning reader can't be left on a half-old
+// shell — which is exactly what happened when books.js grew to eight books.
+var SHELL_VERSION = 'v8';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -22,6 +26,7 @@ var SHELL = [
   './i18n.js',
   './help.js',
   './books.js',
+  './placement.js',
   './dict.js',
   './manifest.webmanifest',
   './icon.svg',
@@ -81,10 +86,11 @@ self.addEventListener('fetch', function (e) {
 
   if (/\/data\/.*\.json$/.test(url.pathname)) { e.respondWith(networkFirst(req, DATA_CACHE)); return; }
   if (/\.pdf$/.test(url.pathname)) { e.respondWith(cacheFirst(req, PDF_CACHE)); return; }
-  // shell: try cache, fall back to network (and cache it for next time)
-  e.respondWith(
-    caches.match(req).then(function (hit) {
-      return hit || cacheFirst(req, SHELL_CACHE);
-    })
-  );
+  // Listening audio goes straight to the network: it is ~490 MB in total, and
+  // an <audio> element seeks with Range requests, which a cached whole-file
+  // response cannot answer.
+  if (/\.(mp3|m4a)$/.test(url.pathname)) return;
+  // shell: prefer the network so updated JS/CSS ship immediately; fall back to
+  // the cached copy only when offline.
+  e.respondWith(networkFirst(req, SHELL_CACHE));
 });

@@ -85,6 +85,20 @@ window.BOOKS = [
     hue: 268
   },
   {
+    id: 'vocab-elem',
+    title: 'Vocabulary in Use — Elementary',
+    author: 'Cambridge · 3rd edition',
+    level: 'A1–A2',
+    kind: 'vocab',
+    units: 60,
+    blurb: {
+      kk: 'Elementary. Ең қажет күнделікті сөздер: отбасы, тамақ, киім, уақыт.',
+      en: 'Elementary. The everyday core: family, food, clothes, telling the time.'
+    },
+    pdf: 'pdf/vocab-elem.pdf',
+    hue: 88
+  },
+  {
     id: 'vocab-preint',
     title: 'Vocabulary in Use — Pre-Intermediate',
     author: 'Cambridge · 4th edition',
@@ -125,5 +139,142 @@ window.BOOKS = [
     },
     pdf: 'pdf/vocab-adv.pdf',
     hue: 190
+  },
+  {
+    id: 'collocations',
+    title: 'Collocations in Use — Intermediate',
+    author: 'McCarthy & O’Dell · 2nd edition',
+    level: 'B1–B2',
+    kind: 'vocab',
+    units: 60,
+    blurb: {
+      kk: 'Қай сөз қай сөзбен тіркеседі: «дұрыс» пен «табиғи» ағылшынның айырмасы.',
+      en: 'Which words go together — the difference between correct and natural English.'
+    },
+    pdf: 'pdf/collocations.pdf',
+    hue: 304
+  },
+  {
+    id: 'academic',
+    title: 'Academic Vocabulary in Use',
+    author: 'McCarthy & O’Dell · 2nd edition',
+    level: 'B2–C1',
+    kind: 'vocab',
+    units: 50,
+    blurb: {
+      kk: 'Университет пен IELTS тілі: дәріс, зерттеу, эссе, дереккөз лексикасы.',
+      en: 'The language of university and IELTS: lectures, research, essays, sources.'
+    },
+    pdf: 'pdf/academic.pdf',
+    hue: 56
+  },
+  {
+    id: 'business',
+    title: 'Business Vocabulary in Use — Intermediate',
+    author: 'Bill Mascull · 3rd edition',
+    level: 'B1–B2',
+    kind: 'vocab',
+    units: 66,
+    blurb: {
+      kk: 'Жұмыс пен кеңсе тілі: жұмысқа қабылдау, келіссөз, қаржы, маркетинг.',
+      en: 'The language of work: recruitment, meetings, finance and marketing.'
+    },
+    pdf: 'pdf/business.pdf',
+    hue: 120
+  },
+  {
+    id: 'ielts-19',
+    title: 'Cambridge IELTS 19 — Academic',
+    author: 'Cambridge · 2024',
+    level: 'B2–C1',
+    kind: 'ielts',
+    units: 8,
+    blurb: {
+      kk: '4 тест, Listening аудиосымен. Сұрақтарын PDF-тен оқисың.',
+      en: 'Four tests with the Listening audio. Read the questions in the PDF.'
+    },
+    pdf: 'pdf/ielts-19.pdf',
+    hue: 175,
+    // An answer sheet, by design: the questions stay in the book, so the pane
+    // has to be open for the page to make sense, and each row is only its
+    // number and a box — no "read this in the PDF" on all forty of them.
+    needsPdf: true,
+    answerSheet: true
+  },
+  {
+    id: 'ielts-20',
+    title: 'Cambridge IELTS 20 — Academic',
+    author: 'Cambridge · 2025',
+    level: 'B2–C1',
+    kind: 'ielts',
+    // Eight units: Listening and Reading for each of the four tests.
+    units: 8,
+    blurb: {
+      kk: '4 нағыз тест. Аудио мен Reading мәтіні осында, сұрақтарды PDF-тен оқисың.',
+      en: 'Four authentic tests. The audio and the passages are here; read the questions in the PDF.'
+    },
+    pdf: 'pdf/ielts-20.pdf',
+    hue: 12,
+    // An answer sheet, by design: the questions stay in the book, so the pane
+    // has to be open for the page to make sense, and each row is only its
+    // number and a box — no "read this in the PDF" on all forty of them.
+    needsPdf: true,
+    answerSheet: true
+  },
+  {
+    id: 'ielts-21',
+    title: 'Cambridge IELTS 21 — Academic',
+    author: 'Cambridge · 2026',
+    level: 'B2–C1',
+    kind: 'ielts',
+    units: 8,
+    blurb: {
+      kk: 'Ең соңғы жинақ. 4 тест, аудио мен мәтіндер осында, сұрақтар PDF-те.',
+      en: 'The newest collection. Four tests; audio and passages here, questions in the PDF.'
+    },
+    pdf: 'pdf/ielts-21.pdf',
+    hue: 240,
+    // An answer sheet, by design: the questions stay in the book, so the pane
+    // has to be open for the page to make sense, and each row is only its
+    // number and a box — no "read this in the PDF" on all forty of them.
+    needsPdf: true,
+    answerSheet: true
+  },
+  // The two Collins books are skill courses rather than full tests, but they
+  // sit in the same IELTS group — after the Cambridge test papers, which are
+  // the main draw.
+  {
+    id: 'collins-reading',
+    title: 'Collins Reading for IELTS',
+    author: 'Els Van Geyte · 2nd edition',
+    level: 'B1–B2',
+    kind: 'ielts',
+    units: 11,
+    blurb: {
+      kk: '12 тақырыптық юнит: Reading дағдыларын қадаммен үйрететін курс.',
+      en: 'Twelve topic units that build the Reading skills step by step.'
+    },
+    pdf: 'pdf/collins-reading.pdf',
+    hue: 158,
+    // Answer sheet: exercises are read in the book. Clean answers are checked
+    // here; the prose ones (definitions, model answers) are shown on a click.
+    needsPdf: true,
+    answerSheet: true
+  },
+  {
+    id: 'collins-listening',
+    title: 'Collins Listening for IELTS',
+    author: 'Fiona Aish & Jo Tomlinson',
+    level: 'B1–B2',
+    kind: 'ielts',
+    units: 11,
+    blurb: {
+      kk: '12 юнит, аудиосымен. Әр жаттығудың треги кітапта белгіленген.',
+      en: 'Twelve units with their audio. Each exercise names its track in the book.'
+    },
+    pdf: 'pdf/collins-listening.pdf',
+    hue: 200,
+    needsPdf: true,
+    answerSheet: true
   }
 ];

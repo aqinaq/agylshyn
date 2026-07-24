@@ -28,5 +28,50 @@
   "id": "vocab-adv",
   "units": 101,
   "tracked": 2327
+ },
+ {
+  "id": "vocab-elem",
+  "units": 60,
+  "tracked": 1024
+ },
+ {
+  "id": "collocations",
+  "units": 60,
+  "tracked": 1312
+ },
+ {
+  "id": "academic",
+  "units": 50,
+  "tracked": 1316
+ },
+ {
+  "id": "business",
+  "units": 66,
+  "tracked": 1066
+ },
+ {
+  "id": "ielts-20",
+  "units": 8,
+  "tracked": 320
+ },
+ {
+  "id": "ielts-21",
+  "units": 8,
+  "tracked": 320
+ },
+ {
+  "id": "ielts-19",
+  "units": 8,
+  "tracked": 320
+ },
+ {
+  "id": "collins-reading",
+  "units": 11,
+  "tracked": 97
+ },
+ {
+  "id": "collins-listening",
+  "units": 11,
+  "tracked": 193
  }
 ]

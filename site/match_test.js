@@ -11,7 +11,7 @@ function listParts(s){return String(s==null?'':s).split(/\s*[,;]\s*|\s+and\s+|\s
 function matchesAsSet(input,answer){const want=listParts(answer);if(want.length<2)return false;const got=listParts(input);if(got.length!==want.length)return false;const a=want.slice().sort(),b=got.slice().sort();for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;}
 function isMatch(input,it){const t=norm(input);if(!t)return false;if(buildVariants(it.answer)[t])return true;if(it.blank&&buildVariants(it.blank)[t])return true;return matchesAsSet(input,it.answer);}
 
-const BOOKS=['essential-grammar','grammar','advanced-grammar','vocab-preint','vocab-upint','vocab-adv'];
+const BOOKS=JSON.parse(require('fs').readFileSync(__dirname+'/data/index.json','utf8')).map(b=>b.id);
 // learner-input transforms that SHOULD still count as correct
 const T=[
  ['exact',           a=>a],

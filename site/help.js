@@ -1,5 +1,6 @@
 /* How-to-use guide, shown in a dialog. Rendered by renderHelpInto() in app.js.
-   Keep it short — it is a reminder, not a manual.
+   Keep it short — it is a reminder, not a manual: one screen, one idea per
+   line. Anything that needs a paragraph belongs in site/README.md instead.
    Section shape: {icon, title, body:[…], list:[…], rows:[[label, text], …]} */
 window.HELP = {
 
@@ -8,61 +9,68 @@ window.HELP = {
       icon: '✍️',
       title: 'Жауап беру',
       list: [
-        'Бас әріп, тыныс белгі, тырнақша ескерілмейді. «don’t» да, «do not» да дұрыс.',
-        'Жазғаның өзі сақталады.'
+        'Бас әріп, тыныс белгі, тырнақша ескерілмейді: «don’t» да, «do not» да дұрыс.',
+        'Бір ғана дұрыс жауабы жоқ сұрақтар «өзің тексер» белгісімен тұрады — ✓ / ✗ дегенді өзің басасың.',
+        '«Мен дұрыс жаздым» — қате қойылған белгіні кері қайтарады.'
       ],
       rows: [
         ['Enter', 'Тексеру + келесі сұрақ'],
-        ['Tab', 'Келесі өріс (тексерусіз)']
+        ['Tab', 'Келесі өріс (тексерусіз)'],
+        ['Ctrl/⌘ + K', 'Іздеу']
+      ]
+    },
+    {
+      icon: '⚡',
+      title: 'Жаттығу сессиясы',
+      body: [
+        'Бір экранда бір сұрақ: қателерің, қайталау мерзімі жеткендері және жаңалары араласып келеді — қате бірінші.'
+      ],
+      list: [
+        'Басты беттегі ⚡ — барлық кітаптан аралас; кітаптың ішіндегі ⚡ — сол кітаптан ғана.',
+        '10, 20 не 50 сұрақ. Соңында нәтиже мен қате жауаптардың тізімі шығады.',
+        'Пернетақтамен: Enter — тексеру, тағы Enter — келесі.'
+      ]
+    },
+    {
+      icon: '💡',
+      title: 'Көмек',
+      list: [
+        'Үш саты: жауаптың пішіні мен әріп саны → әр сөздің бірінші әрпі → жауаптың өзі.',
+        'Көмекпен берілген жауап есептеледі, бірақ ★ меңгерілгенге жеткізбейді және сұрақ ертең қайта келеді.'
+      ]
+    },
+    {
+      icon: '🔎',
+      title: 'Іздеу мен сөздік',
+      list: [
+        'Ctrl/⌘ + K — сұрақтың мәтіні, жауабы, юнит атауы бойынша іздейді; нәтижені бассаң, дәл сол сұраққа апарады.',
+        'Кез келген ағылшын сөзіне меңзе (немесе қос шерт, телефонда — басып тұр) — қазақша аудармасы шығады.',
+        '🔊 — сұрақты, дұрыс жауапты, сөзді браузердің өз даусы оқиды.'
       ]
     },
     {
       icon: '📕',
       title: 'Кітапты қатар ашу',
       list: [
-        '«PDF-ті ашу» — кітап оң жақтан ашылады, сайттан шықпайсың.',
-        'Панельдер арасындағы сызықты сүйресең, ені өзгереді. Қос шертсең — бастапқы қалпына оралады.',
-        'Юниттен юнитке өткенде PDF өзі керек бетке көшеді.'
-      ]
-    },
-    {
-      icon: '📖',
-      title: 'Сөздің аудармасы',
-      body: [
-        'Жаттығудағы кез келген ағылшын сөзінің қазақша аудармасы мен қарапайым ағылшынша түсініктемесін бірден көруге болады.'
-      ],
-      list: [
-        'Тінтуірді сөздің үстіне апарып, сәл ұстап тұр — өзі шығады.',
-        'Немесе қос шерт, не сөзді белгіле. Телефонда — саусақпен басып тұр.',
-        'Жиі кездесетін сөздер сайттың өзінде тұр, интернетсіз де шығады. Сирек сөздер интернеттен бір рет алынып, есте сақталады.',
-        'Меңзегенде шығуы мазаласа — терезенің төменгі жағындағы «Меңзегенде шықсын» дегенді өшір.'
-      ]
-    },
-    {
-      icon: '🔍',
-      title: 'Өзің тексеретін сұрақтар',
-      body: [
-        'Бір ғана дұрыс жауабы жоқ сұрақтар «өзің тексер» белгісімен тұрады.'
-      ],
-      list: [
-        'Жазып болып, ✓ немесе ✗ дегенді өзің басасың.',
-        '«Мен дұрыс жаздым» — қате белгіні кері қайтарады.'
+        '«PDF-ті ашу» — оқулық оң жақтан ашылады, сайттан шықпайсың; юнит ауысса, беті де ауысады.',
+        'Панельдер арасындағы сызықты сүйресең ені өзгереді, қос шертсең — қалпына оралады.'
       ]
     },
     {
       icon: '⭐',
-      title: 'Меңгеру мен қателер',
+      title: 'Меңгеру мен қайталау',
       list: [
-        'Қатарынан 3 рет дұрыс — ★ меңгерілді.',
-        'Қате сұрақтар «Қателер» бетіне жиналады да, 3 рет дұрыс жауап берген соң шығады.'
+        'Әртүрлі күні қатарынан 3 рет дұрыс — ★ меңгерілді.',
+        'Қателер «Қателер» бетіне жиналады, 3 рет дұрыс жауаптан кейін шығады.',
+        'Меңгерілмегендер кестемен қайталауға оралады: 1 → 3 → 7 → 21 → 60 күн.'
       ]
     },
     {
       icon: '💾',
       title: 'Прогресс',
       list: [
-        'Осы браузерде сақталады, әр кітап бөлек.',
-        'Браузер деректерін тазаласаң — өшеді.'
+        'Осы браузерде сақталады, әр кітап бөлек; браузер деректерін тазаласаң — өшеді.',
+        'Статистика бетінде прогресті файлға сақтап, кейін қалпына келтіруге болады.'
       ]
     }
   ],
@@ -72,61 +80,68 @@ window.HELP = {
       icon: '✍️',
       title: 'Answering',
       list: [
-        'Capitals, punctuation and quote marks are ignored. Both "don’t" and "do not" count.',
-        'What you type saves itself.'
+        'Capitals, punctuation and quote marks are ignored: both "don’t" and "do not" count.',
+        'Questions with no single right answer are marked "check it yourself" — you press ✓ or ✗.',
+        '"I was right" takes back a wrong mark.'
       ],
       rows: [
         ['Enter', 'Check + next question'],
-        ['Tab', 'Next box, no check']
+        ['Tab', 'Next box, no check'],
+        ['Ctrl/⌘ + K', 'Search']
+      ]
+    },
+    {
+      icon: '⚡',
+      title: 'Practice session',
+      body: [
+        'One question at a time: your mistakes, whatever is due for review, and new questions — mixed, mistakes first.'
+      ],
+      list: [
+        'The ⚡ on the library page mixes every book; the ⚡ inside a book keeps to that book.',
+        '10, 20 or 50 questions. The run ends with a score and the list of what you missed.',
+        'From the keyboard: Enter checks, Enter again moves on.'
+      ]
+    },
+    {
+      icon: '💡',
+      title: 'Hints',
+      list: [
+        'Three steps: the shape of the answer and its letter count → the first letter of each word → the answer.',
+        'A hinted answer counts as practice, but earns no ★ mastery, and the question returns tomorrow.'
+      ]
+    },
+    {
+      icon: '🔎',
+      title: 'Search and dictionary',
+      list: [
+        'Ctrl/⌘ + K searches question text, answers and unit titles; picking a result takes you straight to that question.',
+        'Rest the mouse on any English word (or double-click it; press and hold on a phone) for a Kazakh translation.',
+        '🔊 reads the question, the answer key or the word in the browser’s own voice.'
       ]
     },
     {
       icon: '📕',
       title: 'The book beside you',
       list: [
-        '"Open the PDF" shows the book on the right — you never leave the site.',
-        'Drag the line between panels to resize. Double-click it to reset.',
-        'Moving to another unit turns the PDF to the right page.'
-      ]
-    },
-    {
-      icon: '📖',
-      title: 'What does this word mean?',
-      body: [
-        'Any English word in an exercise can show you a Kazakh translation and a plain-English explanation.'
-      ],
-      list: [
-        'Rest the mouse on the word for a moment — the card appears.',
-        'Or double-click it, or select it. On a phone, press and hold.',
-        'Common words are built into the site and work offline; rarer ones are fetched once and remembered.',
-        'If the hover card gets in the way, switch off "Show on hover" at the bottom of it.'
-      ]
-    },
-    {
-      icon: '🔍',
-      title: 'Self-check questions',
-      body: [
-        'Questions with no single right answer carry a "self-check" tag.'
-      ],
-      list: [
-        'Type your answer, then mark it ✓ or ✗ yourself.',
-        '"I was right" undoes a wrong mark.'
+        '"Open the PDF" shows the book on the right — you never leave the site, and it follows you from unit to unit.',
+        'Drag the line between panels to resize; double-click it to reset.'
       ]
     },
     {
       icon: '⭐',
-      title: 'Mastery and mistakes',
+      title: 'Mastery and review',
       list: [
-        'Three correct in a row — ★ mastered.',
-        'Wrong answers collect on the "Mistakes" page and leave it after three correct answers.'
+        'Three correct answers in a row, on different days — ★ mastered.',
+        'Mistakes collect on the Mistakes page and leave it after three correct answers.',
+        'Everything else comes back on a schedule: 1 → 3 → 7 → 21 → 60 days.'
       ]
     },
     {
       icon: '💾',
       title: 'Progress',
       list: [
-        'Saved in this browser, separately per book.',
-        'Clearing your browser data clears it too.'
+        'Kept in this browser, separately per book; clearing browser data clears it.',
+        'The Stats page can save your progress to a file and restore it later.'
       ]
     }
   ]

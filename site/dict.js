@@ -303,13 +303,29 @@
       ph.textContent = entry.ph;
       head.appendChild(ph);
     }
-    if (entry && entry.audio) {
+    // A recording when the online entry has one, the browser's own voice
+    // otherwise — the offline core has no audio URLs, and those are exactly the
+    // 1 385 words a reader meets most often.
+    var canSpeak = !!(window.Speech && window.Speech.ok);
+    if (entry && (entry.audio || canSpeak)) {
       var au = document.createElement('button');
       au.type = 'button';
       au.className = 'wl-audio';
       au.textContent = '🔊';
       au.title = T('wl.listen', 'Тыңдау');
-      au.addEventListener('click', function () { new Audio(entry.audio).play(); });
+      au.addEventListener('click', function () {
+        var say = (entry && entry.base) || word;
+        if (entry.audio) {
+          try {
+            var a = new Audio(entry.audio);
+            a.addEventListener('error', function () { if (canSpeak) window.Speech.speak(say); });
+            var p = a.play();
+            if (p && p.catch) p.catch(function () { if (canSpeak) window.Speech.speak(say); });
+            return;
+          } catch (e) { /* fall through to the synthesiser */ }
+        }
+        if (canSpeak) window.Speech.speak(say);
+      });
       head.appendChild(au);
     }
     p.appendChild(head);

@@ -366,7 +366,8 @@ body.dragging iframe { pointer-events: none; }
 
 .row-body { flex: 1; min-width: 0; }
 
-.q { font-size: 14px; margin-bottom: 7px; overflow-wrap: anywhere; }
+/* A multiple-choice stem carries its A/B/C options on their own lines. */
+.q { font-size: 14px; margin-bottom: 7px; overflow-wrap: anywhere; white-space: pre-line; }
 .q.none { color: var(--muted); font-style: italic; }
 
 .answer-line { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
@@ -444,6 +445,12 @@ body.dragging iframe { pointer-events: none; }
   margin-bottom: 12px;
   overflow-wrap: anywhere;
 }
+
+/* The IELTS note, form and table tasks are laid out over many short lines and
+   the shape carries meaning, so the block keeps the line breaks the book has. */
+.passage { white-space: pre-line; }
+
+.sub-title { font-weight: 650; font-size: 14.5px; margin-bottom: 8px; }
 
 .options { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 
@@ -639,10 +646,22 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
    Multi-book shell — welcome / library / book views
    =================================================================== */
 
-/* app.js sets data-view on <body>; only one view is ever mounted */
-body:not([data-view="book"]) .topbar,
-body:not([data-view="book"]) .layout { display: none; }
-body[data-view="book"] .screen { display: none; }
+/* app.js sets data-view on <body>; only one view is ever mounted.
+   The drill session borrows the book shell — topbar and main column — but
+   without the sidebar, the PDF pane or the book tabs: one question at a time
+   is the whole point of it. */
+body:not([data-view="book"]):not([data-view="drill"]) .topbar,
+body:not([data-view="book"]):not([data-view="drill"]) .layout { display: none; }
+body[data-view="book"] .screen,
+body[data-view="drill"] .screen { display: none; }
+body[data-view="drill"] .sidebar,
+body[data-view="drill"] .pdf-pane,
+body[data-view="drill"] .dragger,
+body[data-view="drill"] #menuBtn,
+/* whole bar, not just its buttons: on mobile .tabs is a fixed bottom strip and
+   an emptied one would still sit there as a bare line */
+body[data-view="drill"] .tabs { display: none; }
+body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 
 .screen { min-height: 100vh; }
 
@@ -707,8 +726,13 @@ body[data-view="book"] .screen { display: none; }
 }
 
 .hero-stats { display: flex; gap: 10px; }
-.hero-stats div {
-  min-width: 66px;
+/* direct child only — otherwise the inner .v (number) and .k (label) divs get
+   boxed too, giving each stat a double, nested box.
+   flex:1 stretches the four tiles to fill the row (aligning with the Continue
+   bar below) instead of leaving empty space on the right. */
+.hero-stats > div {
+  flex: 1;
+  min-width: 0;
   padding: 9px 12px;
   border-radius: 11px;
   background: var(--panel-2);
@@ -728,7 +752,7 @@ body[data-view="book"] .screen { display: none; }
 .hero-resume a { font-weight: 600; }
 
 .home-choose {
-  margin: 22px 0 0;
+  margin: 22px 0 20px;
   font-size: 13px;
   color: var(--muted);
 }
@@ -749,19 +773,20 @@ body[data-view="book"] .screen { display: none; }
     border-top: 1px solid var(--line);
   }
   .hero-stats { justify-content: space-between; gap: 8px; }
-  .hero-stats div { flex: 1; min-width: 0; padding: 8px 4px; }
+  .hero-stats > div { flex: 1; min-width: 0; padding: 8px 4px; }
   .home-choose { text-align: center; }
 }
 
 /* ===== "How to use" card at the foot of the home page ===== */
+/* slim full-width guide bar, sitting between the hero and the two columns */
 .home-help {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 15px;
-  margin-top: 30px;
-  padding: 16px 20px;
-  border-radius: 14px;
+  gap: 13px;
+  margin: 22px 0 24px;
+  padding: 11px 18px;
+  border-radius: 12px;
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -769,27 +794,30 @@ body[data-view="book"] .screen { display: none; }
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+  transition: border-color .16s ease, box-shadow .16s ease;
 }
 .home-help:hover {
   border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 22px -10px rgba(47,111,235,.35), 0 2px 6px rgba(16,24,40,.06);
+  box-shadow: 0 6px 16px -8px rgba(47,111,235,.35), 0 1px 4px rgba(16,24,40,.06);
 }
 .home-help .hh-icon {
-  font-size: 20px;
+  font-size: 17px;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 9px;
   background: var(--accent-soft);
 }
-.home-help .hh-text { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
-.home-help .hh-text b { font-size: 14.5px; font-weight: 680; }
-.home-help .hh-text span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+/* title and subtitle on one line so the bar stays thin */
+.home-help .hh-text { display: flex; flex-direction: row; align-items: baseline; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.home-help .hh-text b { font-size: 14px; font-weight: 660; }
+.home-help .hh-text span { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
 .home-help .hh-go { color: var(--accent); font-size: 18px; flex: none; }
+@media (max-width: 560px) {
+  .home-help .hh-text { flex-direction: column; align-items: flex-start; gap: 1px; }
+}
 
 /* ===== Help page ===== */
 .help-sec {
@@ -830,7 +858,159 @@ body[data-view="book"] .screen { display: none; }
 .help-rows .hr-v { color: var(--muted); line-height: 1.55; }
 
 /* ===== Library ===== */
-.wrap { max-width: 1120px; margin: 0 auto; padding: 30px 22px 90px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 30px 24px 90px; }
+
+/* Consistent home-page spacing scale:
+   16px between cards · 12px from a section label to its content ·
+   24px between sections and between the two columns. */
+.home-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;        /* the sidebar keeps its own height, see below */
+}
+/* The sidebar is its own fixed-size block: it never stretches to match the book
+   column, so its height depends only on what is inside it (four cards + a
+   six-week calendar) and stays the same however many books are listed.
+   `align-self: start` is also what makes `position: sticky` work — a stretched
+   grid item is as tall as the whole row and can never stick — so the snapshot
+   and the calendar stay put while the books scroll past. */
+.home-aside {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+#asideDyn { display: flex; flex-direction: column; min-width: 0; }
+/* One constant cell height everywhere (same 34px as the statistics page); the
+   cells are never square and never stretch to fill leftover height. */
+.home-aside .cal-cell { aspect-ratio: auto; height: 34px; min-height: 0; }
+/* Both columns lead with a section label on the same line (top margin reset so
+   "GRAMMAR" and "SNAPSHOT" align); a label hugs the content below it (12px) and
+   keeps a wider gap (24px) from the section above. */
+.aside-title {
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--muted); font-weight: 650; margin: 0 0 12px;
+}
+.aside-title:not(:first-child) { margin-top: 24px; }
+.home-main { min-width: 0; }
+@media (max-width: 980px) {
+  .home-body { grid-template-columns: 1fr; }
+  /* Single column: the sidebar sits under the books, so nothing to stick to and
+     no height cap — it just takes its natural height. */
+  .home-aside { position: static; max-height: none; overflow: visible; }
+}
+
+/* ---- cross-book overview cards ---- */
+.ov-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 16px;
+}
+.ov-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ov-card .ov-v { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.ov-card .ov-k { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.ov-card .ov-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ov-card.hot .ov-sub { color: var(--accent); }
+.ov-card.bad .ov-v { color: var(--bad); }
+
+/* ---- month activity calendar (home + stats) ---- */
+.cal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px 14px;
+  touch-action: pan-y;
+  user-select: none;
+}
+/* On the statistics page the calendar spans the full content width like the
+   cards and table above it, but its cells are NOT square — they keep a short
+   fixed height so the calendar stays wide and flat instead of tall. */
+#main .cal-cell { aspect-ratio: auto; height: 34px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-title { font-weight: 650; font-size: 14px; text-transform: capitalize; }
+.cal-nav {
+  width: 28px; height: 28px; flex: none;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); color: var(--text);
+  cursor: pointer; font-size: 16px; line-height: 1; padding: 0;
+}
+.cal-nav:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.cal-nav:disabled { opacity: .3; cursor: default; }
+.cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px; }
+.cal-week span { text-align: center; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; position: relative; }
+.cal-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; border-radius: 6px; color: var(--muted);
+  font-variant-numeric: tabular-nums; cursor: default;
+}
+.cal-cell.blank { background: transparent; }
+
+/* floating tooltip shown above a day on hover / focus / tap */
+.cal-tip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: #1f2733;
+  color: #fff;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 6px 18px -6px rgba(0,0,0,.5);
+}
+.cal-tip[hidden] { display: none; }
+.cal-tip::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 100%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1f2733;
+}
+:root[data-theme="dark"] .cal-tip { background: #313a47; }
+:root[data-theme="dark"] .cal-tip::after { border-top-color: #313a47; }
+/* blue heat scale: light blue = few answers, deep blue = many */
+.cal-l0 { background: var(--line-soft); }
+.cal-l1 { background: #cfe0fd; color: #123a7a; }
+.cal-l2 { background: #7fb0f6; color: #0b2c5e; }
+.cal-l3 { background: #3f83ee; color: #eef4ff; }
+.cal-l4 { background: #1e50b8; color: #eef4ff; }
+.cal-cell.today { box-shadow: 0 0 0 2px var(--accent); }
+.cal-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cal-foot { margin-top: 10px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+:root[data-theme="dark"] .cal-l0 { background: #1b2129; }
+:root[data-theme="dark"] .cal-l1 { background: #123056; color: #9cc2f7; }
+:root[data-theme="dark"] .cal-l2 { background: #1e57ad; color: #dbe8ff; }
+:root[data-theme="dark"] .cal-l3 { background: #3f83ee; color: #f2f7ff; }
+:root[data-theme="dark"] .cal-l4 { background: #6ea8ff; color: #06204a; }
+/* in the narrow sidebar the four cards stack two-up; drop to one on phones */
+@media (max-width: 460px) {
+  .ov-cards { grid-template-columns: 1fr 1fr; }
+}
+
+.bc-miss { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.bc-miss-n { font-weight: 700; color: var(--bad); font-variant-numeric: tabular-nums; }
 
 .lib-group {
   display: flex;
@@ -841,8 +1021,11 @@ body[data-view="book"] .screen { display: none; }
   letter-spacing: .08em;
   color: var(--muted);
   font-weight: 650;
-  margin: 30px 0 14px;
+  /* same rhythm as the sidebar: 12px down to its cards, 24px from the group
+     above (the first group's top margin is zeroed so it lines up with SNAPSHOT) */
+  margin: 0 0 12px;
 }
+.lib-group:not(:first-child) { margin-top: 24px; }
 .lib-group::after {
   content: "";
   flex: 1;
@@ -850,7 +1033,10 @@ body[data-view="book"] .screen { display: none; }
   background: var(--line);
 }
 
-.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(292px, 1fr)); gap: 16px; }
+/* Three books per row so each group (grammar, vocabulary) is a single row —
+   two rows in all. The min is small enough that three fit inside the narrower
+   left column next to the sidebar. */
+.book-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 
 .book-card {
   display: flex;
@@ -1152,6 +1338,89 @@ body[data-view="book"] .screen { display: none; }
 .modal-body { padding: 14px 16px 18px; overflow-y: auto; }
 .modal-body .help-sec:last-child { margin-bottom: 0; }
 
+/* ===== Placement quiz ("where do I start?") ===== */
+/* The home entry sits above the "how to use" band and reads as the primary
+   call to action for a first-time visitor, so its icon carries the accent. */
+.home-start .hh-icon { background: var(--accent); color: #fff; }
+.home-start.taken .hh-icon { background: var(--accent-soft); color: var(--accent); }
+
+.place-panel { width: min(560px, 100%); }
+.place-body { padding: 18px 18px 20px; }
+
+.plc-h, .plc-resh { margin: 0 0 8px; font-size: 17px; font-weight: 650; }
+.plc-p { margin: 0 0 16px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.plc-primary {
+  appearance: none; border: none; cursor: pointer;
+  background: var(--accent); color: #fff;
+  font: inherit; font-weight: 620; font-size: 14px;
+  padding: 10px 20px; border-radius: 10px;
+}
+.plc-primary:hover { filter: brightness(1.05); }
+
+.plc-qhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.plc-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
+.plc-bar { flex: 1; height: 6px; border-radius: 4px; background: var(--panel-2); overflow: hidden; }
+.plc-bar > i { display: block; height: 100%; background: var(--accent); transition: width .25s ease; }
+.plc-pick { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.plc-q { margin: 0 0 16px; font-size: 18px; font-weight: 560; line-height: 1.5; }
+.plc-opts { display: grid; gap: 8px; }
+.plc-opt {
+  appearance: none; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel);
+  color: var(--text); font: inherit; font-size: 15px;
+  padding: 11px 14px; border-radius: 10px;
+  transition: border-color .14s ease, background .14s ease;
+}
+.plc-opt:hover, .plc-opt:focus-visible { border-color: var(--accent); background: var(--accent-soft); outline: none; }
+.plc-skip {
+  appearance: none; border: none; background: none; cursor: pointer;
+  color: var(--muted); font: inherit; font-size: 13px;
+  margin-top: 14px; padding: 4px 2px; text-decoration: underline;
+}
+.plc-skip:hover { color: var(--text); }
+
+.plc-scoreline { margin: 0 0 4px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plc-why { margin: 0 0 18px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.plc-rec-hd, .plc-goals-hd { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
+.plc-goals-hd { margin-top: 18px; }
+.plc-recs { display: grid; gap: 10px; }
+.plc-rec {
+  display: grid; gap: 3px;
+  padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel);
+  text-decoration: none; color: var(--text);
+  border-left: 4px solid hsl(var(--hue) 68% 52%);
+  transition: border-color .14s ease, box-shadow .14s ease;
+}
+.plc-rec:hover { box-shadow: 0 8px 20px -10px hsl(var(--hue) 45% 35% / .35); }
+.plc-rec-kind { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: hsl(var(--hue) 55% 42%); }
+.plc-rec-title { font-size: 15px; font-weight: 640; }
+.plc-rec-lvl { font-size: 12px; color: var(--muted); }
+.plc-rec-blurb { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+.plc-rec-go { font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+
+.plc-goals { display: grid; gap: 8px; }
+.plc-goal {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 9px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel);
+  text-decoration: none; color: var(--text);
+  border-left: 3px solid hsl(var(--hue) 65% 55%);
+}
+.plc-goal:hover { border-color: hsl(var(--hue) 55% 55%); }
+.plc-goal b { font-size: 13.5px; font-weight: 600; }
+.plc-goal span { font-size: 12px; color: var(--muted); }
+
+.plc-resfoot { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.plc-retake, .plc-tolib {
+  appearance: none; cursor: pointer; font: inherit; font-size: 13px;
+  padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--text);
+}
+.plc-retake:hover, .plc-tolib:hover { border-color: var(--accent); }
+
+:root[data-theme="dark"] .plc-rec-kind { color: hsl(var(--hue) 60% 70%); }
+
 /* ===== Book warning ===== */
 .warn {
   border: 1px solid var(--gold-line);
@@ -1332,3 +1601,374 @@ body[data-view="book"] .screen { display: none; }
 [data-lookup] .instructions,
 [data-lookup] .passage,
 [data-lookup] .raw { cursor: text; }
+
+/* ===================================================================
+   Speech, hints, search and the drill session
+   =================================================================== */
+
+/* ===== 🔊 read this aloud ===== */
+.speak {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  margin-left: 6px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .12s ease, transform .12s ease;
+}
+.speak:hover { opacity: 1; transform: scale(1.15); }
+.speak:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
+
+/* ===== Hints ===== */
+.hint-btn { color: var(--gold); border-color: var(--gold-line); }
+.hint-btn:hover { background: var(--gold-bg); }
+
+.hint {
+  margin-top: 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-line);
+}
+.hint[hidden] { display: none; }
+.hint-ico { font-size: 12px; }
+.hint-mask {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  letter-spacing: .12em;
+  color: var(--gold);
+}
+.hint-meta { font-size: 11.5px; color: var(--muted); }
+.hint-full { color: var(--gold); font-size: 14px; }
+.key.hinted { color: var(--gold); }
+
+/* A row reached from search or a drill summary announces itself, briefly. */
+.row.flash { animation: rowflash 1.8s ease-out; }
+@keyframes rowflash {
+  0%, 40% { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+  100% { box-shadow: none; }
+}
+
+/* ===== Find (Ctrl+K) ===== */
+.tab-find, .tab-drill { min-width: 32px; justify-content: center; }
+
+.find-panel { width: min(680px, 100%); }
+.find-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  flex: none;
+  flex-wrap: wrap;
+}
+#findInput {
+  flex: 1 1 220px;
+  min-width: 0;
+  font: inherit;
+  font-size: 15px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+#findInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.find-scope { display: flex; gap: 4px; }
+.find-scope .fs {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+.find-scope .fs.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+.find-results { overflow-y: auto; padding: 6px; }
+.find-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.find-row:hover, .find-row:focus-visible { background: var(--panel-2); border-color: var(--line); outline: none; }
+.fr-src { display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.fr-book { font-weight: 600; }
+.fr-note { color: var(--accent); }
+.fr-text { font-size: 13.5px; line-height: 1.45; }
+.fr-text mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 0 2px; }
+.find-note { padding: 18px 14px; color: var(--muted); font-size: 13px; text-align: center; }
+.find-foot { padding: 0 16px 10px; font-size: 11.5px; color: var(--muted); text-align: center; }
+.find-foot:empty { display: none; }
+
+/* ===== Drill: setup ===== */
+.drill-today {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.drill-today .dt-streak { color: var(--accent); }
+
+.drill-setup {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.ds-label { font-size: 12px; color: var(--muted); margin-bottom: 9px; }
+.ds-sizes { display: flex; gap: 8px; flex-wrap: wrap; }
+.ds-sizes .btn { font-size: 14px; padding: 9px 18px; }
+.drill-alt { display: inline-block; margin-top: 14px; }
+
+/* Which books the queue is drawn from — "7 mistakes" across six books needs
+   an address before it means anything. */
+.drill-books { display: flex; flex-direction: column; gap: 1px; }
+.db-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.db-row:first-child { border-radius: 10px 10px 0 0; }
+.db-row:last-child { border-radius: 0 0 10px 10px; }
+.db-row:only-child { border-radius: 10px; }
+.db-row + .db-row { border-top: 0; }
+.db-name { font-size: 13.5px; font-weight: 550; color: var(--text); }
+.db-name:hover { color: var(--accent); }
+.db-counts {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.db-counts .db-wrong { color: var(--bad); }
+.db-counts .db-due { color: var(--accent); }
+
+/* How a run goes — the page is otherwise three cards and a blank screen. */
+.drill-how {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.dh-row { display: flex; gap: 10px; align-items: flex-start; }
+.dh-ico { flex: none; font-size: 14px; line-height: 1.5; }
+.dh-txt { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+/* ===== Drill: one question at a time ===== */
+.drill-top { margin-bottom: 14px; }
+.drill-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.drill-bar i { display: block; height: 100%; background: var(--accent); transition: width .25s ease; }
+.drill-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.dm-ok { color: var(--ok); }
+.dm-bad { color: var(--bad); }
+.dm-quit { margin-left: auto; }
+
+.drill-card {
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.drill-card.ok { border-color: var(--ok-line); background: var(--ok-bg); }
+.drill-card.bad { border-color: var(--bad-line); background: var(--bad-bg); }
+.dc-src { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+.dc-instr { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+.dc-q { font-size: 19px; line-height: 1.5; margin: 6px 0 16px; }
+.drill-card .answer-line { display: flex; gap: 8px; flex-wrap: wrap; }
+.drill-card .answer-line input {
+  flex: 1 1 220px;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+.drill-card .answer-line input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.dc-feedback { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.dc-verdict { font-weight: 650; font-size: 15px; }
+.dc-verdict.ok { color: var(--ok); }
+.dc-verdict.bad { color: var(--bad); }
+.dc-key, .dc-yours { font-size: 13.5px; }
+.dc-key b { font-weight: 650; }
+.dc-yours { color: var(--muted); }
+.dc-hinted { font-size: 12px; color: var(--gold); }
+.dc-nav { margin-top: 16px; }
+.dc-nav .btn { font-size: 15px; padding: 9px 20px; }
+
+/* ===== Drill: the summary ===== */
+.drill-end { text-align: center; padding: 24px 0 6px; }
+.de-mark { font-size: 46px; line-height: 1; }
+.drill-end h1 { margin: 10px 0 6px; font-size: 22px; }
+.de-score { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.de-pct { font-size: 40px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.de-perfect { color: var(--gold); font-weight: 600; }
+.de-acts { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+
+.de-missed { display: flex; flex-direction: column; gap: 10px; }
+.de-row {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.de-row .de-src { font-size: 11px; color: var(--muted); }
+.de-row .de-q { font-size: 14.5px; margin: 4px 0 6px; }
+.de-row .de-yours { font-size: 12.5px; color: var(--bad); }
+.de-row .de-key { font-size: 12.5px; }
+.de-go { display: inline-block; margin-top: 6px; font-size: 12.5px; }
+
+/* ===== The library's one big button ===== */
+.hero-drill { margin-top: 10px; }
+.drill-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.drill-cta:hover { border-color: var(--muted); }
+.drill-cta .dc-ico { font-size: 20px; }
+.drill-cta .dc-txt { display: flex; flex-direction: column; line-height: 1.35; }
+.drill-cta .dc-txt b { font-size: 14px; }
+.drill-cta .dc-txt span { font-size: 12px; color: var(--muted); }
+.drill-cta .dc-go { margin-left: auto; color: var(--accent); font-size: 18px; }
+
+@media (max-width: 620px) {
+  .dc-q { font-size: 17px; }
+  .drill-card { padding: 16px; }
+  .de-pct { font-size: 34px; }
+}
+
+/* ================= IELTS: audio player and reading passage ================= */
+/* Both sit directly above the questions they belong to, so they read as part
+   of that block rather than as a header for the whole page. */
+
+.ielts-audio {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-bottom: 10px;
+}
+
+.ia-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-bottom: 8px; font-size: 13.5px; }
+
+.ia-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.ia-head .muted { color: var(--muted); font-size: 12.5px; }
+.ielts-audio audio { width: 100%; height: 34px; }
+.ielts-audio .note { margin-top: 8px; }
+
+.ip {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: var(--panel);
+}
+
+.ip-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 11px 13px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+}
+.ip-head::-webkit-details-marker { display: none; }
+.ip-head::before { content: '▾'; color: var(--muted); font-size: 11px; }
+.ip:not([open]) .ip-head::before { content: '▸'; }
+
+.ip-num {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.ip-title { flex: 1 1 auto; }
+.ip-head .muted { color: var(--muted); font-size: 12.5px; }
+
+.ip-body {
+  padding: 0 15px 13px 15px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.ip-body p { margin: 0 0 11px 0; }
+.ip-sub { color: var(--muted); font-style: italic; }
+
+/* Collins Listening: a unit's tracks as a labelled list of small players. */
+.track-list { display: flex; flex-direction: column; gap: 6px; }
+.track { display: flex; align-items: center; gap: 10px; }
+.track-label {
+  flex: 0 0 auto;
+  min-width: 62px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.track audio { flex: 1 1 auto; height: 32px; min-width: 0; }
