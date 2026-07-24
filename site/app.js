@@ -15,17 +15,12 @@
   var THEMES = ['light', 'dark'];
   var THEME_ICON = { light: '☀', dark: '☾' };
 
-  // First PDF page (true #page=) of each book's printed answer key. Powers the
-  // "answer key" chip: when a key is prose, a crossword, a self-check item or
-  // otherwise not auto-checkable, the learner opens the back of the book in one
-  // click. Books without a machine-locatable key (IELTS 19/20, Collins) are
-  // omitted — no chip is shown for them.
-  var ANSWER_KEY_PAGE = {
-    'essential-grammar': 263, 'grammar': 348, 'advanced-grammar': 263,
-    'vocab-preint': 209, 'vocab-upint': 211, 'vocab-adv': 212,
-    'vocab-elem': 129, 'collocations': 130, 'academic': 134, 'business': 144,
-    'ielts-21': 118
-  };
+  // Per-unit answer-key pages: AK_PAGES[bookId][unit] -> true PDF #page= of that
+  // unit's answers in the back of the book. Loaded from data/answer-key-pages.json
+  // (built by tools/build_answer_key_pages.py). Powers the "answer key" button on
+  // exercises the app can't grade — a Unit 19 task opens the Unit 19 answers, not
+  // Unit 1. Books without a machine-locatable key (IELTS 19/20, Collins) are absent.
+  var AK_PAGES = {};
 
   function bookMeta(id) {
     for (var i = 0; i < BOOKS.length; i++) if (BOOKS[i].id === id) return BOOKS[i];
@@ -705,6 +700,12 @@
   var pending = {};
 
   function loadIndex() {
+    // The answer-key page map is small and needed the moment a unit renders, so
+    // fetch it alongside the index; a failure just means no "answer key" button.
+    fetch('data/answer-key-pages.json')
+      .then(function (r) { return r.json(); })
+      .then(function (m) { AK_PAGES = m || {}; })
+      .catch(function () { /* no key button — harmless */ });
     return fetch('data/index.json')
       .then(function (r) { return r.json(); })
       .then(function (list) {
@@ -1657,6 +1658,23 @@
 
   /* ================= sub-exercise block ================= */
 
+  // The answer-key page for the unit being rendered, set by renderUnit so each
+  // exercise's key button opens that unit's answers (not the book's first page).
+  var akUnitPage = null;
+
+  // "📗 Answer key" — opens this unit's printed key in the PDF pane. null when
+  // the book has no machine-locatable key (IELTS 19/20, Collins) or no PDF.
+  function answerKeyBtn() {
+    var akPage = akUnitPage;
+    if (akPage == null || !(book.meta && book.meta.pdf)) return null;
+    var b = el('button', 'btn small key-btn');
+    b.type = 'button';
+    b.title = t('unit.answerKeyHint');
+    b.appendChild(document.createTextNode('📗 ' + t('unit.answerKey')));
+    b.addEventListener('click', function () { showPdf(akPage); });
+    return b;
+  }
+
   function buildSub(unitNo, sub) {
     var box = el('div', 'sub');
 
@@ -1716,6 +1734,8 @@
 
     if (sub.type === 'crossword') {
       box.appendChild(el('div', 'note', t('sub.crossword') + (sub.note ? ' ' + sub.note : '')));
+      var cwKey = answerKeyBtn();
+      if (cwKey) { var cwActs = el('div', 'sub-actions'); cwActs.appendChild(cwKey); box.appendChild(cwActs); }
       return box;
     }
 
@@ -1724,6 +1744,8 @@
     var items = sub.items || [];
     if (!items.length) {
       box.appendChild(el('div', 'note', t('sub.doInPdf')));
+      var emptyKey = answerKeyBtn();
+      if (emptyKey) { var emptyActs = el('div', 'sub-actions'); emptyActs.appendChild(emptyKey); box.appendChild(emptyActs); }
       return box;
     }
 
@@ -1738,6 +1760,15 @@
       var btn = el('button', 'btn small', t('sub.checkExercise'));
       btn.addEventListener('click', function () { checkAllIn(box); });
       actions.appendChild(btn);
+    }
+
+    // Only when the whole exercise is self-check — no answer can be graded
+    // automatically (all open/personal, or a broken key). An exercise that
+    // checks itself has its answers, so the key would only tempt cheating.
+    var hasReal = items.some(function (it) { return !isExample(it); });
+    if (hasReal && !hasCheckable) {
+      var kb = answerKeyBtn();
+      if (kb) actions.appendChild(kb);
     }
 
     // Some exercises ship a printed key that cannot be matched automatically
@@ -1906,6 +1937,11 @@
     if (!u) { renderNotFound(no); return; }
 
     currentUnit = no;
+    // this unit's answer-key page, so each exercise's key button lands on the
+    // right unit's answers; may carry an explicit u.answerKeyPage from the data.
+    akUnitPage = (u.answerKeyPage != null)
+      ? u.answerKeyPage
+      : ((AK_PAGES[book.id] || {})[no] || null);
     state.last = { book: book.id, unit: no };
     save();
     setTab('units');
@@ -1925,18 +1961,6 @@
       var pages = (u.pdfPages && u.pdfPages.length > 1)
         ? u.pdfPages.join('–') : String(u.pdfExercisePage);
       chips.appendChild(pageChip(t('unit.exercisePage'), pages, u.pdfExercisePage));
-    }
-    // The answer key in the back of the book, one click away — for self-check
-    // items, crosswords and prose answers the app cannot grade automatically.
-    var akPage = ANSWER_KEY_PAGE[book.id];
-    if (akPage != null && book.meta && book.meta.pdf) {
-      var akChip = el('button', 'chip pdf-link');
-      akChip.type = 'button';
-      akChip.title = t('unit.answerKeyHint');
-      akChip.appendChild(document.createTextNode('📗 '));
-      akChip.appendChild(el('strong', null, t('unit.answerKey')));
-      akChip.addEventListener('click', function () { showPdf(akPage); });
-      chips.appendChild(akChip);
     }
     if (book.meta && book.meta.pdf) {
       // Start on the explanation page: that is where a unit begins. The two
