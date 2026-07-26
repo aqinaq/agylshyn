@@ -369,7 +369,14 @@ window.I18N = {
     'lock.signIn': 'Аккаунтқа кіру',
     'lock.recheck': 'Қайта тексеру',
     'lock.readPdf': '📖 Кітапты оқу',
-    'lock.badge': 'Ақылы'
+    'lock.badge': 'Ақылы',
+
+    'offer.size': '{books} кітап · {items} сұрақ',
+    'offer.once': '— бір рет, мәңгілікке',
+    'offer.pay': 'Kaspi арқылы төлеу',
+    'offer.kaspi': 'Kaspi:',
+    'offer.after': 'Төлегеннен кейін чекті мына жерге жібер:',
+    'offer.write': 'Бағасын және төлем жолын осы жерден сұра:'
   },
 
   en: {
@@ -732,6 +739,13 @@ window.I18N = {
     'lock.signIn': 'Sign in',
     'lock.recheck': 'Check again',
     'lock.readPdf': '📖 Read the book',
-    'lock.badge': 'Paid'
+    'lock.badge': 'Paid',
+
+    'offer.size': '{books} books · {items} questions',
+    'offer.once': '— once, forever',
+    'offer.pay': 'Pay with Kaspi',
+    'offer.kaspi': 'Kaspi:',
+    'offer.after': 'Once paid, send the receipt to:',
+    'offer.write': 'Ask about the price and how to pay:'
   }
 };

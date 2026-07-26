@@ -19,15 +19,17 @@
     "pay when the level you need is behind one.",
     "",
     "  ielts     Cambridge IELTS 19/20/21 — people sitting a paid exam",
-    "  advanced  C1–C2 and the specialised vocabularies",
+    "  advanced  B2 upwards: the C1–C2 shelf and the specialised vocabularies",
     "",
-    "Free: essential-grammar, grammar, vocab-elem, vocab-preint, vocab-upint,",
-    "collocations."
+    "Free: essential-grammar, grammar, vocab-elem, vocab-preint, collocations.",
+    "Those five carry a learner from A1 to B1, which is where most people who",
+    "will never pay stop anyway."
   ],
   "books": {
     "ielts-19": "ielts",
     "ielts-20": "ielts",
     "ielts-21": "ielts",
+    "vocab-upint": "advanced",
     "advanced-grammar": "advanced",
     "vocab-adv": "advanced",
     "academic": "advanced",

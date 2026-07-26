@@ -4262,6 +4262,110 @@
   // "try again", no error text, and a way forward instead. The two cases differ
   // by one question — is there an account yet — because for a signed-out reader
   // the next step is signing in, not paying.
+  // What a package contains, counted rather than written down: every book in
+  // index.json carrying this sku, and the questions inside them. tools/tiers.json
+  // is the only place that decides membership, so an offer can never advertise a
+  // book that has since moved tiers.
+  function packageSize(sku) {
+    var books = 0, items = 0;
+    for (var id in INDEX) {
+      if (INDEX[id].tier !== sku) continue;
+      books++;
+      items += INDEX[id].tracked || 0;
+    }
+    return { books: books, items: items };
+  }
+
+  // The "here is what it costs and how to pay" card. Returns null when there is
+  // nothing honest to show — no pricing.js, or a package with no price set —
+  // rather than an empty box or a button that does nothing.
+  function offerCard(sku) {
+    var cfg = window.PRICING || {};
+    var pack = (cfg.packages || {})[sku];
+    var contact = cfg.contact || {};
+    // A package with neither a price nor a link says nothing a reader can act
+    // on — it would be a box holding a title. Show the card only once at least
+    // one of the three useful things is filled in.
+    if (!((pack && (pack.price > 0 || pack.link)) || cfg.kaspi || contact.label)) return null;
+
+    var box = el('div', 'offer');
+
+    if (pack) {
+      var head = el('div', 'offer-head');
+      head.appendChild(el('div', 'offer-title', pick(pack.title) || sku));
+      var size = packageSize(sku);
+      if (size.books) {
+        head.appendChild(el('div', 'offer-size',
+          t('offer.size', { books: num(size.books), items: num(size.items) })));
+      }
+      box.appendChild(head);
+
+      if (pack.note) box.appendChild(el('div', 'offer-note', pick(pack.note)));
+
+      if (pack.price > 0) {
+        var price = el('div', 'offer-price');
+        price.appendChild(el('strong', null, num(pack.price) + ' ' + (pack.currency || '')));
+        price.appendChild(el('span', null, ' ' + t('offer.once')));
+        box.appendChild(price);
+      }
+
+      if (cfg.kaspi) {
+        var k = el('div', 'offer-kaspi');
+        k.appendChild(document.createTextNode(t('offer.kaspi') + ' '));
+        k.appendChild(el('strong', null, cfg.kaspi));
+        box.appendChild(k);
+      }
+    }
+
+    // One button, and which one depends on how far the setup has got. With a
+    // payment link it is "pay"; without one the sale happens in a conversation,
+    // so the button opens that instead. Two buttons would leave a reader
+    // choosing between steps that are actually sequential.
+    var payHref = pack && pack.link;
+    if (payHref) {
+      var pay = el('a', 'btn primary offer-pay', t('offer.pay'));
+      pay.href = payHref;
+      pay.target = '_blank';
+      // An outside site; noopener keeps it from reaching back into this page
+      // through window.opener.
+      pay.rel = 'noopener noreferrer';
+      box.appendChild(pay);
+    } else if (contact.href) {
+      var write = el('a', 'btn primary offer-pay', pick(contact.cta) || contact.label);
+      write.href = contact.href;
+      write.target = '_blank';
+      write.rel = 'noopener noreferrer';
+      box.appendChild(write);
+    }
+
+    // The step that actually gets the book opened while granting is by hand. It
+    // matters more than the price, so it is never hidden behind a missing one.
+    // With no pay link the wording changes: there is nothing to have paid yet.
+    if (contact.label) {
+      var how = el('div', 'offer-how');
+      how.appendChild(document.createTextNode(
+        t(payHref ? 'offer.after' : 'offer.write') + ' '));
+      if (contact.href) {
+        var a = el('a', null, contact.label);
+        a.href = contact.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        how.appendChild(a);
+      } else {
+        how.appendChild(el('strong', null, contact.label));
+      }
+      box.appendChild(how);
+    }
+
+    return box;
+  }
+
+  // pricing.js carries {kk, en} pairs like books.js does.
+  function pick(o) {
+    if (!o) return '';
+    return o[state.lang] || o.kk || '';
+  }
+
   function showLocked(id, sku) {
     clear(main);
     var meta = bookMeta(id);
@@ -4271,6 +4375,9 @@
     s.appendChild(el('div', null, t('lock.title', { id: (meta && meta.title) || id })));
     s.appendChild(el('div', 'instructions',
       t(signedIn ? 'lock.body' : 'lock.signedOut', { sku: String(sku || '') })));
+
+    var offer = offerCard(sku);
+    if (offer) s.appendChild(offer);
 
     var row = el('div', 'sub-actions');
     row.style.justifyContent = 'center';
