@@ -804,31 +804,36 @@
       drillBox.appendChild(dcta);
     }
 
-    // Right-hand sidebar: the month calendar always, plus a cross-book snapshot
-    // once there is progress. Books stay on the left, so the page fills its
-    // width instead of leaving big empty margins.
+    // Right-hand sidebar: the cross-book snapshot, then the month calendar.
+    // Books stay on the left, so the page fills its width instead of leaving big
+    // empty margins.
+    //
+    // The snapshot used to appear only once there was progress. Hiding it made
+    // the page silently different for a first-time visitor and for a returning
+    // one, and a newcomer never learned that any of this is tracked. It is shown
+    // from the first visit now; only the accuracy reads "—" rather than 0 %,
+    // because nothing answered is not the same as everything wrong.
     var aside = document.getElementById('asideDyn');
     if (aside) {
       clear(aside);
-      if (done > 0) {
-        aside.appendChild(el('div', 'aside-title', t('home.snapshot')));
-        var ovCards = el('div', 'ov-cards');
-        function ovCard(k, v, sub, cls) {
-          var c = el('div', 'ov-card' + (cls ? ' ' + cls : ''));
-          c.appendChild(el('div', 'ov-v', v));
-          c.appendChild(el('div', 'ov-k', k));
-          if (sub != null) c.appendChild(el('div', 'ov-sub', sub));
-          ovCards.appendChild(c);
-        }
-        var acc = done ? Math.round(correct / done * 100) : 0;
-        var streak = dayStreak();
-        ovCard(t('home.ovAccuracy'), acc + '%', correct + ' / ' + done);
-        ovCard(t('home.ovToday'), num(state.daily[todayKey()] || 0),
-          streak ? t('stats.streak', { n: streak }) : t('stats.streakNone'), streak ? 'hot' : '');
-        ovCard(t('home.ovWeek'), num(lastNDaysCount(7)), t('home.ovWeekSub'));
-        ovCard(t('home.ovMistakes'), num(mistakes), null, mistakes ? 'bad' : '');
-        aside.appendChild(ovCards);
+      aside.appendChild(el('div', 'aside-title', t('home.snapshot')));
+      var ovCards = el('div', 'ov-cards');
+      function ovCard(k, v, sub, cls) {
+        var c = el('div', 'ov-card' + (cls ? ' ' + cls : ''));
+        c.appendChild(el('div', 'ov-v', v));
+        c.appendChild(el('div', 'ov-k', k));
+        if (sub != null) c.appendChild(el('div', 'ov-sub', sub));
+        ovCards.appendChild(c);
       }
+      var streak = dayStreak();
+      ovCard(t('home.ovAccuracy'), done ? Math.round(correct / done * 100) + '%' : '—',
+        correct + ' / ' + done);
+      ovCard(t('home.ovToday'), num(state.daily[todayKey()] || 0),
+        streak ? t('stats.streak', { n: streak }) : t('stats.streakNone'), streak ? 'hot' : '');
+      ovCard(t('home.ovWeek'), num(lastNDaysCount(7)), t('home.ovWeekSub'));
+      ovCard(t('home.ovMistakes'), num(mistakes), null, mistakes ? 'bad' : '');
+      aside.appendChild(ovCards);
+
       aside.appendChild(el('div', 'aside-title', t('stats.activity')));
       aside.appendChild(buildMonthCalendar());
     }
