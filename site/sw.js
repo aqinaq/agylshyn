@@ -13,7 +13,7 @@
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v18';
+var SHELL_VERSION = 'v19';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -42,7 +42,10 @@ self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(SHELL_CACHE).then(function (c) {
     // Don't let one missing file abort the whole install.
     return Promise.all(SHELL.map(function (u) {
-      return c.add(u).catch(function () { /* skip, fetch it live later */ });
+      // Same reason as networkFirst: a precache filled from the HTTP cache can
+      // seed a brand-new shell version with the previous build's files.
+      return c.add(new Request(u, { cache: 'reload' }))
+        .catch(function () { /* skip, fetch it live later */ });
     }));
   }).then(function () { return self.skipWaiting(); }));
 });
@@ -56,9 +59,31 @@ self.addEventListener('activate', function (e) {
   }).then(function () { return self.clients.claim(); }));
 });
 
+// "Network first" was a lie in practice: plain fetch() inside a worker still
+// goes through the browser's HTTP cache, and GitHub Pages serves everything with
+// max-age=600. For ten minutes after a deploy a reader could therefore get the
+// NEW index.html together with the OLD cached app.js and style.css — a shell
+// spliced from two builds, which is worse than either. That is exactly how a
+// freshly redesigned account button came back as the small circle it replaced.
+// `cache: 'reload'` bypasses the HTTP cache, so the network really is consulted
+// first and the SW cache remains what it was meant to be: the offline copy.
+function bustCache(req) {
+  try {
+    return new Request(req.url, {
+      cache: 'reload',
+      credentials: 'same-origin',
+      headers: req.headers,
+      mode: req.mode === 'navigate' ? 'same-origin' : req.mode,
+      redirect: 'follow'
+    });
+  } catch (e) {
+    return req;          // very old browsers: fall back to the plain request
+  }
+}
+
 function networkFirst(req, cacheName) {
   return caches.open(cacheName).then(function (cache) {
-    return fetch(req).then(function (res) {
+    return fetch(bustCache(req)).then(function (res) {
       if (res && res.ok) cache.put(req, res.clone());
       return res;
     }).catch(function () {
