@@ -1411,7 +1411,13 @@
       if (!on) return;
       var inn = SYNC.signedIn();
       var mail = SYNC.email() || '';
-      b.textContent = inn ? (mail.charAt(0) || '●').toUpperCase() : t('auth.signIn');
+      clear(b);
+      // Avatar + word, not a lone glyph: the mark carries "this is a person's
+      // account" and the word says what pressing it does. Signed in the avatar
+      // holds the initial and the label becomes the address, so the button also
+      // answers "which account?" without being opened.
+      b.appendChild(el('span', 'acct-ava', inn ? (mail.charAt(0) || '●').toUpperCase() : '👤'));
+      b.appendChild(el('span', 'acct-label', inn ? mail : t('auth.signIn')));
       b.classList.toggle('on', inn);
       var label = inn ? t('auth.signedInAs') + ': ' + mail : t('auth.signIn');
       b.title = label;

@@ -1342,28 +1342,82 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 /* The topbar button doubles as the status light — hollow ○ when local-only,
    filled ◉ in the accent once signed in — so "is my progress backed up?" is
    answerable at a glance, without opening the panel. */
-/* Signed out the button carries a word ("Кіру"), so it cannot keep .theme-btn's
-   fixed icon width. Signed in it collapses to a round accent avatar holding the
-   first letter of the address. */
+/* The account control stands on its own at the top-left of the home page,
+   mirroring the icon cluster on the right. Two earlier tries failed the only
+   test that matters — being noticed: a bare ○ read as decoration, and a word
+   sized like the theme icon disappeared into the same row. It is now a pill
+   with an avatar and a label, on the opposite side and nothing beside it. */
+.acct-slot {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  z-index: 5;
+}
+@media (max-width: 860px) {
+  .acct-slot { top: 12px; left: 12px; }
+}
+
 .acct-btn {
-  width: auto;
-  min-width: 30px;
-  padding: 0 11px;
-  font-size: 12.5px;
-  font-weight: 560;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 15px 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
   color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
 }
-.acct-btn.on {
-  width: 27px;
-  padding: 0;
+.acct-btn:hover { border-color: var(--accent); }
+.acct-btn[hidden] { display: none; }
+
+.acct-ava {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 13px;
-  font-weight: 680;
+  font-weight: 700;
 }
-.acct-btn.on:hover { background: var(--accent); color: #fff; filter: brightness(1.08); }
+/* Signed in the avatar fills in — the same "you are logged in" cue everywhere
+   else on the web — and the label switches to the address. */
+.acct-btn.on .acct-ava { background: var(--accent); color: #fff; }
+
+.acct-label {
+  max-width: 168px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Inside a book the topbar is already crowded, so the same control rides at a
+   smaller scale next to the library link. */
+.topbar-acct {
+  height: 30px;
+  padding: 0 12px 0 5px;
+  gap: 7px;
+  font-size: 12.5px;
+  box-shadow: none;
+  flex: none;
+}
+.topbar-acct .acct-ava { width: 21px; height: 21px; font-size: 11.5px; }
+.topbar-acct .acct-label { max-width: 120px; }
+@media (max-width: 700px) {
+  .topbar-acct .acct-label { display: none; }
+  .topbar-acct { padding: 0 5px; }
+}
 
 .auth-panel { width: min(440px, 100%); }
 .auth-body { padding: 18px 18px 20px; }
