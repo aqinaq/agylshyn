@@ -15,7 +15,7 @@
   "id": "advanced-grammar",
   "units": 116,
   "tracked": 2484,
-  "tier": "free"
+  "tier": "advanced"
  },
  {
   "id": "vocab-elem",
@@ -39,7 +39,7 @@
   "id": "vocab-adv",
   "units": 101,
   "tracked": 2462,
-  "tier": "free"
+  "tier": "advanced"
  },
  {
   "id": "collocations",
@@ -51,30 +51,30 @@
   "id": "academic",
   "units": 50,
   "tracked": 1321,
-  "tier": "free"
+  "tier": "advanced"
  },
  {
   "id": "business",
   "units": 66,
   "tracked": 1076,
-  "tier": "free"
+  "tier": "advanced"
  },
  {
   "id": "ielts-19",
   "units": 8,
   "tracked": 320,
-  "tier": "free"
+  "tier": "ielts"
  },
  {
   "id": "ielts-20",
   "units": 8,
   "tracked": 320,
-  "tier": "free"
+  "tier": "ielts"
  },
  {
   "id": "ielts-21",
   "units": 8,
   "tracked": 320,
-  "tier": "free"
+  "tier": "ielts"
  }
 ]

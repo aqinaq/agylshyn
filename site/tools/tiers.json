@@ -13,21 +13,26 @@
     "Moving a book between tiers is an edit here plus a rerun of the two tools —",
     "nobody's purchased rows have to change, because rows carry skus, not books."
   ],
-  "_pending": [
-    "Empty on purpose, for now. Marking a book paid moves its JSON out of",
-    "site/data/ — and until api.config.js carries a working API base, the app",
-    "would ask for a file that is no longer there and show 'could not load'",
-    "rather than a lock. The API base cannot be filled in before Railway has",
-    "built once and issued a domain, and Railway cannot build before this is",
-    "pushed. So the first deploy ships with nothing gated.",
+  "_packages": [
+    "Two packages today. The six books not listed here are free, and they are",
+    "the ones a beginner starts with — the funnel is: learn on the free books,",
+    "pay when the level you need is behind one.",
     "",
-    "Turning it on later is this map plus a rerun of split_content.py and",
-    "index_json.py. A suggested starting point, once /health reports ok:",
-    "  ielts-19 / ielts-20 / ielts-21          -> \"ielts\"",
-    "  advanced-grammar / vocab-adv            -> \"advanced\"",
-    "  academic / business                     -> \"advanced\""
+    "  ielts     Cambridge IELTS 19/20/21 — people sitting a paid exam",
+    "  advanced  C1–C2 and the specialised vocabularies",
+    "",
+    "Free: essential-grammar, grammar, vocab-elem, vocab-preint, vocab-upint,",
+    "collocations."
   ],
-  "books": {},
+  "books": {
+    "ielts-19": "ielts",
+    "ielts-20": "ielts",
+    "ielts-21": "ielts",
+    "advanced-grammar": "advanced",
+    "vocab-adv": "advanced",
+    "academic": "advanced",
+    "business": "advanced"
+  },
   "features": {
     "_comment": [
       "Convenience gated in the client only. These are not content, so a reader",
