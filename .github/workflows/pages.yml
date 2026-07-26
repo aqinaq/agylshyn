@@ -9,6 +9,11 @@
 # artifact — does not contain it. The deployed app reads AUDIO_BASE from
 # site/audio.config.js instead; until that points at object storage, the IELTS
 # and Collins listening tracks 404 and the app hides those players.
+#
+# ONE-TIME MANUAL STEP: Settings → Pages → Build and deployment → Source must be
+# set to "GitHub Actions" before the first run. configure-pages can create that
+# setting itself via `enablement: true`, but only with a token that has repo
+# admin rights — GITHUB_TOKEN does not, so that route just fails the job.
 name: Deploy site to GitHub Pages
 
 on:
@@ -37,8 +42,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true    # turns Pages on the first time this runs
 
       # ~230 MB, almost all of it site/pdf/. Uploading takes a few minutes.
       - uses: actions/upload-pages-artifact@v3
