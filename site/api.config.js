@@ -21,4 +21,4 @@
 
    Local work against a local API:
      window.API_BASE = 'http://localhost:8000'; */
-window.API_BASE = '';
+window.API_BASE = 'https://agylshyn-production.up.railway.app';
