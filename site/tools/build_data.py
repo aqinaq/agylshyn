@@ -16,7 +16,11 @@ import json
 import os
 import re
 
+import fitz
+
+import index_json
 import parse_additional
+import repair
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, 'site', 'data')
@@ -442,46 +446,31 @@ BOOKS = [
 ]
 
 
-# A few Advanced Grammar pages carry a broken font ToUnicode map, so their text
-# came out shifted three letters ("WKH" for "the"). Detected by the shifted
-# forms of very common words; the field is unreadable and gets dropped.
-_SHIFT_WORDS = re.compile(
-    r'\b(WKH|DQG|ZDV|WKDW|RXW|LQJ|YRX|WLPH|KDYH|ZLOO|WKLV|IURP|EHHQ|QRW|DUH|IRU|WKHLU)\b')
-
 # A handful of crossword answers were extracted as spaced-out single letters
 # with trailing junk ("c r i t i c s u h b a l"). They cannot be matched.
 _SPACED_LETTERS = re.compile(r'(?:\b[A-Za-z]\s){4,}')
 
 
-def _is_shifted(s):
-    return bool(s) and len(_SHIFT_WORDS.findall(s)) >= 3
-
-
 def scrub(units):
-    """Post-process shared by every book, applied after page fixing:
+    """Post-process shared by every book, applied after page fixing.
 
-    1. Drop shift-garbled text (instructions/passage/note and any garbled
-       item text) but keep the exercise's clean items — the learner reads the
-       passage from the PDF and its answer key. (AUDIT: adv-grammar 11/15/49/74)
-    2. Turn spaced-letter garbled answers into self-check rows, so a broken key
-       never marks a right answer wrong — the PDF answer key is one click away.
-    3. Remove tracked rows the extractor created past the real questions: no
-       question and no answer, so they can never be completed yet still count
-       toward the total — which is why a book could never reach 100 %.
+    The damage-specific repairs now live in tools/repair.py, which runs first
+    (see refine below); what is left here is the pruning that has to happen
+    afterwards, because a repair may still fill a row that looked empty.
+
+    Spaced-letter answers ("c r i t i c s u h b a l") cannot be matched against
+    anything, so they become self-check rows and the printed key stays one click
+    away. Rows with neither a question nor an answer are removed outright: they
+    could never be completed, yet they counted towards the total, which is why a
+    book could never reach 100 %.
     """
     for u in units:
         for s in u.get('subExercises', []) or []:
-            for f in ('instructions', 'passage', 'note'):
-                if _is_shifted(s.get(f)):
-                    s[f] = None
             for it in s.get('items', []) or []:
-                if _is_shifted(it.get('question')):
-                    it['question'] = None
-                if _is_shifted(it.get('answer')):
-                    it['answer'] = it['blank'] = None
-                elif it.get('answer') and _SPACED_LETTERS.search(it['answer']):
+                if it.get('answer') and _SPACED_LETTERS.search(it['answer']):
                     it['answer'] = it['blank'] = None
                     it['selfCheck'] = True
+                    it['selfWhy'] = 'key'
 
             if s.get('type') in ('items', 'text'):
                 s['items'] = [
@@ -494,35 +483,77 @@ def scrub(units):
     return units
 
 
-def tracked(units):
-    """Questions that count towards progress — must match isTracked() in app.js."""
-    n = 0
-    for u in units:
-        for s in u.get('subExercises', []) or []:
-            if s.get('type') not in ('items', 'text'):
-                continue
-            for it in s.get('items', []) or []:
-                if not it.get('isExample'):
-                    n += 1
-    return n
+def book_pdf(bid):
+    path = os.path.join(ROOT, 'site', 'pdf', bid + '.pdf')
+    return path if os.path.exists(path) else None
+
+
+def pages_of(u):
+    """The PDF pages a unit's exercises are printed on."""
+    pages = u.get('pdfPages') or []
+    if not pages and u.get('pdfExercisePage') is not None:
+        pages = [u['pdfExercisePage']]
+    # The exercises sometimes run onto the page after the one recorded, and
+    # searching one page too many costs nothing but a miss costs a repair.
+    return pages + [pages[-1] + 1] if pages else []
+
+
+def refine(bid, units):
+    """Undo extraction damage, using the book's own PDF as the reference.
+
+    Order matters. Merged keys are split before anything prunes the empty rows
+    they belong to; questions are realigned before garbled text is dropped, so
+    a page that reads cleanly is never thrown away; long answers are classified
+    last, once every answer is in its final form.
+    """
+    log = []
+    recovered = repair.split_merged_keys(units)
+    if recovered:
+        log.append('%d keys unmerged' % recovered)
+
+    pdf = book_pdf(bid)
+    if pdf:
+        with fitz.open(pdf) as doc:
+            gaps, respelled = repair.regap_book(units, doc, pages_of)
+            fixed = repair.fix_answer_words(units, repair.book_vocabulary(doc))
+        if gaps:
+            log.append('%d gaps restored' % gaps)
+        if respelled:
+            log.append('%d respelled' % respelled)
+        if fixed:
+            log.append('%d keys respelled' % fixed)
+
+    dropped = repair.drop_garbled(units)
+    if dropped:
+        log.append('%d garbled dropped' % dropped)
+    prose = repair.mark_long_answers(units)
+    if prose:
+        log.append('%d prose -> self-check' % prose)
+    return units, log
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     index = []
     for bid, fn in BOOKS:
-        units = clean(scrub(fix_pages(bid, fn())))
+        units, log = refine(bid, fix_pages(bid, fn()))
+        units = clean(scrub(units))
         path = os.path.join(OUT, bid + '.json')
         with open(path, 'w', encoding='utf-8') as f:
             json.dump({'id': bid, 'units': units}, f, ensure_ascii=False,
                       separators=(',', ':'))
-        t = tracked(units)
-        index.append({'id': bid, 'units': len(units), 'tracked': t})
-        print('%-18s %3d units  %5d tracked  %6.0f KB'
-              % (bid, len(units), t, os.path.getsize(path) / 1024))
+        row = index_json.entry(bid, units)
+        index.append(row)
+        print('%-18s %3d units  %5d tracked  %6.0f KB   %s'
+              % (bid, len(units), row['tracked'], os.path.getsize(path) / 1024,
+                 ', '.join(log)))
 
-    with open(os.path.join(OUT, 'index.json'), 'w', encoding='utf-8') as f:
-        json.dump(index, f, ensure_ascii=False, indent=1)
+    # Merge, never overwrite: the IELTS and Collins rows are written by their own
+    # builders and a wholesale rewrite here used to drop them from index.json —
+    # which is what made the home page under-count by five books.
+    rows = index_json.update(index)
+    print('index.json: %d books, %d units, %d questions'
+          % (len(rows), sum(r['units'] for r in rows), sum(r['tracked'] for r in rows)))
 
 
 if __name__ == '__main__':

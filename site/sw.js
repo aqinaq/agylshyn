@@ -13,7 +13,7 @@
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v10';
+var SHELL_VERSION = 'v15';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -27,7 +27,10 @@ var SHELL = [
   './help.js',
   './books.js',
   './placement.js',
+  './supabase.config.js',
+  './sync.js',
   './dict.js',
+  './audio.config.js',
   './manifest.webmanifest',
   './icon.svg',
   './data/index.json',
@@ -83,7 +86,10 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;   // e.g. translation API — leave alone
+  // Anything on another host is left entirely alone — the translation API, and
+  // the listening audio when AUDIO_BASE points at object storage. Intercepting
+  // that bucket would only break the Range requests <audio> depends on.
+  if (url.origin !== self.location.origin) return;
 
   if (/\/data\/.*\.json$/.test(url.pathname)) { e.respondWith(networkFirst(req, DATA_CACHE)); return; }
   if (/\.pdf$/.test(url.pathname)) { e.respondWith(cacheFirst(req, PDF_CACHE)); return; }

@@ -30,6 +30,9 @@ import re
 
 import fitz
 
+import index_json
+import repair
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, 'site', 'data')
 
@@ -245,8 +248,18 @@ if __name__ == '__main__':
               os.path.join(ROOT, 'site', 'pdf', 'collins-listening.pdf'),
               LISTENING_UNITS, LISTENING_KEY_PAGES, audio=listening_audio()),
     ]
+    index = []
     for data in books:
+        labels, keys = repair.fix_collins_ocr(data['units'])
+        prose = repair.mark_long_answers(data['units'])
+        print(f"{data['id']:18s} OCR: {labels} exercise numbers, {keys} keys; "
+              f"{prose} prose answers -> self-check")
         path = os.path.join(OUT, data['id'] + '.json')
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
         report(data)
+        index.append(index_json.entry(data['id'], data['units']))
+    # Without this the home page counted these two books as zero units and zero
+    # questions, and their cards showed "0/0" however much had been answered.
+    index_json.update(index)
+    print(f'index.json updated with {len(index)} book(s)')

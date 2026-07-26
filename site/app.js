@@ -287,6 +287,8 @@
     applyStatic();
     if (!helpModal.hidden) renderHelpInto(helpModalBody);
     if (placeModal && !placeModal.hidden && placeRepaint) placeRepaint();
+    if (authModal && !authModal.hidden && authRepaint) authRepaint();
+    refreshAuthButtons();   // its tooltip is translated too
     route();          // re-render whatever view is open, in the new language
   }
 
@@ -551,6 +553,9 @@
     }
     bumpDaily();
     save();
+    // The one hook cloud sync needs: keys are 'bookId|…', so this is also how it
+    // learns which book to push. No-op unless an account is signed in.
+    if (window.SYNC) SYNC.touch(key);
     return r;
   }
 
@@ -1092,6 +1097,7 @@
       score: score, ts: Date.now()
     };
     save();
+    if (window.SYNC) SYNC.touch(null);   // the estimate lives in the __meta row
     paintStartBand();
     renderPlaceResult(score, track);
   }
@@ -1198,6 +1204,271 @@
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
+
+  /* ================= account (optional cloud sync) ================= */
+
+  // Everything here is inert unless supabase.config.js has been filled in. The
+  // app was local-only by design and stays that way: an account is a backup that
+  // also reaches a second device, never a gate in front of the exercises.
+  var authModal = document.getElementById('authModal');
+  var authBody = document.getElementById('authBody');
+  var authReturnFocus = null;
+  var authRepaint = null;
+  var authMode = 'magic';       // 'magic' | 'password'
+  var authSignup = false;       // password mode: sign in vs create account
+  var authBusy = false;
+  var authMsg = null;           // { text, bad } — the last result, shown in-panel
+  var authEmail = '';           // survives a re-render (status ticks repaint us)
+
+  function syncOn() { return !!(window.SYNC && SYNC.configured); }
+
+  function openAuthModal() {
+    if (!authModal || !syncOn()) return;
+    authReturnFocus = document.activeElement;
+    authMsg = null;
+    authBusy = false;
+    // Repaints itself through SYNC.onChange once the answer lands.
+    if (!SYNC.signedIn()) SYNC.loadSettings();
+    renderAuth();
+    authModal.hidden = false;
+    var c = authModal.querySelector('.modal-close');
+    if (c) c.focus();
+  }
+  function closeAuthModal() {
+    if (!authModal || authModal.hidden) return;
+    authModal.hidden = true;
+    authRepaint = null;
+    if (authReturnFocus && authReturnFocus.focus) authReturnFocus.focus();
+    authReturnFocus = null;
+  }
+
+  function authSay(text, bad) {
+    authMsg = { text: text, bad: !!bad };
+    authBusy = false;
+    renderAuth();
+  }
+
+  // Supabase's own error strings are English-only and often jargon ("Invalid
+  // login credentials"), so they are wrapped rather than shown bare.
+  function authFail(e) {
+    if (!navigator.onLine) return authSay(t('auth.offline'), true);
+    authSay(t('auth.failed', { msg: (e && e.message) || '' }), true);
+  }
+
+  function renderAuth() {
+    if (!authBody) return;
+    authRepaint = renderAuth;
+    clear(authBody);
+    if (SYNC.signedIn()) renderAuthAccount();
+    else renderAuthSignIn();
+    if (authMsg) {
+      authBody.appendChild(el('p', 'auth-msg' + (authMsg.bad ? ' bad' : ''), authMsg.text));
+    }
+    authBody.appendChild(el('p', 'auth-note', t('auth.privacy')));
+  }
+
+  function renderAuthSignIn() {
+    authBody.appendChild(el('p', 'auth-intro', t('auth.intro')));
+
+    // Only offered when the Supabase project really has Google switched on —
+    // otherwise the button's one job would be to navigate away to an error page.
+    var prov = SYNC.providers();
+    if (prov && prov.google) {
+      var g = el('button', 'auth-google', t('auth.google'));
+      g.type = 'button';
+      g.disabled = authBusy;
+      g.addEventListener('click', function () { SYNC.signInGoogle(); });
+      authBody.appendChild(g);
+      authBody.appendChild(el('div', 'auth-or', t('auth.or')));
+    }
+
+    var mail = el('input', 'auth-in');
+    mail.type = 'email';
+    mail.autocomplete = 'email';
+    mail.placeholder = t('auth.emailPh');
+    mail.setAttribute('aria-label', t('auth.email'));
+    mail.value = authEmail;
+    mail.addEventListener('input', function () { authEmail = mail.value; });
+    authBody.appendChild(mail);
+
+    var pass = null;
+    if (authMode === 'password') {
+      pass = el('input', 'auth-in');
+      pass.type = 'password';
+      pass.autocomplete = authSignup ? 'new-password' : 'current-password';
+      pass.placeholder = t('auth.passwordPh');
+      pass.setAttribute('aria-label', t('auth.password'));
+      authBody.appendChild(pass);
+    }
+
+    function submit() {
+      var email = (mail.value || '').trim();
+      if (!email) return authSay(t('auth.needEmail'), true);
+      authEmail = email;
+      authBusy = true;
+      renderAuth();
+      if (authMode === 'magic') {
+        SYNC.sendMagicLink(email)
+          .then(function () { authSay(t('auth.magicSent'), false); })
+          .catch(authFail);
+        return;
+      }
+      var pw = pass ? pass.value : '';
+      if (pw.length < 6) return authSay(t('auth.needPassword'), true);
+      var p = authSignup ? SYNC.signUpPassword(email, pw) : SYNC.signInPassword(email, pw);
+      p.then(function (r) {
+        if (r === 'confirm-email') authSay(t('auth.confirmEmail'), false);
+        else { authMsg = null; renderAuth(); }
+      }).catch(authFail);
+    }
+
+    // Enter submits from either field — a two-field form where only the mouse
+    // works is a needless annoyance on mobile keyboards.
+    [mail, pass].forEach(function (inp) {
+      if (!inp) return;
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); submit(); }
+      });
+    });
+
+    var go = el('button', 'auth-primary',
+      authMode === 'magic' ? t('auth.magic') : (authSignup ? t('auth.signUp') : t('auth.signIn')));
+    go.type = 'button';
+    go.disabled = authBusy;
+    go.addEventListener('click', submit);
+    authBody.appendChild(go);
+
+    var alt = el('div', 'auth-alt');
+    var swap = el('button', 'auth-link',
+      authMode === 'magic' ? t('auth.usePassword') : t('auth.useMagic'));
+    swap.type = 'button';
+    swap.addEventListener('click', function () {
+      authMode = authMode === 'magic' ? 'password' : 'magic';
+      authMsg = null;
+      renderAuth();
+    });
+    alt.appendChild(swap);
+
+    if (authMode === 'password') {
+      var reg = el('button', 'auth-link', authSignup ? t('auth.haveAccount') : t('auth.noAccount'));
+      reg.type = 'button';
+      reg.addEventListener('click', function () {
+        authSignup = !authSignup;
+        authMsg = null;
+        renderAuth();
+      });
+      alt.appendChild(reg);
+    }
+    authBody.appendChild(alt);
+  }
+
+  function renderAuthAccount() {
+    var who = el('div', 'auth-who');
+    who.appendChild(el('div', 'auth-who-k', t('auth.signedInAs')));
+    who.appendChild(el('div', 'auth-who-v', SYNC.email() || '—'));
+    authBody.appendChild(who);
+
+    var st = SYNC.status();
+    authBody.appendChild(el('div', 'auth-status ' + st, t('auth.st.' + st)));
+
+    var ls = SYNC.lastSync();
+    var when = ls
+      ? t('auth.lastSync', { time: new Date(ls).toLocaleTimeString(t('locale')) })
+      : t('auth.neverSynced');
+    authBody.appendChild(el('div', 'auth-sub', when));
+
+    var pend = SYNC.pending();
+    if (pend) authBody.appendChild(el('div', 'auth-sub', t('auth.pending', { n: pend })));
+
+    var row = el('div', 'auth-row');
+    var now = el('button', 'auth-primary', t('auth.syncNow'));
+    now.type = 'button';
+    now.disabled = st === 'syncing';
+    now.addEventListener('click', function () { SYNC.syncNow(); });
+    row.appendChild(now);
+
+    var out = el('button', 'btn danger', t('auth.signOut'));
+    out.type = 'button';
+    out.addEventListener('click', function () {
+      SYNC.signOut().then(function () { authMsg = null; renderAuth(); });
+    });
+    row.appendChild(out);
+    authBody.appendChild(row);
+
+    authBody.appendChild(el('p', 'auth-note', t('auth.signOutNote')));
+  }
+
+  // The button doubles as the status light: filled once signed in, so the state
+  // is visible without opening anything.
+  function refreshAuthButtons() {
+    var on = syncOn();
+    [].forEach.call(document.querySelectorAll('.acct-btn'), function (b) {
+      b.hidden = !on;
+      if (!on) return;
+      var inn = SYNC.signedIn();
+      b.textContent = inn ? '◉' : '○';
+      b.classList.toggle('on', inn);
+      var label = t('auth.open') + (inn ? ' — ' + (SYNC.email() || '') : '');
+      b.title = label;
+      b.setAttribute('aria-label', label);
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    if (e.target.closest('[data-open-auth]')) { openAuthModal(); return; }
+    if (e.target.closest('[data-close-auth]')) closeAuthModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!authModal || authModal.hidden) return;
+    if (e.key === 'Escape') { closeAuthModal(); return; }
+    if (e.key !== 'Tab') return;
+    var f = authModal.querySelectorAll(
+      'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  // A merge that changed nothing must not repaint: sync runs on a timer, and a
+  // pointless re-render would clear whatever the reader is halfway through typing.
+  var mergedChanged = false;
+
+  function itemsSig(st) {
+    var n = 0, sum = 0;
+    for (var k in st.items) { n++; sum += (st.items[k].ts || 0) % 1e9; }
+    return n + ':' + sum;
+  }
+
+  if (window.SYNC) {
+    SYNC.onChange(function () {
+      refreshAuthButtons();
+      if (authModal && !authModal.hidden && authRepaint) authRepaint();
+    });
+    SYNC.attach({
+      getState: function () { return state; },
+      mergeInto: function (cur, incoming) {
+        var before = itemsSig(cur);
+        mergeInto(cur, incoming);
+        if (itemsSig(cur) !== before) mergedChanged = true;
+      },
+      afterMerge: function () {
+        if (!mergedChanged) return;
+        mergedChanged = false;
+        state.books = {};          // counters are derived — force a recount
+        flush();
+        // Never yank the page out from under an answer in progress. The merged
+        // records are already in `state`; the view catches up on the next route.
+        var ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') &&
+            ae.closest && ae.closest('#main')) return;
+        route();
+        refreshBadge();
+      }
+    });
+  }
 
   /* ================= sidebar ================= */
 
@@ -1434,6 +1705,11 @@
 
   function buildRow(unitNo, sub, it, opts) {
     var review = !!(opts && opts.review);        // rendered on the Mistakes page
+    // The reference page for the unit THIS row belongs to. It has to travel with
+    // the row rather than sit in a module variable: the Mistakes page builds rows
+    // from a dozen different units in one pass, and a shared variable meant every
+    // one of them offered the last-opened unit's page.
+    var introPage = (opts && opts.introPage != null) ? opts.introPage : null;
     // In review mode the book key stays hidden until the learner answers again
     // this session — otherwise the answer sits in plain sight (AUDIT §У1).
     var reveal = !review;
@@ -1485,8 +1761,15 @@
     }
     if (isManual(it)) {
       var tg = el('span', 'tag self', t('row.self'));
+      // "self-check" on its own reads as the app giving up. The data says which
+      // of three quite different reasons applies — the answer is a whole
+      // sentence, the printed key did not survive extraction, or the question
+      // is genuinely open — and each wants a different thing from the reader.
+      var why = 'row.selfWhy.' + (it.selfWhy || 'open');
+      tg.title = t(why);
       if (q) q.insertBefore(tg, q.firstChild);
       else rbody.appendChild(tg);
+      rbody.appendChild(el('div', 'self-note', t(why)));
     }
 
     /* --- input + buttons --- */
@@ -1576,6 +1859,16 @@
       if (r.hinted) feedback.appendChild(el('span', 'key hinted', t('hint.used')));
 
       if (r.last === 'wrong') {
+        // "Why?" — jump to the page that explains the rule they just missed.
+        // Showing the key is half the lesson; the reference page is the rest.
+        if (introPage != null) {
+          var pg = introPage;
+          var why = el('button', 'btn small why-btn', t('row.whyPage', { n: pg }));
+          why.type = 'button';
+          why.title = t('row.whyHint');
+          why.addEventListener('click', function () { showPdf(pg); });
+          feedback.appendChild(why);
+        }
         var ov = el('button', 'btn small ok', t('row.override'));
         ov.addEventListener('click', function () { mark(true, true); });
         feedback.appendChild(ov);
@@ -1662,6 +1955,16 @@
   // exercise's key button opens that unit's answers (not the book's first page).
   var akUnitPage = null;
 
+  // A unit's reference/theory page — the left half of a grammar spread, the page
+  // that explains the rule. Powers the "Why?" button on a wrong answer. null when
+  // the book ships no PDF or the unit has no intro page (most vocab/IELTS keys).
+  // Deliberately a function of the unit rather than a variable set by renderUnit:
+  // the Mistakes page renders rows from many units at once, and it must be able
+  // to ask this per unit.
+  function unitIntroPage(u) {
+    return (u && book.meta && book.meta.pdf && u.pdfIntroPage != null) ? u.pdfIntroPage : null;
+  }
+
   // "📗 Answer key" — opens this unit's printed key in the PDF pane. null when
   // the book has no machine-locatable key (IELTS 19/20, Collins) or no PDF.
   function answerKeyBtn() {
@@ -1675,7 +1978,7 @@
     return b;
   }
 
-  function buildSub(unitNo, sub) {
+  function buildSub(unitNo, sub, introPage) {
     var box = el('div', 'sub');
 
     var head = el('div', 'sub-head');
@@ -1727,6 +2030,10 @@
       });
       var acts = el('div', 'sub-actions');
       acts.appendChild(show);
+      // The reveal text is the extracted (sometimes OCR-mangled) key; the real
+      // page in the PDF is the source of truth for an unclear answer.
+      var fk = answerKeyBtn();
+      if (fk) acts.appendChild(fk);
       box.appendChild(acts);
       box.appendChild(ansBox);
       return box;
@@ -1749,10 +2056,11 @@
       return box;
     }
 
-    var hasCheckable = false;
+    var hasCheckable = false, hasManual = false;
     items.forEach(function (it) {
-      box.appendChild(buildRow(unitNo, sub, it));
+      box.appendChild(buildRow(unitNo, sub, it, { introPage: introPage }));
       if (isAuto(it)) hasCheckable = true;
+      else if (isManual(it)) hasManual = true;
     });
 
     var actions = el('div', 'sub-actions');
@@ -1762,11 +2070,13 @@
       actions.appendChild(btn);
     }
 
-    // Only when the whole exercise is self-check — no answer can be graded
-    // automatically (all open/personal, or a broken key). An exercise that
-    // checks itself has its answers, so the key would only tempt cheating.
-    var hasReal = items.some(function (it) { return !isExample(it); });
-    if (hasReal && !hasCheckable) {
+    // Whenever the exercise holds any item the app can't grade — an open/personal
+    // answer, or a key that didn't survive extraction — offer that exercise's
+    // printed key in the PDF pane. This now covers mixed exercises too (only some
+    // rows self-check), so a "self-check" or wrong-looking answer can be verified
+    // against the book page. Purely auto-gradable exercises are left out: their
+    // key sits one Check away already and would only tempt cheating.
+    if (hasManual) {
       var kb = answerKeyBtn();
       if (kb) actions.appendChild(kb);
     }
@@ -1852,6 +2162,31 @@
 
   /* ================= IELTS: audio and reading passages ================= */
 
+  // The data files store audio as site-relative paths ("audio/c20/t1p1.m4a").
+  // The folder is ~490 MB and is deliberately not in the repository, so a
+  // deployed copy usually serves it from object storage instead: AUDIO_BASE
+  // (audio.config.js) is prefixed here, in the one place a path becomes a URL.
+  // Empty base — a local checkout, or a deploy that does ship the folder —
+  // leaves the path exactly as the data file wrote it.
+  var AUDIO_BASE = String(window.AUDIO_BASE || '').replace(/\/+$/, '');
+
+  function audioUrl(path) {
+    var p = String(path == null ? '' : path);
+    // A data file may name an absolute URL of its own; that always wins.
+    if (!p || !AUDIO_BASE || /^(https?:)?\/\//i.test(p)) return p;
+    return AUDIO_BASE + '/' + p.replace(/^\.?\//, '');
+  }
+
+  // A track that 404s (audio not deployed, or a wrong AUDIO_BASE) makes <audio>
+  // fail silently — a player that simply does nothing when pressed. Both
+  // builders below route through this so the reader is told instead.
+  function audioFallback(audio, box, note) {
+    audio.addEventListener('error', function () {
+      if (box.querySelector('.' + note)) return;
+      box.appendChild(el('div', 'note ' + note, t('ielts.noAudio')));
+    });
+  }
+
   /* The recording for one Listening part, shown directly above that part's
      questions. A part is sometimes cut into two files, so the player takes a
      list and moves to the next when one ends — otherwise the reader would have
@@ -1873,20 +2208,15 @@
     var audio = document.createElement('audio');
     audio.controls = true;
     audio.preload = 'none';
-    audio.src = p.files[0];
+    audio.src = audioUrl(p.files[0]);
     audio.addEventListener('ended', function () {
       if (at + 1 >= p.files.length) return;
       at++;
-      audio.src = p.files[at];
+      audio.src = audioUrl(p.files[at]);
       audio.play().catch(function () { /* autoplay blocked — reader presses play */ });
     });
     box.appendChild(audio);
-    // A missing file fails silently on <audio>, so say so rather than leaving
-    // a player that does nothing when pressed.
-    audio.addEventListener('error', function () {
-      if (box.querySelector('.note')) return;
-      box.appendChild(el('div', 'note', t('ielts.noAudio')));
-    });
+    audioFallback(audio, box, 'audio-missing');
     return box;
   }
 
@@ -1903,8 +2233,11 @@
       var audio = document.createElement('audio');
       audio.controls = true;
       audio.preload = 'none';
-      audio.src = tr.file;
+      audio.src = audioUrl(tr.file);
       row.appendChild(audio);
+      // Per track, not per unit: with twelve players in a list, "the audio is
+      // missing" under the whole box would not say which one.
+      audioFallback(audio, row, 'audio-missing');
       list.appendChild(row);
     });
     box.appendChild(list);
@@ -1942,6 +2275,7 @@
     akUnitPage = (u.answerKeyPage != null)
       ? u.answerKeyPage
       : ((AK_PAGES[book.id] || {})[no] || null);
+    var introPage = unitIntroPage(u);   // for this unit's wrong-answer "Why?" buttons
     state.last = { book: book.id, unit: no };
     save();
     setTab('units');
@@ -2026,7 +2360,7 @@
       // reading passage goes in front of it rather than at the top of the page.
       if (sub.audio) main.appendChild(buildAudio(sub.audio));
       if (sub.reading) main.appendChild(buildPassage(sub.reading));
-      main.appendChild(buildSub(u.unit, sub));
+      main.appendChild(buildSub(u.unit, sub, introPage));
     });
 
     /* footer */
@@ -2133,13 +2467,17 @@
 
       // One instruction heading per exercise, not per question (AUDIT §У3).
       var lastSub = null;
+      // Every row in this group belongs to g.unit, so its "Why?" button points
+      // at that unit's reference page — the next group gets its own.
+      var groupIntro = unitIntroPage(g.unit);
       g.list.forEach(function (e) {
         if (e.sub !== lastSub) {
           box.appendChild(el('div', 'instructions',
             e.sub.number + (e.sub.instructions ? ' · ' + e.sub.instructions : '')));
           lastSub = e.sub;
         }
-        box.appendChild(buildRow(g.unit.unit, e.sub, e.item, { review: true }));
+        box.appendChild(buildRow(g.unit.unit, e.sub, e.item,
+          { review: true, introPage: groupIntro }));
       });
       main.appendChild(box);
     });
@@ -2256,6 +2594,13 @@
     imp.addEventListener('click', importProgress);
     tools.appendChild(exp);
     tools.appendChild(imp);
+    // The file backup and the account solve the same problem, so the way to the
+    // stronger one belongs right here rather than only behind a topbar icon.
+    if (syncOn()) {
+      var cloud = el('button', 'btn', t('stats.cloud'));
+      cloud.addEventListener('click', openAuthModal);
+      tools.appendChild(cloud);
+    }
     main.appendChild(tools);
 
     var reset = el('button', 'btn danger', t('stats.reset'));
@@ -3436,5 +3781,6 @@
 
   applyStatic();
   applyWidths();
+  refreshAuthButtons();
   loadIndex().then(route);
 })();

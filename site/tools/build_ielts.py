@@ -30,6 +30,8 @@ import re
 
 import fitz
 
+import index_json
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, 'site', 'data')
 
@@ -998,24 +1000,6 @@ def build_c19():
     return {'id': 'ielts-19', 'units': units}
 
 
-def update_index(entries):
-    """Merge these books into data/index.json without touching the others.
-
-    build_data.py owns that file for the grammar and vocabulary books, so this
-    reads it, replaces only its own rows and writes it back — running either
-    builder alone must not drop the other's books from the home page totals."""
-    path = os.path.join(OUT, 'index.json')
-    try:
-        with open(path, encoding='utf-8') as f:
-            rows = json.load(f)
-    except (IOError, ValueError):
-        rows = []
-    ours = {e['id'] for e in entries}
-    rows = [r for r in rows if r['id'] not in ours] + entries
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(rows, f, ensure_ascii=False, indent=1)
-
-
 if __name__ == '__main__':
     books = [
         build_c20(),
@@ -1035,7 +1019,7 @@ if __name__ == '__main__':
             path = os.path.join(OUT, 'ielts-19.json')
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
-            index.append({'id': 'ielts-19', 'units': len(units), 'tracked': answered})
+            index.append(index_json.entry('ielts-19', units))
             print(f"{'ielts-19':10s} {answered:3d}/320 answers from the transcribed key"
                   f"  {os.path.getsize(path) // 1024:3d} KB  shipped")
             continue
@@ -1054,9 +1038,6 @@ if __name__ == '__main__':
         print(f"{data['id']:10s} {found:3d}/320 questions, {answered:3d} answered"
               f"  {size:3d} KB  {state}")
         if complete:
-            units = to_units(data)['units']
-            index.append({'id': data['id'], 'units': len(units),
-                          'tracked': sum(len(s['items'])
-                                         for u in units for s in u['subExercises'])})
-    update_index(index)
+            index.append(index_json.entry(data['id'], to_units(data)['units']))
+    index_json.update(index)
     print(f'index.json updated with {len(index)} book(s)')

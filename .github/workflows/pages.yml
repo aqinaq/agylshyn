@@ -1,0 +1,49 @@
+# Publishes site/ to GitHub Pages → https://aqinaq.github.io/agylshyn/
+#
+# Why Actions rather than the "deploy from a branch" setting: Pages can only
+# serve a branch root or /docs, and the app lives in site/. Uploading site/ as
+# the artifact publishes it at the domain root without moving anything or
+# maintaining a second branch.
+#
+# site/audio/ is in .gitignore (~490 MB), so the checkout — and therefore the
+# artifact — does not contain it. The deployed app reads AUDIO_BASE from
+# site/audio.config.js instead; until that points at object storage, the IELTS
+# and Collins listening tracks 404 and the app hides those players.
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:      # lets a deploy be re-run without a new commit
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue instead of cancelling so a finished build
+# is not thrown away half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true    # turns Pages on the first time this runs
+
+      # ~230 MB, almost all of it site/pdf/. Uploading takes a few minutes.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

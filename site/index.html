@@ -34,6 +34,9 @@
 <section id="home" class="screen">
   <div class="controls floating">
     <button type="button" class="theme-btn" data-open-find data-i18n-aria="find.open">🔎</button>
+    <!-- Account is optional: app.js unhides these only when supabase.config.js
+         is filled in, so a fork with no backend never shows a dead button. -->
+    <button type="button" class="theme-btn acct-btn" data-open-auth data-i18n-aria="auth.open" hidden>◉</button>
     <button type="button" class="theme-btn" data-theme-btn></button>
     <div class="lang-switch">
       <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
@@ -107,6 +110,7 @@
     <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help">?</button>
   </nav>
   <div class="controls">
+    <button type="button" class="theme-btn acct-btn" data-open-auth data-i18n-aria="auth.open" hidden>◉</button>
     <button type="button" class="theme-btn" data-theme-btn></button>
     <div class="lang-switch">
       <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
@@ -167,6 +171,18 @@
   </div>
 </div>
 
+<!-- ================= account: optional cloud progress sync ================= -->
+<div id="authModal" class="modal" hidden>
+  <div class="modal-backdrop" data-close-auth></div>
+  <div class="modal-panel auth-panel" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="modal-head">
+      <h2 id="authTitle" data-i18n="auth.title"></h2>
+      <button type="button" class="modal-close" data-close-auth data-i18n-aria="auth.close">✕</button>
+    </div>
+    <div id="authBody" class="modal-body auth-body"></div>
+  </div>
+</div>
+
 <!-- ================= find: search questions across books (Ctrl+K) ========= -->
 <div id="findModal" class="modal" hidden>
   <div class="modal-backdrop" data-close-find></div>
@@ -190,6 +206,12 @@
 <script src="books.js"></script>
 <script src="placement.js"></script>
 <script src="dict.js"></script>
+<!-- Where the listening audio is served from; empty means "next to the site". -->
+<script src="audio.config.js"></script>
+<!-- Both must load before app.js: sync.js consumes the OAuth fragment on the way
+     back from a provider, and app.js would otherwise try to route on it. -->
+<script src="supabase.config.js"></script>
+<script src="sync.js"></script>
 <script src="app.js"></script>
 <script>
 /* Offline support. Registered after load so it never delays first paint, and

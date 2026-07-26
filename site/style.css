@@ -1338,6 +1338,83 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 .modal-body { padding: 14px 16px 18px; overflow-y: auto; }
 .modal-body .help-sec:last-child { margin-bottom: 0; }
 
+/* ===== Account (optional cloud sync) ===== */
+/* The topbar button doubles as the status light — hollow ○ when local-only,
+   filled ◉ in the accent once signed in — so "is my progress backed up?" is
+   answerable at a glance, without opening the panel. */
+.acct-btn.on { color: var(--accent); border-color: var(--accent); }
+
+.auth-panel { width: min(440px, 100%); }
+.auth-body { padding: 18px 18px 20px; }
+
+.auth-intro { margin: 0 0 16px; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+.auth-google {
+  appearance: none; cursor: pointer; width: 100%;
+  border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  font: inherit; font-weight: 560; font-size: 14px;
+  padding: 11px 16px; border-radius: var(--radius);
+}
+.auth-google:hover { background: var(--panel-2); border-color: var(--muted); }
+
+/* "or" on a rule: the two sign-in paths are alternatives, not a sequence. */
+.auth-or {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0; font-size: 12px; color: var(--muted);
+}
+.auth-or::before, .auth-or::after {
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
+
+.auth-in {
+  display: block; width: 100%; margin-bottom: 9px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--text);
+  font: inherit; font-size: 14px; padding: 10px 12px;
+}
+.auth-in:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.auth-primary {
+  appearance: none; border: none; cursor: pointer;
+  background: var(--accent); color: #fff;
+  font: inherit; font-weight: 620; font-size: 14px;
+  padding: 10px 20px; border-radius: var(--radius);
+}
+.auth-primary:hover { filter: brightness(1.05); }
+.auth-primary[disabled] { opacity: .55; cursor: default; filter: none; }
+
+.auth-alt { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+.auth-link {
+  appearance: none; border: none; background: none; cursor: pointer;
+  font: inherit; font-size: 12.5px; color: var(--accent); padding: 0;
+}
+.auth-link:hover { text-decoration: underline; }
+
+.auth-who { margin-bottom: 14px; }
+.auth-who-k { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.auth-who-v { font-size: 15px; font-weight: 600; word-break: break-all; }
+
+.auth-status {
+  display: inline-block; font-size: 12.5px; font-weight: 560;
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); background: var(--panel-2);
+}
+.auth-status.idle { color: var(--ok); background: var(--ok-bg); border-color: var(--ok-line); }
+.auth-status.error { color: var(--bad); background: var(--bad-bg); border-color: var(--bad-line); }
+.auth-status.offline { color: var(--gold); background: var(--gold-bg); border-color: var(--gold-line); }
+
+.auth-sub { font-size: 12.5px; color: var(--muted); margin-top: 7px; }
+.auth-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+.auth-msg {
+  margin: 14px 0 0; font-size: 13px; line-height: 1.55;
+  padding: 9px 12px; border-radius: var(--radius);
+  color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok-line);
+}
+.auth-msg.bad { color: var(--bad); background: var(--bad-bg); border-color: var(--bad-line); }
+
+.auth-note { margin: 14px 0 0; font-size: 12px; color: var(--muted); line-height: 1.55; }
+
 /* ===== Placement quiz ("where do I start?") ===== */
 /* The home entry sits above the "how to use" band and reads as the primary
    call to action for a first-time visitor, so its icon carries the accent. */
@@ -1621,6 +1698,10 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 }
 .speak:hover { opacity: 1; transform: scale(1.15); }
 .speak:focus-visible { opacity: 1; outline: 2px solid var(--accent); border-radius: 4px; }
+
+/* "Why?" — reference-page jump shown next to a wrong answer's key. */
+.why-btn { color: var(--accent); border-color: var(--accent-soft); }
+.why-btn:hover { background: var(--accent-soft); }
 
 /* ===== Hints ===== */
 .hint-btn { color: var(--gold); border-color: var(--gold-line); }
@@ -1972,3 +2053,14 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   font-variant-numeric: tabular-nums;
 }
 .track audio { flex: 1 1 auto; height: 32px; min-width: 0; }
+
+/* Why this row is judged by the reader rather than the app. Three quite
+   different reasons share the "self-check" tag, so the tag alone is not enough:
+   a broken key wants the book opened, an open question wants nothing. */
+.self-note {
+  margin: 2px 0 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 60ch;
+}
