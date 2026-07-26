@@ -219,8 +219,15 @@
         // These books are 2–44 MB. Fetch the bytes a page needs, not the file:
         // GitHub Pages answers Range requests, and the service worker is told
         // to leave ranged PDF requests alone so they reach it.
+        //
+        // Both switches are needed and they do different things. Without
+        // `disableStream` pdf.js keeps a full-file download running alongside
+        // the range requests, so the phone pays for the book twice over;
+        // without `disableAutoFetch` it range-fetches the rest of the file in
+        // the background once it can. Measured on the 44 MB IELTS 21: 74 MB
+        // pulled with only autoFetch off, 3 MB with both.
         disableAutoFetch: true,
-        disableStream: false,
+        disableStream: true,
         rangeChunkSize: 262144
       });
       return task.promise.then(function (d) {
