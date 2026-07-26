@@ -239,42 +239,5 @@ window.BOOKS = [
     // number and a box — no "read this in the PDF" on all forty of them.
     needsPdf: true,
     answerSheet: true
-  },
-  // The two Collins books are skill courses rather than full tests, but they
-  // sit in the same IELTS group — after the Cambridge test papers, which are
-  // the main draw.
-  {
-    id: 'collins-reading',
-    title: 'Collins Reading for IELTS',
-    author: 'Els Van Geyte · 2nd edition',
-    level: 'B1–B2',
-    kind: 'ielts',
-    units: 11,
-    blurb: {
-      kk: '12 тақырыптық юнит: Reading дағдыларын қадаммен үйрететін курс.',
-      en: 'Twelve topic units that build the Reading skills step by step.'
-    },
-    pdf: 'pdf/collins-reading.pdf',
-    hue: 158,
-    // Answer sheet: exercises are read in the book. Clean answers are checked
-    // here; the prose ones (definitions, model answers) are shown on a click.
-    needsPdf: true,
-    answerSheet: true
-  },
-  {
-    id: 'collins-listening',
-    title: 'Collins Listening for IELTS',
-    author: 'Fiona Aish & Jo Tomlinson',
-    level: 'B1–B2',
-    kind: 'ielts',
-    units: 11,
-    blurb: {
-      kk: '12 юнит, аудиосымен. Әр жаттығудың треги кітапта белгіленген.',
-      en: 'Twelve units with their audio. Each exercise names its track in the book.'
-    },
-    pdf: 'pdf/collins-listening.pdf',
-    hue: 200,
-    needsPdf: true,
-    answerSheet: true
   }
 ];

@@ -26,6 +26,11 @@
   --topbar-h: 49px;   /* measured at runtime by app.js */
   --sidebar-w: 268px; /* both set by the draggers, persisted in localStorage */
   --pdf-w: 520px;
+  /* Phones stack the book above the questions instead of tiling them side by
+     side, so there what the reader adjusts is the sheet's height. Overwritten
+     inline by app.js once it knows the viewport; this is the value the first
+     paint uses. */
+  --pdf-h: 46vh;
   /* Height of the fixed bottom tab bar (phones only — 0 while the tabs are in
      the topbar). Everything that must not end up underneath it — the reading
      column, the unit list, the PDF pane — reserves this much. */
@@ -159,10 +164,40 @@ a { color: var(--accent); text-decoration: none; }
   border-left: 1px solid var(--line);
 }
 
-.search-wrap { padding: 10px; border-bottom: 1px solid var(--line-soft); }
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Collapse handle for the unit list. Quiet by default — it is a layout
+   preference, not something the page wants pressed. */
+.side-min-btn {
+  flex: 0 0 auto;
+  display: none;              /* wide screens only; see the min-width block */
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 30px;
+  padding: 0;
+  appearance: none;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.side-min-btn:hover { background: var(--panel-2); color: var(--text); }
+.side-min-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 #search {
   width: 100%;
+  min-width: 0;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -211,6 +246,36 @@ a { color: var(--accent); text-decoration: none; }
 .u-pct { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .u-pct.done { color: var(--ok); font-weight: 700; }
 .empty-hint { padding: 14px; color: var(--muted); font-size: 13px; }
+
+/* ===== The unit list, collapsed to a rail of numbers =====
+   Only above the phone breakpoint (which the narrow block below mirrors at
+   860px): down there the list is a drawer sliding over the page, so shrinking
+   it to bare numbers would win no room at all — it would only take the titles
+   away. app.js sets --sidebar-w to the rail width and hides the drag handle;
+   everything else the collapsed state needs is here.
+   The number keeps its progress colour, so the rail still shows how far the
+   book has been worked: green for a finished unit, accent for the open one. */
+@media (min-width: 861px) {
+  .side-min-btn { display: inline-flex; }
+
+  body.side-min .search-wrap { padding: 8px 0; justify-content: center; }
+  body.side-min #search { display: none; }
+  body.side-min .unit-list { padding: 6px 3px; }
+  body.side-min .unit-link {
+    gap: 0;
+    padding: 7px 2px;
+    justify-content: center;
+  }
+  body.side-min .u-title,
+  body.side-min .u-pct { display: none; }
+  body.side-min .u-num {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 12.5px;
+  }
+  body.side-min .unit-link.full .u-num { color: var(--ok); }
+  body.side-min .empty-hint { padding: 12px 4px; font-size: 11px; text-align: center; }
+}
 
 .overlay {
   position: fixed;
@@ -303,9 +368,52 @@ body.dragging iframe { pointer-events: none; }
 /* sits under the frame; while loading the frame is blank anyway */
 .pdf-fallback { padding: 18px; font-size: 13px; color: var(--muted); line-height: 1.6; flex: none; }
 .pdf-pane.loading .pdf-frame { flex: 0 0 0; }
+.pdf-pane.loading .pdf-canvas { flex: 0 0 0; }
 .pdf-pane.loading .pdf-fallback { flex: 1; }
 .pdf-fallback[hidden] { display: none; }
 .pdf-fallback .btn { margin-top: 10px; }
+.pdf-frame[hidden] { display: none; }
+
+/* ===== The reader we draw ourselves (pdfview.js) =====
+   Used where the browser has no PDF viewer of its own — every phone. The
+   pages scroll inside this box, not with the document, so the questions
+   underneath stay where the reader left them. */
+.pdf-canvas {
+  flex: 1;
+  /* Positioned so that it, and not the fixed pane around it, is what a page's
+     offsetTop is measured from — otherwise "go to page 14" lands the height of
+     the header short of it. */
+  position: relative;
+  overflow-y: auto;
+  /* auto, not hidden: zoomed past the fit-to-width scale the page is wider
+     than the sheet, and the reader has to be able to pan across it. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: var(--panel-2);
+  padding: 4px;
+}
+.pdf-canvas[hidden] { display: none; }
+/* One per page, standing in at the right height before it is drawn so the
+   scrollbar does not grow and lurch as pages arrive. */
+.pv-page {
+  position: relative;
+  margin: 0 auto 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.pv-canvas { display: block; width: 100%; }
+
+/* page counter and zoom, in the pane's header */
+.pdf-nav { display: flex; align-items: center; gap: 4px; flex: none; }
+.pdf-nav[hidden] { display: none; }
+.pdf-pos {
+  min-width: 62px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ===== Unit page ===== */
 .page-head { margin-bottom: 18px; }
@@ -681,9 +789,6 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
   .tabs .tab-drill,
   .tabs .tab-find,
   .tabs .tab-help { flex: 0 0 44px; padding: 9px 0; font-size: 15px; }
-  /* The bar used to be laid *over* the PDF, hiding a strip of every page and
-     the viewer's own controls. The pane now stops above it. */
-  .pdf-pane { inset: var(--topbar-h) 0 var(--tabbar-h) 0; }
 }
 
 /* ===================================================================
@@ -1573,7 +1678,13 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 .place-body { padding: 18px 18px 20px; }
 
 .plc-h, .plc-resh { margin: 0 0 8px; font-size: 17px; font-weight: 650; }
-.plc-p { margin: 0 0 16px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.plc-p { margin: 0 0 10px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+/* Secondary to .plc-p: the reason a retake is worth taking, not the pitch. */
+.plc-fresh {
+  margin: 0 0 16px; padding-left: 10px;
+  border-left: 2px solid var(--line);
+  font-size: 13px; color: var(--muted); line-height: 1.55;
+}
 .plc-primary {
   appearance: none; border: none; cursor: pointer;
   background: var(--accent); color: #fff;
@@ -2189,19 +2300,6 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 .ip-body p { margin: 0 0 11px 0; }
 .ip-sub { color: var(--muted); font-style: italic; }
 
-/* Collins Listening: a unit's tracks as a labelled list of small players. */
-.track-list { display: flex; flex-direction: column; gap: 6px; }
-.track { display: flex; align-items: center; gap: 10px; }
-.track-label {
-  flex: 0 0 auto;
-  min-width: 62px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-.track audio { flex: 1 1 auto; height: 32px; min-width: 0; }
-
 /* Why this row is judged by the reader rather than the app. Three quite
    different reasons share the "self-check" tag, so the tag alone is not enough:
    a broken key wants the book opened, an open question wants nothing. */
@@ -2254,9 +2352,10 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   /* ↗ and ✕ on the PDF pane. On a phone that pane is the whole screen, so
      these two are the only way out of it — 26×24 was not enough. */
   .pdf-btn { width: 40px; height: 40px; font-size: 14px; }
-  /* Padding pulled back out by an equal negative margin: the book name gets a
-     row-height hit area without the row growing. */
+  /* Padding pulled back out by an equal negative margin: these text links get
+     a thumb-sized hit area without the rows around them growing. */
   .db-name { display: block; padding: 11px 0; margin: -11px 0; }
+  .auth-link { padding: 11px 0; margin: -5px 0; }
   /* The 🔊 glyph is tiny by design; give it a transparent margin to be
      tapped by rather than making the icon itself bigger. */
   .speak { padding: 8px 7px; margin-left: 2px; font-size: 14px; opacity: .6; }
@@ -2273,6 +2372,57 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   .topbar > .controls { display: none; }
   .brand-title { font-size: 15px; }
 
+  /* ---- 3b. The book is a sheet, not a takeover ----------------------
+     A full-screen PDF made the exercise unanswerable: the questions and
+     the input boxes were behind it, and the books that carry no question
+     text of their own (the IELTS tests) were unusable altogether — you
+     could see the paper or the answer box, never both. So the phone gets
+     the desktop's split, turned ninety degrees: the book across the top,
+     the questions scrolling underneath, and a handle between them.
+     `--pdf-h` is written by app.js and remembered per reader. */
+  .pdf-pane { inset: var(--topbar-h) 0 auto 0; height: var(--pdf-h); }
+  body.pdf-open .main { padding-top: calc(var(--pdf-h) + 14px); }
+  /* Every row of chrome here is a row of the book the reader cannot see, so
+     the sheet's header keeps only the two buttons: the title beside it just
+     repeats the one in the topbar directly above. */
+  .pdf-head { padding: 4px 6px; justify-content: flex-end; }
+  .pdf-title { display: none; }
+  /* The sidebar handle stays gone — there is no sidebar to size here —
+     but the one under the sheet becomes a full-width grab bar. */
+  #dragPdf {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(var(--topbar-h) + var(--pdf-h));
+    width: auto;
+    height: 18px;
+    z-index: 26;
+    cursor: row-resize;
+    border: 0;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    background-clip: border-box;
+  }
+  /* the grab line itself, centred in that 18px band */
+  #dragPdf::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 7px;
+    width: 40px;
+    height: 4px;
+    margin-left: -20px;
+    border-radius: 999px;
+    background: var(--line);
+  }
+  #dragPdf:active::after, #dragPdf.active::after { background: var(--accent); }
+  /* An id beats the two rules that hide every dragger, so both cases have to
+     be restated here — otherwise the bar floats over a practice session that
+     was started with the book left open. */
+  #dragPdf[hidden] { display: none; }
+  body[data-view="drill"] #dragPdf { display: none; }
+
   /* ---- 4. A drawer wide enough to read ------------------------------
      At the desktop's 268px every unit read "Present contin…", which is
      no way to choose one. `width` (not the --sidebar-w variable) because
@@ -2280,11 +2430,16 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   .sidebar {
     width: min(88vw, 400px);
     flex-basis: auto;
+    /* Above the PDF pane (25). With the book open the pane fills the screen,
+       so a drawer underneath it made ☰ look like a dead button. Still below
+       the tab bar (40), which stays usable while the drawer is out. */
+    z-index: 28;
     /* Stop above the tab bar rather than running underneath it, or the last
        units and the settings strip below them are unreachable. */
     bottom: var(--tabbar-h);
     height: auto;
   }
+  .overlay { z-index: 27; }
   .unit-list { padding-bottom: 8px; }
   .sidebar-foot { display: flex; }
 
@@ -2320,4 +2475,59 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   /* Practice-session counters: an odd last card sat alone in a 2-column
      grid with a hole beside it — let it take the whole row instead. */
   .ov-cards > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* ===== Hover tips =====
+   A control that is only an icon ("⚡", "?") or a single word ("Қателер")
+   can't say what it does. Resting on one for half a second opens this: a
+   heading naming it, then a bullet a line. Same box as the library card's
+   .warn-pop, which reads well — but in the panel's own colours, because
+   nothing here is a warning and gold would say one was. Positioned from JS
+   (app.js, Tips): the topbar controls sit close to the edge of the window
+   and a purely-CSS tip would hang off it.
+   Above the modal backdrop (60) — the find dialog has hoverable controls
+   of its own — but below the word-lookup popup (200). */
+.tip {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: max-content;
+  max-width: 260px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 28px rgba(16, 24, 40, .18);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  pointer-events: none;   /* never stands between the mouse and the button */
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity .13s ease, transform .13s ease;
+}
+.tip.show { opacity: 1; transform: none; }
+.tip b { color: var(--text); font-size: 12.5px; font-weight: 650; }
+
+/* The arrow is a rotated corner of the box, so it inherits the border and
+   the panel colour in both themes. JS puts it under the control with
+   --tip-ax; the box itself may have been nudged sideways to stay on screen. */
+.tip::after {
+  content: '';
+  position: absolute;
+  left: var(--tip-ax, 50%);
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.tip[data-pos="below"]::after { top: -5px; border-width: 1px 0 0 1px; }
+.tip[data-pos="above"]::after { bottom: -5px; border-width: 0 1px 1px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tip { transition: none; }
 }

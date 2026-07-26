@@ -19,7 +19,7 @@
   // unit's answers in the back of the book. Loaded from data/answer-key-pages.json
   // (built by tools/build_answer_key_pages.py). Powers the "answer key" button on
   // exercises the app can't grade — a Unit 19 task opens the Unit 19 answers, not
-  // Unit 1. Books without a machine-locatable key (IELTS 19/20, Collins) are absent.
+  // Unit 1. Books without a machine-locatable key (IELTS 19/20) are absent.
   var AK_PAGES = {};
 
   function bookMeta(id) {
@@ -253,6 +253,7 @@
       b.classList.toggle('on', b.getAttribute('data-lang') === state.lang);
     });
     applyTheme();     // its tooltip is translated too
+    applySideMin();   // ditto: its label and tip flip with the collapsed state
   }
 
   /* ================= theme ================= */
@@ -264,7 +265,10 @@
 
     [].forEach.call(document.querySelectorAll('[data-theme-btn]'), function (b) {
       b.textContent = THEME_ICON[th];
-      b.title = t('theme.' + th);
+      // The hover tip replaces title= — both at once shows the same sentence
+      // twice, in two different boxes.
+      b.removeAttribute('title');
+      b.setAttribute('data-tip-text', t('tip.theme.' + th));
       b.setAttribute('aria-label', t('theme.' + th));
     });
   }
@@ -296,6 +300,106 @@
     var b = e.target.closest && e.target.closest('.lang-switch button');
     if (b) setLang(b.getAttribute('data-lang'));
   });
+
+  /* ================= hover tips ================= */
+
+  // The topbar is icons and one-word tabs: "⚡" and "?" say nothing about what
+  // they open, and "Қателер" doesn't say the mistakes come back to be redone.
+  // Resting on a control for half a second explains it — the browser's own
+  // title= tooltip is too slow, unstyled and truncates the second line.
+  //
+  // Carry a key in data-tip (translated at show time, so a language switch is
+  // picked up for free) or ready-made text in data-tip-text for controls whose
+  // label is built in JS. First line is the heading, every line after it a
+  // bullet — the shape the library card's warning popover already uses.
+  var Tips = (function () {
+    var DELAY = 500;
+    var box = null, timer = 0, host = null;
+
+    // Touch and pen have no hover: there a tip could only appear stuck to the
+    // finger after a tap, i.e. on top of the thing it was explaining. The query
+    // is kept live (not read once) — a tablet with a mouse plugged in flips it.
+    var mouse = null;
+    try { mouse = matchMedia('(hover: hover) and (pointer: fine)'); } catch (e) { /* old browser */ }
+    function hoverable() { return !mouse || mouse.matches; }
+
+    function textOf(n) {
+      var k = n.getAttribute('data-tip');
+      return (k ? t(k) : n.getAttribute('data-tip-text')) || '';
+    }
+
+    function hide() {
+      if (timer) { clearTimeout(timer); timer = 0; }
+      host = null;
+      if (box) { box.classList.remove('show'); box.hidden = true; }
+    }
+
+    function show(n) {
+      var raw = textOf(n);
+      if (!raw) return;
+      if (!box) {
+        box = el('div', 'tip');
+        box.setAttribute('role', 'tooltip');
+        box.hidden = true;
+        document.body.appendChild(box);
+      }
+      clear(box);
+      var lines = raw.split('\n');
+      box.appendChild(el('b', null, lines[0]));
+      for (var i = 1; i < lines.length; i++) box.appendChild(el('span', null, '• ' + lines[i]));
+
+      // Measure before placing: the box is as tall as its text is long.
+      box.hidden = false;
+      box.style.left = '0px';
+      box.style.top = '0px';
+      var r = n.getBoundingClientRect();
+      var w = box.offsetWidth, h = box.offsetHeight;
+      var below = r.bottom + 10 + h <= window.innerHeight || r.top - 10 - h < 0;
+      var left = Math.round(r.left + r.width / 2 - w / 2);
+      left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+      box.style.left = left + 'px';
+      box.style.top = Math.round(below ? r.bottom + 8 : r.top - 8 - h) + 'px';
+      box.setAttribute('data-pos', below ? 'below' : 'above');
+      // The arrow follows the control, not the box, which drifts when a tip
+      // near the edge of the window is clamped back inside it.
+      box.style.setProperty('--tip-ax',
+        Math.round(Math.max(14, Math.min(r.left + r.width / 2 - left, w - 14))) + 'px');
+      box.classList.add('show');
+    }
+
+    function target(e) {
+      return e.target && e.target.closest ? e.target.closest('[data-tip], [data-tip-text]') : null;
+    }
+
+    document.addEventListener('mouseover', function (e) {
+      if (!hoverable()) return;
+      var n = target(e);
+      if (n === host) return;
+      hide();
+      if (!n) return;
+      host = n;
+      timer = setTimeout(function () { timer = 0; if (host === n) show(n); }, DELAY);
+    });
+
+    // mouseout's own target is the element being left, so the decision has to
+    // come from relatedTarget: where the pointer went. Still inside the same
+    // control (over a child span) is not a leave.
+    document.addEventListener('mouseout', function (e) {
+      if (!host) return;
+      var to = e.relatedTarget;
+      if (to && to.closest && to.closest('[data-tip], [data-tip-text]') === host) return;
+      hide();
+    });
+
+    // A tip that outlived what it described would point at nothing.
+    document.addEventListener('mousedown', hide, true);
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+    window.addEventListener('blur', hide);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+
+    return { hide: hide };
+  })();
 
   /* ================= answer checking ================= */
 
@@ -1021,8 +1125,48 @@
   var placeModal = document.getElementById('placeModal');
   var placeBody = document.getElementById('placeBody');
   var placeReturnFocus = null;
-  var placeState = null;      // { i, answers[] } while a run is in progress
+  var placeState = null;      // { i, answers[], qs[] } while a run is in progress
   var placeRepaint = null;    // re-renders the current screen (for a language switch)
+  // Ids asked in the last couple of runs, so a retake doesn't repeat them.
+  var placeSeen = ((state.placement && state.placement.seen) || []).slice();
+
+  /* One run = one question per blueprint slot, drawn from that slot's level.
+     The quiz used to BE its eight questions, which made a retake a memory test
+     of the first attempt (and made the level estimate worthless the second time
+     round). Now the bank is sampled: questions asked in recent runs are held
+     back until the level's pool runs dry, and the options are shuffled too, so a
+     remembered position can't give the answer away. */
+  function buildPlaceRun() {
+    var P = window.PLACEMENT || {};
+    var pool = P.pool || [];
+    var plan = P.blueprint || [];
+    var used = {}, run = [];
+    plan.forEach(function (level) {
+      var cand = pool.filter(function (q) { return q.level === level && !used[q.id]; });
+      if (!cand.length) return;
+      var fresh = cand.filter(function (q) { return placeSeen.indexOf(q.id) < 0; });
+      var pick = shuffle((fresh.length ? fresh : cand).slice())[0];
+      used[pick.id] = 1;
+      run.push(placeItem(pick));
+    });
+    run.forEach(function (q) { placeSeen.push(q.id); });
+    // Remember two runs' worth: enough to rotate, short enough that a learner
+    // who keeps retaking still meets every question eventually.
+    var cap = (plan.length || 8) * 2;
+    if (placeSeen.length > cap) placeSeen = placeSeen.slice(placeSeen.length - cap);
+    return run;
+  }
+
+  // A pool entry copied into a run with its options in a random order; `a` is
+  // re-mapped to wherever the correct option landed.
+  function placeItem(q) {
+    var order = shuffle(q.options.map(function (o, i) { return i; }));
+    return {
+      id: q.id, level: q.level, q: q.q,
+      options: order.map(function (i) { return q.options[i]; }),
+      a: order.indexOf(q.a)
+    };
+  }
 
   // A raw score (correct answers) maps to exactly one track band.
   function placeTrack(score) {
@@ -1056,10 +1200,11 @@
     var wrap = el('div', 'plc-intro');
     wrap.appendChild(el('h3', 'plc-h', t('plc.introH')));
     wrap.appendChild(el('p', 'plc-p', t('plc.introP')));
+    wrap.appendChild(el('p', 'plc-fresh', t('plc.fresh')));
     var start = el('button', 'plc-primary', t('plc.start'));
     start.type = 'button';
     start.addEventListener('click', function () {
-      placeState = { i: 0, answers: [] };
+      placeState = { i: 0, answers: [], qs: buildPlaceRun() };
       renderPlaceQuestion();
     });
     wrap.appendChild(start);
@@ -1068,8 +1213,8 @@
 
   function renderPlaceQuestion() {
     placeRepaint = renderPlaceQuestion;
-    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
-    if (!placeState) { renderPlaceIntro(); return; }
+    if (!placeState || !placeState.qs.length) { renderPlaceIntro(); return; }
+    var qs = placeState.qs;
     var i = placeState.i;
     clear(placeBody);
 
@@ -1105,27 +1250,28 @@
   }
 
   function answerPlace(idx) {
-    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
     if (!placeState) return;
+    var qs = placeState.qs;
     placeState.answers.push(idx);
     if (placeState.i < qs.length - 1) { placeState.i++; renderPlaceQuestion(); }
     else finishPlace();
   }
 
   function finishPlace() {
-    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
+    var qs = placeState.qs;
     var score = 0;
     placeState.answers.forEach(function (a, i) { if (qs[i] && a === qs[i].a) score++; });
     var track = placeTrack(score);
     state.placement = {
       track: track ? track.id : null,
       band: track ? track.band : '',
-      score: score, ts: Date.now()
+      score: score, ts: Date.now(),
+      seen: placeSeen.slice()          // so the next retake asks something else
     };
     save();
     if (window.SYNC) SYNC.touch(null);   // the estimate lives in the __meta row
     paintStartBand();
-    renderPlaceResult(score, track);
+    renderPlaceResult(score, qs.length, track);
   }
 
   // A recommended-book card inside the result — links into the book and closes.
@@ -1142,14 +1288,14 @@
     return a;
   }
 
-  function renderPlaceResult(score, track) {
-    placeRepaint = function () { renderPlaceResult(score, track); };
-    var qs = (window.PLACEMENT && PLACEMENT.questions) || [];
+  // `total` is the length of the run that was just taken, not of the whole bank.
+  function renderPlaceResult(score, total, track) {
+    placeRepaint = function () { renderPlaceResult(score, total, track); };
     clear(placeBody);
     var res = el('div', 'plc-result');
 
     res.appendChild(el('h3', 'plc-resh', t('plc.resultH', { band: track ? track.band : '—' })));
-    res.appendChild(el('p', 'plc-scoreline', t('plc.score', { c: score, n: qs.length })));
+    res.appendChild(el('p', 'plc-scoreline', t('plc.score', { c: score, n: total })));
     if (track) res.appendChild(el('p', 'plc-why', t('plc.track.' + track.id)));
 
     res.appendChild(el('div', 'plc-rec-hd', t('plc.startWith')));
@@ -1456,10 +1602,6 @@
     who.appendChild(whoText);
     authBody.appendChild(who);
 
-    if (u.newEmail) {
-      authBody.appendChild(el('div', 'auth-sub', t('auth.emailPending', { mail: u.newEmail })));
-    }
-
     /* ---- sync ---- */
     authSection(t('auth.secSync'));
     var st = SYNC.status();
@@ -1489,12 +1631,6 @@
 
     /* ---- security ---- */
     authSection(t('auth.secSecurity'));
-    authField({
-      label: t('auth.newEmail'), placeholder: t('auth.emailPh'), type: 'email',
-      autocomplete: 'email', action: t('auth.changeEmail'),
-      validate: function (v) { return v ? null : t('auth.needEmail'); },
-      run: function (v) { return SYNC.setEmail(v).then(function () { return t('auth.emailSent'); }); }
-    });
     authField({
       label: t('auth.newPassword'), placeholder: t('auth.passwordPh'), type: 'password',
       autocomplete: 'new-password', action: t('auth.changePassword'),
@@ -1600,7 +1736,9 @@
       b.appendChild(el('span', 'acct-label', inn ? shown : t('auth.signIn')));
       b.classList.toggle('on', inn);
       var label = inn ? t('auth.signedInAs') + ': ' + mail : t('auth.signIn');
-      b.title = label;
+      b.removeAttribute('title');   // the hover tip says the same, better
+      b.setAttribute('data-tip-text',
+        inn ? label + '\n' + t('tip.acctIn') : t('tip.acct'));
       b.setAttribute('aria-label', label);
     });
   }
@@ -1680,6 +1818,7 @@
   function renderSidebar() {
     if (!book) return;
     var q = (searchEl.value || '').trim().toLowerCase();
+    var min = sideMin();
     clear(unitListEl);
     var shown = 0;
     book.units.forEach(function (u) {
@@ -1690,12 +1829,20 @@
       shown++;
       var st = unitStats(book.id, u);
       var li = el('li');
-      var a = el('a', 'unit-link' + (currentUnit === u.unit ? ' current' : ''));
+      var full = st.total > 0 && st.pct === 100;
+      var a = el('a', 'unit-link' + (currentUnit === u.unit ? ' current' : '') +
+        (full ? ' full' : ''));
       a.href = '#/b/' + book.id + '/unit/' + u.unit;
       if (currentUnit === u.unit) a.setAttribute('aria-current', 'page');
+      // Collapsed the title is not on screen, so it moves into the hover tip
+      // and the accessible name — a rail of numbers must still be readable.
+      if (min) {
+        a.setAttribute('aria-label', String(u.unit) + '. ' + unitTitle(u));
+        a.setAttribute('data-tip-text', String(u.unit) + '. ' + unitTitle(u) +
+          (st.done ? '\n' + st.pct + '%' : ''));
+      }
       a.appendChild(el('span', 'u-num', String(u.unit)));
       a.appendChild(el('span', 'u-title', unitTitle(u)));
-      var full = st.total > 0 && st.pct === 100;
       a.appendChild(el('span', 'u-pct' + (full ? ' done' : ''), full ? '✓' : (st.done ? st.pct + '%' : '')));
       li.appendChild(a);
       unitListEl.appendChild(li);
@@ -1719,9 +1866,30 @@
     });
   }
 
+  /* ================= the ◇ / ← button ================= */
+
+  // The leftmost button in the topbar. Inside a book it is the way out to the
+  // library, a diamond. On a practice-session page pointing anywhere else it is
+  // one step back — and then it says so with an arrow, because ◇ next to a book
+  // title reads as "leave", which is exactly what it must not do there.
+  var backHash = '#/';
+
+  function setBackLink(href) {
+    var a = document.querySelector('.home-link');
+    if (!a) return;
+    var out = !href || href === '#/';
+    a.href = out ? '#/' : href;
+    a.textContent = out ? '◇' : '←';
+    var ariaKey = out ? 'library.aria' : 'back.aria';
+    a.setAttribute('data-tip', out ? 'tip.home' : 'tip.back');
+    a.setAttribute('data-i18n-aria', ariaKey);   // stays right after a language switch
+    a.setAttribute('aria-label', t(ariaKey));
+  }
+
   // Works from the catalogue alone, so the header is right from the first
   // frame — even while the data is still downloading, or if it never arrives.
   function paintChrome(id) {
+    setBackLink('#/');
     var bid = id || (book && book.id);
     var m = bookMeta(bid) || {};
     document.getElementById('brandTitle').textContent = m.title || bid || '';
@@ -1737,35 +1905,77 @@
 
   /* ================= resizable panels ================= */
 
-  var SIDEBAR_DEFAULT = 268, PDF_DEFAULT = 520;
+  /* First-time proportions, as SHARES of the window rather than pixels: the
+     book page on the left just under half the screen, the unit list a narrow
+     eighth on the right, the exercises taking whatever is between them. Fixed
+     defaults (268px / 520px) gave every reader a different split — on a 1792px
+     laptop the book pane was a third of what it should be and the exercise
+     column sprawled; on a 1100px one there was barely a reading column left.
+     Clamps keep both panels usable at either extreme. A stored size (dragged by
+     the reader) always wins; double-clicking a handle clears it back to these. */
+  var SIDEBAR_SHARE = .125, SIDEBAR_MIN = 210, SIDEBAR_MAX = 320;
+  var PDF_SHARE = .48, PDF_MIN = 420, PDF_MAX = 1100;
+  // Collapsed unit list: wide enough for a column of unit numbers and nothing
+  // else. Must match the rail width in the stylesheet.
+  var SIDEBAR_RAIL = 54;
+  // Share of the window the book sheet takes on a phone until the reader drags
+  // it. Just under half: enough of the page to read, enough of the exercise
+  // below it to see which question is being answered.
+  var PDF_H_SHARE = .46;
+  // Below this the layout stops tiling panels side by side and stacks them —
+  // it must match the breakpoint the stylesheet uses.
+  var NARROW = 860;
 
   function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-  function sidebarW() { return state.ui.sidebarW || SIDEBAR_DEFAULT; }
-  function pdfW() { return state.ui.pdfW || PDF_DEFAULT; }
+  function isNarrow() { return (window.innerWidth || 1280) <= NARROW; }
+  function winW() { return window.innerWidth || 1280; }
+  function sidebarW() {
+    if (sideMin()) return SIDEBAR_RAIL;
+    return state.ui.sidebarW ||
+      clampNum(Math.round(winW() * SIDEBAR_SHARE), SIDEBAR_MIN, SIDEBAR_MAX);
+  }
+  function pdfW() {
+    return state.ui.pdfW || clampNum(Math.round(winW() * PDF_SHARE), PDF_MIN, PDF_MAX);
+  }
+  function pdfH() {
+    return state.ui.pdfH || Math.round((window.innerHeight || 800) * PDF_H_SHARE);
+  }
 
   // The reading column must keep a usable width, so each panel's ceiling
   // depends on the window and on whether the other panel is open.
   function applyWidths() {
     var win = window.innerWidth || 1280;
     var open = !pdfPane.hidden;
-    var sMax = Math.max(180, win - (open ? pdfW() : 0) - 320);
-    var sw = clampNum(sidebarW(), 180, sMax);
+    var min = sideMin() ? SIDEBAR_RAIL : 180;
+    var sMax = Math.max(min, win - (open ? pdfW() : 0) - 320);
+    var sw = clampNum(sidebarW(), min, sMax);
     document.documentElement.style.setProperty('--sidebar-w', sw + 'px');
 
     var pMax = Math.max(300, win - sw - 320);
     var pw = clampNum(pdfW(), 300, pMax);
     document.documentElement.style.setProperty('--pdf-w', pw + 'px');
+
+    // On a phone the sheet is sized by height instead. Its ceiling leaves room
+    // for a question and its answer box underneath — a sheet that fills the
+    // screen is the very thing this layout exists to avoid.
+    var vh = window.innerHeight || 800;
+    document.documentElement.style.setProperty(
+      '--pdf-h', clampNum(pdfH(), 130, Math.max(150, vh - 250)) + 'px');
   }
 
   // `sign` is +1 when dragging right should widen the panel (sidebar) and -1
   // when the handle sits on the panel's left edge (the PDF pane).
-  function makeDragger(handle, sign, read, write, reset) {
-    var startX = 0, startVal = 0, active = false;
+  // `axis` is read at pointerdown, not once at wiring time: the PDF handle
+  // sizes a width beside the text on a desktop and a height above it on a
+  // phone, and the same window can become either by being resized or turned.
+  function makeDragger(handle, sign, read, write, reset, axis) {
+    var startX = 0, startVal = 0, active = false, vertical = false;
 
     handle.addEventListener('pointerdown', function (e) {
       active = true;
-      startX = e.clientX;
+      vertical = axis ? axis() === 'y' : false;
+      startX = vertical ? e.clientY : e.clientX;
       startVal = read();
       handle.setPointerCapture(e.pointerId);
       handle.classList.add('active');
@@ -1774,7 +1984,7 @@
     });
     handle.addEventListener('pointermove', function (e) {
       if (!active) return;
-      write(startVal + sign * (e.clientX - startX));
+      write(startVal + sign * ((vertical ? e.clientY : e.clientX) - startX));
       applyWidths();
     });
     function stop(e) {
@@ -1795,14 +2005,70 @@
   makeDragger(dragSidebar, -1,
     sidebarW,
     function (v) { state.ui.sidebarW = clampNum(v, 180, 560); },
-    function () { state.ui.sidebarW = SIDEBAR_DEFAULT; });
+    // 0 is falsy, so the width goes back to being a share of the window rather
+    // than to whatever pixel count happened to be the default when it was set.
+    function () { state.ui.sidebarW = 0; });
 
+  /* ---- collapsing the unit list down to a rail of numbers ----
+     Once a reader knows the book, the titles are dead weight: they are reading
+     a unit, not choosing one, and the list is holding an eighth of the window
+     to repeat what the page they are on already says. Collapsed, the list keeps
+     only the numbers — still a full jump list, at a fifth of the width — and
+     the exercises get the room. Only on a wide screen: on a phone the list is a
+     drawer over the page, where a rail of bare numbers would save nothing.
+     The choice is remembered (`state.ui.sideMin`), so it is a layout preference
+     and not something to redo on every visit. */
+  function sideMin() { return !!state.ui.sideMin && !isNarrow(); }
+
+  function applySideMin() {
+    var on = sideMin();
+    document.body.classList.toggle('side-min', on);
+    var b = document.getElementById('sideMin');
+    if (b) {
+      b.textContent = on ? '«' : '»';
+      b.setAttribute('aria-expanded', on ? 'false' : 'true');
+      b.setAttribute('aria-label', t(on ? 'side.max' : 'side.min'));
+      b.setAttribute('data-tip', on ? 'tip.sideMax' : 'tip.sideMin');
+    }
+    // A rail cannot be dragged wider — expanding it is what the button is for.
+    if (dragSidebar) dragSidebar.hidden = on;
+  }
+
+  function setSideMin(on) {
+    state.ui.sideMin = !!on;
+    // A filter left behind in the search box would hide most of the rail with
+    // nothing on screen to explain why.
+    if (on && searchEl && searchEl.value) searchEl.value = '';
+    save();
+    applySideMin();
+    applyWidths();
+    renderSidebar();
+    Tips.hide();          // the button under the pointer now means the opposite
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-side-min]')) setSideMin(!sideMin());
+  });
+
+  // One handle, two jobs. Beside the text it sets the pane's width; stacked
+  // above it, dragging down makes the book sheet taller — same +1 sign, since
+  // the handle sits on the pane's far edge either way. A double-tap on it
+  // clears the stored size and goes back to the default share of the screen.
   makeDragger(dragPdf, 1,
-    pdfW,
-    function (v) { state.ui.pdfW = clampNum(v, 300, 1200); },
-    function () { state.ui.pdfW = PDF_DEFAULT; });
+    function () { return isNarrow() ? pdfH() : pdfW(); },
+    function (v) {
+      if (isNarrow()) state.ui.pdfH = clampNum(v, 130, 2000);
+      else state.ui.pdfW = clampNum(v, 300, 1200);
+    },
+    function () {
+      if (isNarrow()) state.ui.pdfH = 0;   // falsy — pdfH() falls back to the share
+      else state.ui.pdfW = PDF_DEFAULT;
+    },
+    function () { return isNarrow() ? 'y' : 'x'; });
 
-  window.addEventListener('resize', applyWidths);
+  // Crossing the narrow breakpoint turns the rail back into a drawer and back
+  // again, so the collapsed state has to be re-read, not just the widths.
+  window.addEventListener('resize', function () { applySideMin(); applyWidths(); });
 
   /* ================= embedded PDF pane ================= */
 
@@ -1826,19 +2092,106 @@
     watchPdf();
   }
 
+  /* Can this browser show a PDF inside the page at all?
+
+     Not "is it a phone" — the honest question is whether an <iframe> will
+     render the book. Every desktop browser does, and does it better than we
+     could: native scrolling, text selection, find, print. Touch browsers do
+     not. iOS Safari paints the first page as a flat picture, ignores the
+     `#page=` we send it, and gives no way to reach page two; Android Chrome
+     offers a download. Both leave the IELTS books — whose questions exist
+     only on the page — impossible to work through.
+
+     A coarse pointer is the test, because that is precisely the population
+     without a viewer, and it needs no user-agent sniffing. Desktop browsers
+     with the built-in viewer switched off report `pdfViewerEnabled === false`
+     and are caught by the second check; they used to land on the "your
+     browser would not display this" message and now get the drawn one. */
+  function canEmbedPdf() {
+    try {
+      if (window.matchMedia && matchMedia('(pointer: coarse)').matches) return false;
+    } catch (e) { /* no matchMedia — assume a desktop browser */ }
+    if (typeof navigator.pdfViewerEnabled === 'boolean') return navigator.pdfViewerEnabled;
+    return true;
+  }
+
+  function drawPdf() {
+    return !canEmbedPdf() && window.PDFVIEW && PDFVIEW.supported();
+  }
+
+  var pdfNav = document.getElementById('pdfNav');
+  var pdfPos = document.getElementById('pdfPos');
+  var pdfCanvas = document.getElementById('pdfCanvas');
+  var pdfDrawing = false;      // is the canvas reader the one on screen
+
+  function setPos(n, total) {
+    pdfPos.textContent = total ? t('pdf.pos', { n: n, total: total }) : '';
+  }
+
+  // Draw the book ourselves. The iframe stays in the DOM but empty, so nothing
+  // downloads twice if the reader resizes across the breakpoint.
+  function paintPdf(page) {
+    pdfDrawing = true;
+    pdfFrame.removeAttribute('src');
+    pdfFrame.hidden = true;
+    pdfCanvas.hidden = false;
+    pdfNav.hidden = false;
+    clearTimeout(pdfWatch);
+    pdfPane.classList.add('loading');
+    clear(pdfFallback);
+    pdfFallback.appendChild(el('div', null, t('pdf.loading')));
+    pdfFallback.hidden = false;
+    setPos(page, PDFVIEW.count());
+
+    PDFVIEW.open(pdfCanvas, pdfUrl(null) || '', page, {
+      onPage: function (n, total) { setPos(n, total); }
+    }).then(function (total) {
+      pdfPane.classList.remove('loading');
+      pdfFallback.hidden = true;
+      setPos(page, total);
+    }).catch(function () {
+      // Nothing to fall back to in the page itself — offer the file.
+      pdfPane.classList.remove('loading');
+      clear(pdfFallback);
+      pdfFallback.appendChild(el('div', null, t('pdf.fallback')));
+      var a = el('a', 'btn small', t('pdf.newTab'));
+      a.href = pdfNewTab.href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      pdfFallback.appendChild(a);
+      pdfFallback.hidden = false;
+    });
+  }
+
   function showPdf(page) {
     var url = pdfUrl(page);
     if (!url) return;
     pdfPane.hidden = false;
     dragPdf.hidden = false;
     document.body.classList.add('pdf-open');
-    if (pdfCurrentUrl !== url) mountPdf(url);
+    if (drawPdf()) paintPdf(page || 1);
+    else if (pdfCurrentUrl !== url) mountPdf(url);
     pdfTitle.textContent = (book.meta && book.meta.title) || '';
     pdfNewTab.href = url;
     state.ui.pdfOpen = true;
     save();
     applyWidths();
   }
+
+  pdfCanvas.addEventListener('scroll', function () {
+    if (pdfDrawing) setPos(PDFVIEW.page(), PDFVIEW.count());
+  });
+  document.getElementById('pdfIn').addEventListener('click', function () {
+    PDFVIEW.setZoom(PDFVIEW.zoomLevel() * 1.35);
+  });
+  document.getElementById('pdfOut').addEventListener('click', function () {
+    PDFVIEW.setZoom(PDFVIEW.zoomLevel() / 1.35);
+  });
+  // Dragging the sheet taller or turning the phone changes the fit-to-width
+  // scale, and a canvas drawn at the old width would sit there blurred.
+  window.addEventListener('resize', function () {
+    if (pdfDrawing) PDFVIEW.relayout();
+  });
 
   // `remember` false keeps the reader's preference so the pane comes back when
   // they open the next unit — used when switching books, not when they close it.
@@ -1848,6 +2201,15 @@
     document.body.classList.remove('pdf-open');
     pdfFrame.removeAttribute('src');
     pdfCurrentUrl = null;
+    // Give the worker and every rasterised page back: a book left open in the
+    // background is tens of megabytes of canvas on a device that has none.
+    if (pdfDrawing) {
+      PDFVIEW.close();
+      pdfDrawing = false;
+      pdfCanvas.hidden = true;
+      pdfNav.hidden = true;
+      pdfFrame.hidden = false;
+    }
     clearTimeout(pdfWatch);
     pdfPane.classList.remove('loading');
     pdfFallback.hidden = true;
@@ -2151,7 +2513,7 @@
   }
 
   // "📗 Answer key" — opens this unit's printed key in the PDF pane. null when
-  // the book has no machine-locatable key (IELTS 19/20, Collins) or no PDF.
+  // the book has no machine-locatable key (IELTS 19/20) or no PDF.
   function answerKeyBtn() {
     var akPage = akUnitPage;
     if (akPage == null || !(book.meta && book.meta.pdf)) return null;
@@ -2408,30 +2770,6 @@
     return box;
   }
 
-  /* A unit's audio as a labelled list of players — one per track, each loaded
-     only when pressed. Used by Collins Listening, where the book prints the
-     track number ("CD1 · 03") beside each exercise. */
-  function buildTrackList(tracks) {
-    var box = el('div', 'ielts-audio');
-    box.appendChild(el('div', 'ia-label', t('ielts.audio')));
-    var list = el('div', 'track-list');
-    tracks.forEach(function (tr) {
-      var row = el('div', 'track');
-      row.appendChild(el('span', 'track-label', tr.label));
-      var audio = document.createElement('audio');
-      audio.controls = true;
-      audio.preload = 'none';
-      audio.src = audioUrl(tr.file);
-      row.appendChild(audio);
-      // Per track, not per unit: with twelve players in a list, "the audio is
-      // missing" under the whole box would not say which one.
-      audioFallback(audio, row, 'audio-missing');
-      list.appendChild(row);
-    });
-    box.appendChild(list);
-    return box;
-  }
-
   /* One Reading passage, above the questions asked about it. Collapsible: it
      is long, and once it has been read the reader wants the boxes, not to
      scroll past the whole text again. */
@@ -2504,11 +2842,14 @@
       });
       chips.appendChild(toggle);
 
-      // A book flagged `needsPdf` has no question text of its own, so it is
-      // unusable with the pane shut: open it once, before the reader has ever
-      // expressed a preference. Narrow screens keep the drawer shut — there the
+      // First visit, before the reader has ever expressed a preference: open the
+      // pane. A book flagged `needsPdf` has no question text of its own and is
+      // unusable without it, but even a fully extracted book is meant to be
+      // worked WITH the page open — that three-panel split (book · exercises ·
+      // units) is the layout, and a first-time reader should be handed it rather
+      // than have to discover the button. Narrow screens keep it shut: there the
       // pane covers the whole page. `hidePdf` records the choice either way.
-      if (state.ui.pdfOpen == null && book.meta.needsPdf && window.innerWidth >= 1000) {
+      if (state.ui.pdfOpen == null && window.innerWidth >= 1000) {
         state.ui.pdfOpen = true;
       }
 
@@ -2530,13 +2871,6 @@
 
     var warn = buildWarning();
     if (warn) main.appendChild(warn);
-
-    // Collins Listening cues each exercise with a track number printed in the
-    // book ("CD1 · 03"), so the whole unit's tracks sit at the top as a labelled
-    // list of players and the learner picks the one the exercise names.
-    if (u.audio && u.audio.tracks && u.audio.tracks.length) {
-      main.appendChild(buildTrackList(u.audio.tracks));
-    }
 
     if (!(u.subExercises && u.subExercises.length)) {
       // A few Essential Grammar units had no answers in the scan at all; keep
@@ -3068,6 +3402,10 @@
     for (var k in state.items) {
       var r = state.items[k];
       if (!r || !r.last) continue;
+      // Records outlive the catalogue: a book that has been dropped leaves its
+      // rows in storage, and counting them would promise cards the session
+      // cannot deal.
+      if (!bookMeta(k.slice(0, k.indexOf('|')))) continue;
       if ((r.wrong > 0 && !r.mastered) || (r.due != null && r.due <= now)) n++;
     }
     return n;
@@ -3122,6 +3460,10 @@
     document.getElementById('brandTitle').textContent = t('drill.title');
     document.getElementById('brandSub').textContent =
       m ? (m.title + (m.level ? ' · ' + m.level : '')) : t('drill.allBooks');
+    // Opened straight from a link, with no page behind it, a session scoped to
+    // one book still has an obvious "back": that book.
+    var to = backHash !== '#/' ? backHash : (m ? '#/b/' + scope : '#/');
+    setBackLink(to);
   }
 
   // #/drill or #/drill/<book>
@@ -3900,6 +4242,14 @@
 
   function renderBookView(sub, arg) {
     setView('book');
+    // The book sheet is pinned to a unit's pages, and on a phone it costs half
+    // the screen. Mistakes draws on every unit at once and Statistics is a
+    // dashboard, so on those two the page it is showing is the wrong one and
+    // the room is better spent. `false` keeps the reader's preference: the
+    // sheet comes back by itself with the next unit.
+    if (pdfOpen() && (sub === 'errors' || sub === 'stats') && window.innerWidth <= 860) {
+      hidePdf(false);
+    }
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
     else if (sub === 'unit') renderUnit(arg);
@@ -3929,6 +4279,12 @@
     closeSidebar();
     if (window.WordLookup) window.WordLookup.hide();
     var r = parseHash(location.hash);
+    // Where ◇ goes back to from a session. Every page that is not a session
+    // records itself, so "back" is the page the session was started from — the
+    // book, at the unit that was open — and not the library the reader would
+    // otherwise be thrown out to. Two sessions in a row (one book → all books)
+    // keep pointing at the same book, since neither of them overwrites this.
+    if (r.view !== 'drill') backHash = location.hash || '#/';
     if (r.view !== 'drill') Speech.stop();
     if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }

@@ -63,15 +63,5 @@
   "id": "ielts-21",
   "units": 8,
   "tracked": 320
- },
- {
-  "id": "collins-reading",
-  "units": 11,
-  "tracked": 97
- },
- {
-  "id": "collins-listening",
-  "units": 11,
-  "tracked": 193
  }
 ]

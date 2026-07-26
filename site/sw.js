@@ -8,15 +8,22 @@
    - data/*.json — network-first, falling back to cache. A rebuilt data file
      must reach a returning reader, so the network wins when it is available.
    - pdf/*.pdf — cache-first at runtime. They are large (25–70 MB) and never
-     change, so once fetched they stay; nothing is pre-cached.
+     change, so once fetched they stay; nothing is pre-cached. Ranged requests
+     are the exception and are not touched at all — see the fetch handler.
+   - vendor/* (pdf.js) — cache-first, in a cache of its own so that bumping the
+     shell version does not make every phone re-fetch 1.8 MB.
 */
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v22';
+var SHELL_VERSION = 'v26';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
+// pdf.js, kept out of the versioned shell: it is 1.8 MB that never changes,
+// and re-downloading it on every release would be the most expensive thing
+// about a deploy for the readers who need it most.
+var VENDOR_CACHE = 'agylshyn-vendor';
 
 var SHELL = [
   './',
@@ -30,6 +37,7 @@ var SHELL = [
   './supabase.config.js',
   './sync.js',
   './dict.js',
+  './pdfview.js',
   './audio.config.js',
   './manifest.webmanifest',
   './icon.svg',
@@ -53,8 +61,9 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
     return Promise.all(keys.map(function (k) {
-      // drop old shell versions; keep data + pdf caches
-      if (k !== SHELL_CACHE && k !== DATA_CACHE && k !== PDF_CACHE) return caches.delete(k);
+      // drop old shell versions; keep data, pdf and vendor caches
+      if (k !== SHELL_CACHE && k !== DATA_CACHE && k !== PDF_CACHE &&
+          k !== VENDOR_CACHE) return caches.delete(k);
     }));
   }).then(function () { return self.clients.claim(); }));
 });
@@ -117,7 +126,18 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== self.location.origin) return;
 
   if (/\/data\/.*\.json$/.test(url.pathname)) { e.respondWith(networkFirst(req, DATA_CACHE)); return; }
-  if (/\.pdf$/.test(url.pathname)) { e.respondWith(cacheFirst(req, PDF_CACHE)); return; }
+  // pdf.js: immutable, so cache-first, and in its own cache so a shell bump
+  // does not throw it away.
+  if (/\/vendor\//.test(url.pathname)) { e.respondWith(cacheFirst(req, VENDOR_CACHE)); return; }
+  if (/\.pdf$/.test(url.pathname)) {
+    // A ranged request goes straight to the network, untouched. On a phone we
+    // render the book ourselves and pdf.js asks for the few hundred kilobytes
+    // a page needs — answering that with the whole cached file (the only thing
+    // the Cache API can do) makes it give up on ranges and pull all 44 MB.
+    if (req.headers.get('range')) return;
+    e.respondWith(cacheFirst(req, PDF_CACHE));
+    return;
+  }
   // Listening audio goes straight to the network: it is ~490 MB in total, and
   // an <audio> element seeks with Range requests, which a cached whole-file
   // response cannot answer.

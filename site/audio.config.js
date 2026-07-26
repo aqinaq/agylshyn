@@ -3,15 +3,14 @@
    The data files store audio as site-relative paths ("audio/c20/t1p1.m4a"), and
    in a local checkout that is exactly right: the files sit in site/audio/.
 
-   A deployed copy usually cannot do that. The audio is ~490 MB across four
-   folders, which is why .gitignore keeps site/audio/ out of the repository —
-   so a GitHub Pages build ships every path but none of the files, and all
-   three Cambridge IELTS books plus Collins Listening lose the one thing they
-   are for. Uploading the folder to object storage and pointing AUDIO_BASE at
-   it fixes that without touching a single data file.
+   A deployed copy usually cannot do that. The audio is ~340 MB across three
+   folders, so a build that leaves site/audio/ behind ships every path but none
+   of the files, and all three Cambridge IELTS books lose the one thing they are
+   for. Uploading the folder to object storage and pointing AUDIO_BASE at it
+   fixes that without touching a single data file.
 
    Set it to the URL that site/audio/ was uploaded to, keeping the same folder
-   layout underneath (c19/, c20/, c21/, collins-listening/):
+   layout underneath (c19/, c20/, c21/):
 
      window.AUDIO_BASE = 'https://pub-xxxx.r2.dev/agylshyn-audio/';
 

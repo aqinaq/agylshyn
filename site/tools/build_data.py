@@ -548,9 +548,9 @@ def main():
               % (bid, len(units), row['tracked'], os.path.getsize(path) / 1024,
                  ', '.join(log)))
 
-    # Merge, never overwrite: the IELTS and Collins rows are written by their own
-    # builders and a wholesale rewrite here used to drop them from index.json —
-    # which is what made the home page under-count by five books.
+    # Merge, never overwrite: the IELTS rows are written by their own builder
+    # and a wholesale rewrite here used to drop them from index.json — which is
+    # what made the home page under-count.
     rows = index_json.update(index)
     print('index.json: %d books, %d units, %d questions'
           % (len(rows), sum(r['units'] for r in rows), sum(r['tracked'] for r in rows)))

@@ -41,10 +41,10 @@
   </div>
 
   <div class="controls floating">
-    <button type="button" class="theme-btn" data-open-find data-i18n-aria="find.open">🔎</button>
+    <button type="button" class="theme-btn" data-open-find data-i18n-aria="find.open" data-tip="tip.find">🔎</button>
     <button type="button" class="theme-btn" data-theme-btn></button>
     <div class="lang-switch">
-      <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="kk" data-tip="tip.lang.kk">KK</button><button type="button" data-lang="en" data-tip="tip.lang.en">EN</button>
     </div>
   </div>
   <div class="wrap">
@@ -100,25 +100,25 @@
 
 <!-- ================= book ================= -->
 <header class="topbar">
-  <button id="menuBtn" class="icon-btn" data-i18n-aria="menu.aria">☰</button>
-  <a class="home-link" href="#/" data-i18n-aria="library.aria">◇</a>
+  <button id="menuBtn" class="icon-btn" data-i18n-aria="menu.aria" data-tip="tip.menu">☰</button>
+  <a class="home-link" href="#/" data-i18n-aria="library.aria" data-tip="tip.home">◇</a>
   <button type="button" class="acct-btn topbar-acct" data-open-auth hidden></button>
   <div class="brand">
     <span class="brand-title" id="brandTitle"></span>
     <span class="brand-sub" id="brandSub"></span>
   </div>
   <nav class="tabs">
-    <a href="#" data-tab="units"  class="tab" id="tabUnits" data-i18n="nav.units"></a>
-    <a href="#" data-tab="errors" class="tab" id="tabErrors"><span data-i18n="nav.errors"></span> <span id="errBadge" class="badge" hidden>0</span></a>
-    <a href="#" data-tab="stats"  class="tab" id="tabStats" data-i18n="nav.stats"></a>
-    <a href="#/drill" class="tab tab-drill" id="tabDrill" data-i18n-aria="drill.title">⚡</a>
-    <button type="button" class="tab tab-find" data-open-find data-i18n-aria="find.open">🔎</button>
-    <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help">?</button>
+    <a href="#" data-tab="units"  class="tab" id="tabUnits" data-i18n="nav.units" data-tip="tip.units"></a>
+    <a href="#" data-tab="errors" class="tab" id="tabErrors" data-tip="tip.errors"><span data-i18n="nav.errors"></span> <span id="errBadge" class="badge" hidden>0</span></a>
+    <a href="#" data-tab="stats"  class="tab" id="tabStats" data-i18n="nav.stats" data-tip="tip.stats"></a>
+    <a href="#/drill" class="tab tab-drill" id="tabDrill" data-i18n-aria="drill.title" data-tip="tip.drill">⚡</a>
+    <button type="button" class="tab tab-find" data-open-find data-i18n-aria="find.open" data-tip="tip.find">🔎</button>
+    <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help" data-tip="tip.help">?</button>
   </nav>
   <div class="controls">
     <button type="button" class="theme-btn" data-theme-btn></button>
     <div class="lang-switch">
-      <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="kk" data-tip="tip.lang.kk">KK</button><button type="button" data-lang="en" data-tip="tip.lang.en">EN</button>
     </div>
   </div>
 </header>
@@ -129,10 +129,19 @@
   <aside id="pdfPane" class="pdf-pane" hidden>
     <div class="pdf-head">
       <span class="pdf-title" id="pdfTitle"></span>
+      <!-- Only for the drawn-by-us reader below: the browser's own viewer
+           comes with its own zoom and page counter. -->
+      <div class="pdf-nav" id="pdfNav" hidden>
+        <button type="button" class="pdf-btn" id="pdfOut" data-i18n-aria="pdf.zoomOut">−</button>
+        <span class="pdf-pos" id="pdfPos"></span>
+        <button type="button" class="pdf-btn" id="pdfIn" data-i18n-aria="pdf.zoomIn">+</button>
+      </div>
       <a class="pdf-btn" id="pdfNewTab" target="_blank" rel="noopener" data-i18n-aria="pdf.newTab">↗</a>
       <button type="button" class="pdf-btn" id="pdfClose" data-i18n-aria="pdf.close">✕</button>
     </div>
     <iframe id="pdfFrame" class="pdf-frame" title="PDF"></iframe>
+    <!-- Where pdfview.js draws the pages when the browser cannot embed one. -->
+    <div id="pdfCanvas" class="pdf-canvas" hidden></div>
     <div class="pdf-fallback" id="pdfFallback" hidden></div>
   </aside>
 
@@ -146,9 +155,25 @@
 
   <aside id="sidebar" class="sidebar">
     <div class="search-wrap">
-      <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off">
+      <input id="search" type="search" data-i18n-placeholder="search.placeholder" autocomplete="off"
+             autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+      <!-- Collapses the list to a rail of unit numbers. Label, tip and arrow
+           direction are set by app.js, which owns the collapsed state. -->
+      <button type="button" id="sideMin" class="side-min-btn" data-side-min
+              aria-controls="unitList">»</button>
     </div>
     <ul id="unitList" class="unit-list"></ul>
+    <!-- Phone-only footer. Inside a book the topbar has room for navigation
+         (menu · library · account · title) or for settings, not both, and at
+         390px the title lost. Theme and language live down here instead; the
+         CSS hides this whole strip on anything wider. Every control in the
+         app is bound by event delegation, so this second copy needs no JS. -->
+    <div class="sidebar-foot">
+      <button type="button" class="theme-btn" data-theme-btn></button>
+      <div class="lang-switch">
+        <button type="button" data-lang="kk">KK</button><button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
   </aside>
 </div>
 
@@ -198,6 +223,7 @@
     </div>
     <div class="find-bar">
       <input id="findInput" type="search" autocomplete="off" spellcheck="false"
+             autocapitalize="off" autocorrect="off" enterkeyhint="search"
              data-i18n-placeholder="find.placeholder" data-i18n-aria="find.title">
       <div id="findScope" class="find-scope"></div>
     </div>
@@ -217,6 +243,9 @@
      back from a provider, and app.js would otherwise try to route on it. -->
 <script src="supabase.config.js"></script>
 <script src="sync.js"></script>
+<!-- Defines window.PDFVIEW; the ~1.8 MB of pdf.js behind it is only imported
+     the first time a reader on a phone opens a book. -->
+<script src="pdfview.js"></script>
 <script src="app.js"></script>
 <script>
 /* Offline support. Registered after load so it never delays first paint, and

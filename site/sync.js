@@ -87,8 +87,6 @@ window.SYNC = (function () {
       id: (u && u.id) || null,
       email: (u && u.email) || null,
       name: meta.name || '',
-      // A pending email change sits here until the new address is confirmed.
-      newEmail: (u && u.new_email) || '',
       createdAt: (u && u.created_at) || null
     };
   }
@@ -322,11 +320,6 @@ window.SYNC = (function () {
 
   function setName(name) { return updateUser({ data: { name: name } }); }
   function setPassword(pw) { return updateUser({ password: pw }); }
-
-  // Supabase mails a confirmation link; with "Secure email change" on it mails
-  // BOTH addresses and the change only lands once each is confirmed. So the
-  // address on screen is deliberately not updated here.
-  function setEmail(email) { return updateUser({ email: email }); }
 
   // scope=global revokes every refresh token this account has, which is the
   // "I signed in on a shared computer" button. The local session goes either way.
@@ -587,7 +580,6 @@ window.SYNC = (function () {
     refreshUser: function () { return fetchUser(true); },
     setName: setName,
     setPassword: setPassword,
-    setEmail: setEmail,
     signOutEverywhere: signOutEverywhere,
     deleteCloudProgress: deleteCloudProgress,
     deleteAccount: deleteAccount,

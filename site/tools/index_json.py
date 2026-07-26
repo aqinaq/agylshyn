@@ -7,8 +7,8 @@ line on a card the reader has never opened.
 
 It used to be written by whichever builder ran last. build_data.py owned ten
 books and rewrote the file wholesale, so a later run of it silently dropped the
-five IELTS/Collins rows that build_ielts.py had merged in — the home page then
-claimed 913 units and 20 560 questions against a real 959 and 21 876.
+IELTS rows that build_ielts.py had merged in — the home page then under-counted
+by exactly those books.
 
 So the write lives here, once, with merge semantics: a builder hands over only
 its own rows and the rest of the file survives. Ordering comes from books.js,
