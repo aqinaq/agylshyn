@@ -1820,6 +1820,11 @@
   // holds off below.
   if (window.ENTITLE && ENTITLE.configured) {
     ENTITLE.onChange(function () {
+      // The account panel carries the admin entry, and the answer that decides
+      // whether to draw it arrives after the panel can already be open. Without
+      // this the entry only ever appears on the *second* opening — which reads
+      // as "it does not work".
+      if (authModal && !authModal.hidden && authRepaint) authRepaint();
       if (body.getAttribute('data-view') !== 'home') return;
       var ae = document.activeElement;
       if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;

@@ -180,7 +180,13 @@ async def admin(x_admin_token: Optional[str] = None,
         if not auth.is_admin(user):
             # 403, not 401: signing in again will not help, and the client must
             # not respond by throwing away a perfectly good session.
-            raise HTTPException(403, 'this account is not an admin')
+            #
+            # The address is named because getting ADMIN_EMAILS wrong — a typo,
+            # a stray quote, a different account than the one signed in — is the
+            # likeliest reason to be here, and "not an admin" alone turns that
+            # into guesswork. It tells the caller nothing they did not send.
+            raise HTTPException(403, 'this account (%s) is not on the admin list'
+                                % (user.get('email') or 'no address'))
         return user
 
     raise HTTPException(401, 'sign in as an admin')
