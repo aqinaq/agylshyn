@@ -19,6 +19,18 @@ SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', '')
 WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', '')
 
+# Who may run the admin panel inside the site, by the address they signed in
+# with. Comma-separated, compared lower-case.
+#
+# An email rather than a role column, because the check has to survive the
+# account being deleted and recreated, and because the list has to be readable
+# by the person maintaining it a year from now. It is not a secret — it is a
+# list of who is trusted, and trusting it is the server's job: the client is
+# told "you are an admin" only so it can draw a menu item, and every endpoint
+# re-derives the same answer from the verified token.
+ADMIN_EMAILS = [e.strip().lower() for e in
+                os.environ.get('ADMIN_EMAILS', '').split(',') if e.strip()]
+
 # --- object storage (optional) -------------------------------------------
 # PDFs and audio are hundreds of megabytes. They do not belong in the Railway
 # image (slow deploys, ephemeral disk, metered egress); they belong in R2, whose
@@ -51,8 +63,8 @@ def problems():
         out.append('SUPABASE_SERVICE_KEY is unset — entitlements cannot be read')
     if not ALLOWED_ORIGINS:
         out.append('ALLOWED_ORIGINS is unset — every browser request will be blocked')
-    if not ADMIN_TOKEN:
-        out.append('ADMIN_TOKEN is unset — /v1/admin/* is disabled')
+    if not ADMIN_TOKEN and not ADMIN_EMAILS:
+        out.append('ADMIN_TOKEN and ADMIN_EMAILS are both unset — nobody can administer anything')
     if not WEBHOOK_SECRET:
         out.append('WEBHOOK_SECRET is unset — /v1/webhook/payment is disabled')
     return out
@@ -63,6 +75,7 @@ def describe():
         'supabase': SUPABASE_READY,
         'storage': R2_READY,
         'admin': bool(ADMIN_TOKEN),
+        'admins': len(ADMIN_EMAILS),
         'webhook': bool(WEBHOOK_SECRET),
         'origins': len(ALLOWED_ORIGINS),
     }

@@ -7,10 +7,16 @@ static host cannot do: decide, per reader, whether to hand something over.
     GET  /health                     what is configured (no secrets)
     GET  /v1/me                      the caller's live purchases
     GET  /v1/content/{book_id}       a paid book's JSON, if they hold the sku
-    GET  /v1/file/{book_id}/{kind}   a signed R2 url for the pdf/audio
-    POST /v1/admin/grant             give someone a sku (ADMIN_TOKEN)
-    POST /v1/admin/revoke            take it back  (ADMIN_TOKEN)
+    GET  /v1/file/{book_id}/audio    a signed R2 url for a listening track
+    GET  /v1/admin/users             everyone, with what they hold
+    POST /v1/admin/grant             give someone a sku
+    POST /v1/admin/revoke            take it back
     POST /v1/webhook/payment         a provider says money arrived (WEBHOOK_SECRET)
+
+The three admin routes take either a signed-in account listed in ADMIN_EMAILS
+or the shared ADMIN_TOKEN. The panel that calls them lives in the site, not
+here — an admin signs into the app they already use, and no separate password
+exists to be kept anywhere.
 
 Two rules run through all of it:
 
@@ -83,17 +89,21 @@ def bearer(header: Optional[str]) -> str:
     return header[7:].strip()
 
 
-async def caller(header: Optional[str]) -> str:
-    """The verified user id, or the right HTTP error."""
+async def caller_user(header: Optional[str]) -> dict:
+    """The verified account, or the right HTTP error."""
     try:
-        uid = await auth.user_id_for(bearer(header))
+        user = await auth.user_for(bearer(header))
     except auth.Upstream as e:
         # 503, not 401: the reader did nothing wrong and should retry, and the
         # client must not react by signing them out.
         raise HTTPException(503, 'cannot reach %s right now' % e.what)
-    if not uid:
+    if not user or not user.get('id'):
         raise HTTPException(401, 'session expired')
-    return uid
+    return user
+
+
+async def caller(header: Optional[str]) -> str:
+    return (await caller_user(header))['id']
 
 
 def allows(skus: dict, needed: str) -> bool:
@@ -142,13 +152,38 @@ def require_supabase():
         raise HTTPException(503, 'Supabase is not configured on this service')
 
 
-def admin(header: Optional[str]):
-    if not config.ADMIN_TOKEN:
-        raise HTTPException(404, 'not enabled')
-    # compare_digest, not ==: a plain comparison returns as soon as two bytes
-    # differ, which leaks the prefix to anyone willing to time the responses.
-    if not header or not secrets.compare_digest(header, config.ADMIN_TOKEN):
-        raise HTTPException(401, 'bad admin token')
+async def admin(x_admin_token: Optional[str] = None,
+                authorization: Optional[str] = None):
+    """Two ways in, because they are for two different situations.
+
+    A signed-in account whose address is in ADMIN_EMAILS — this is the normal
+    one, and what the panel inside the site uses. Nothing extra to type, nothing
+    extra to keep somewhere safe, and losing the laptop loses no secret.
+
+    Or the shared ADMIN_TOKEN, for a script or a curl. It stays because the day
+    the site will not load is exactly the day access has to be granted anyway.
+
+    Order matters: the header is checked first and only when it was sent, so a
+    signed-in admin never gets "bad admin token" for a header they never had.
+    """
+    if x_admin_token:
+        if not config.ADMIN_TOKEN:
+            raise HTTPException(404, 'token admin is not enabled')
+        # compare_digest, not ==: a plain comparison returns as soon as two
+        # bytes differ, leaking the prefix to anyone willing to time responses.
+        if not secrets.compare_digest(x_admin_token, config.ADMIN_TOKEN):
+            raise HTTPException(401, 'bad admin token')
+        return None                      # a token has no account behind it
+
+    if authorization:
+        user = await caller_user(authorization)
+        if not auth.is_admin(user):
+            # 403, not 401: signing in again will not help, and the client must
+            # not respond by throwing away a perfectly good session.
+            raise HTTPException(403, 'this account is not an admin')
+        return user
+
+    raise HTTPException(401, 'sign in as an admin')
 
 
 async def service_post(path: str, body, params=None, prefer: str = ''):
@@ -178,12 +213,16 @@ def health():
 @app.get('/v1/me')
 async def me(authorization: Optional[str] = Header(None)):
     """What this reader has bought — the client draws the library from it."""
-    uid = await caller(authorization)
+    user = await caller_user(authorization)
     try:
-        skus = await auth.skus_for(uid)
+        skus = await auth.skus_for(user['id'])
     except auth.Upstream as e:
         raise HTTPException(503, 'cannot reach %s right now' % e.what)
     return {
+        # Only so the app knows whether to show an admin entry in the menu. It
+        # opens nothing by itself: every admin route re-checks the same address
+        # against the same list, from the token rather than from this answer.
+        'admin': auth.is_admin(user),
         'skus': skus,
         'books': sorted(b for b, sku in TIERS['books'].items() if allows(skus, sku)),
         'features': sorted(f for f, sku in TIERS['features'].items() if allows(skus, sku)),
@@ -273,7 +312,8 @@ async def file_url(book_id: str, kind: str, name: str = '',
 
 
 @app.post('/v1/admin/grant')
-async def grant(req: Request, x_admin_token: Optional[str] = Header(None)):
+async def grant(req: Request, x_admin_token: Optional[str] = Header(None),
+                authorization: Optional[str] = Header(None)):
     """Give a reader an sku. This is the whole payment system on day one:
     they pay by Kaspi transfer, send the receipt, and this call runs.
 
@@ -285,7 +325,7 @@ async def grant(req: Request, x_admin_token: Optional[str] = Header(None)):
       days omitted → never expires (a one-off purchase)
       days present → expires that many days from now (a subscription period)
     """
-    admin(x_admin_token)
+    await admin(x_admin_token, authorization)
     require_supabase()
     body = await req.json()
     return await _grant(body, source=body.get('source') or 'manual')
@@ -362,9 +402,10 @@ async def _grant(body: dict, source: str):
 
 
 @app.post('/v1/admin/revoke')
-async def revoke(req: Request, x_admin_token: Optional[str] = Header(None)):
+async def revoke(req: Request, x_admin_token: Optional[str] = Header(None),
+                 authorization: Optional[str] = Header(None)):
     """Remove an sku — a refund, a chargeback, or a mistaken grant."""
-    admin(x_admin_token)
+    await admin(x_admin_token, authorization)
     require_supabase()
     body = await req.json()
     uid = (body.get('user_id') or '').strip()
@@ -390,7 +431,8 @@ async def revoke(req: Request, x_admin_token: Optional[str] = Header(None)):
 
 
 @app.get('/v1/admin/users')
-async def list_users(page: int = 1, x_admin_token: Optional[str] = Header(None)):
+async def list_users(page: int = 1, x_admin_token: Optional[str] = Header(None),
+                     authorization: Optional[str] = Header(None)):
     """Everyone who has signed up, with what they currently hold.
 
     Two calls, not one per user: GoTrue for the accounts, one PostgREST read for
@@ -398,7 +440,7 @@ async def list_users(page: int = 1, x_admin_token: Optional[str] = Header(None))
     accounts into a hundred round trips and make the page unusable exactly when
     it starts being worth having.
     """
-    admin(x_admin_token)
+    await admin(x_admin_token, authorization)
     require_supabase()
 
     res = await auth.client().get(
@@ -451,22 +493,6 @@ async def list_users(page: int = 1, x_admin_token: Optional[str] = Header(None))
         # tiers.json rather than from a list somebody has to remember to update.
         'skus': sorted(set(TIERS['books'].values()) | set(TIERS['features'].values())),
     }
-
-
-@app.get('/admin')
-def admin_page():
-    """The panel itself. The HTML is public — it is a login form and some
-    script; every byte of data behind it needs the admin token, which is asked
-    for in the browser and kept in sessionStorage, so it is gone when the tab
-    closes and never written to disk."""
-    path = os.path.join(HERE, 'admin.html')
-    if not os.path.isfile(path):
-        raise HTTPException(404, 'admin page not deployed')
-    with open(path, 'rb') as f:
-        body = f.read()
-    return Response(content=body, media_type='text/html; charset=utf-8',
-                    headers={'X-Robots-Tag': 'noindex, nofollow',
-                             'Cache-Control': 'no-store'})
 
 
 async def _lookup_by_email(email: str) -> Optional[str]:

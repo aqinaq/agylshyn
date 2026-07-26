@@ -376,7 +376,26 @@ window.I18N = {
     'offer.pay': 'Kaspi арқылы төлеу',
     'offer.kaspi': 'Kaspi:',
     'offer.after': 'Төлегеннен кейін чекті мына жерге жібер:',
-    'offer.write': 'Бағасын және төлем жолын осы жерден сұра:'
+    'offer.write': 'Бағасын және төлем жолын осы жерден сұра:',
+
+    'admin.title': 'Админ',
+    'admin.link': 'Админ бөлімі',
+    'admin.loading': 'Тіркелгендер жүктелуде…',
+    'admin.noApi': 'Құқық қызметі бапталмаған (api.config.js бос).',
+    'admin.signIn': 'Алдымен аккаунтқа кір.',
+    'admin.notAdmin': 'Бұл аккаунт админ емес.',
+    'admin.filter': 'Пошта бойынша сүзу…',
+    'admin.reload': 'Жаңарту',
+    'admin.count': '{n} / {all} аккаунт',
+    'admin.colUser': 'Пайдаланушы',
+    'admin.colHas': 'Құқықтары',
+    'admin.colGive': 'Беру',
+    'admin.joined': 'тіркелген {d}',
+    'admin.seen': 'соңғы кіру {d}',
+    'admin.revoke': 'Алып тастау',
+    'admin.askDays': '{email} → «{sku}»\n\nНеше күнге? Бос қалдырсаң — мәңгілікке.',
+    'admin.badDays': 'Күн саны оң сан болуы керек.',
+    'admin.confirmRevoke': '{email} — «{sku}» құқығын алып тастау керек пе?'
   },
 
   en: {
@@ -746,6 +765,25 @@ window.I18N = {
     'offer.pay': 'Pay with Kaspi',
     'offer.kaspi': 'Kaspi:',
     'offer.after': 'Once paid, send the receipt to:',
-    'offer.write': 'Ask about the price and how to pay:'
+    'offer.write': 'Ask about the price and how to pay:',
+
+    'admin.title': 'Admin',
+    'admin.link': 'Admin panel',
+    'admin.loading': 'Loading accounts…',
+    'admin.noApi': 'The entitlement service is not configured (api.config.js is empty).',
+    'admin.signIn': 'Sign in first.',
+    'admin.notAdmin': 'This account is not an admin.',
+    'admin.filter': 'Filter by email…',
+    'admin.reload': 'Reload',
+    'admin.count': '{n} / {all} accounts',
+    'admin.colUser': 'Account',
+    'admin.colHas': 'Holds',
+    'admin.colGive': 'Grant',
+    'admin.joined': 'joined {d}',
+    'admin.seen': 'last seen {d}',
+    'admin.revoke': 'Revoke',
+    'admin.askDays': '{email} → "{sku}"\n\nHow many days? Leave empty for forever.',
+    'admin.badDays': 'Days must be a positive number.',
+    'admin.confirmRevoke': '{email} — revoke "{sku}"?'
   }
 };

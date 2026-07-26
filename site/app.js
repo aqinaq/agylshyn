@@ -1629,6 +1629,22 @@
     who.appendChild(whoText);
     authBody.appendChild(who);
 
+    /* ---- admin ---- */
+    // Only for an address the server has already told us is on its admin list.
+    // Hiding it is a courtesy to everyone else, not a control: #/admin can be
+    // typed by anybody and shows nothing without the server agreeing.
+    if (window.ENTITLE && ENTITLE.isAdmin()) {
+      var adminRow = el('div', 'auth-row');
+      var goAdmin = el('button', 'auth-primary', t('admin.link'));
+      goAdmin.type = 'button';
+      goAdmin.addEventListener('click', function () {
+        closeAuthModal();
+        location.hash = '#/admin';
+      });
+      adminRow.appendChild(goAdmin);
+      authBody.appendChild(adminRow);
+    }
+
     /* ---- sync ---- */
     authSection(t('auth.secSync'));
     var st = SYNC.status();
@@ -4444,6 +4460,176 @@
     main.appendChild(s);
   }
 
+  /* ================= admin ================= */
+
+  // Who has signed up and what they hold, with a button to change it. Reachable
+  // at #/admin by anybody, and useful to nobody else: the account panel only
+  // links here for an admin, and every request underneath is decided by the
+  // server against the address on the verified token. A stranger who types the
+  // URL gets the same page with an error where the table would be.
+  var adminUsers = [];
+  var adminSkus = [];
+  var adminFilter = '';
+
+  function renderAdmin() {
+    setView('home');
+    homeEl.hidden = true;
+    clear(main);
+    body.setAttribute('data-view', 'book');   // reuse the full-width layout
+
+    var head = el('div', 'admin-head');
+    head.appendChild(el('h1', null, t('admin.title')));
+    var back = el('a', 'btn', t('load.back'));
+    back.href = '#/';
+    head.appendChild(back);
+    main.appendChild(head);
+
+    var body_ = el('div', 'admin-body');
+    main.appendChild(body_);
+
+    if (!window.ENTITLE || !ENTITLE.configured) {
+      body_.appendChild(el('div', 'instructions', t('admin.noApi')));
+      return;
+    }
+    if (!(window.SYNC && SYNC.signedIn())) {
+      body_.appendChild(el('div', 'instructions', t('admin.signIn')));
+      return;
+    }
+
+    body_.appendChild(el('div', 'instructions', t('admin.loading')));
+    ENTITLE.adminUsers().then(function (j) {
+      adminUsers = j.users || [];
+      adminSkus = j.skus || [];
+      paintAdmin(body_);
+    }).catch(function (e) {
+      clear(body_);
+      body_.appendChild(el('div', 'instructions',
+        e.status === 403 ? t('admin.notAdmin') : String(e.message || e)));
+    });
+  }
+
+  function paintAdmin(host) {
+    clear(host);
+
+    var bar = el('div', 'admin-bar');
+    var q = el('input');
+    q.type = 'search';
+    q.placeholder = t('admin.filter');
+    q.value = adminFilter;
+    q.addEventListener('input', function () {
+      adminFilter = q.value;
+      paintTable();
+    });
+    bar.appendChild(q);
+    var count = el('span', 'admin-count');
+    bar.appendChild(count);
+    var reload = el('button', 'btn', t('admin.reload'));
+    reload.addEventListener('click', function () { renderAdmin(); });
+    bar.appendChild(reload);
+    host.appendChild(bar);
+
+    var wrap = el('div', 'admin-scroll');
+    var table = el('table', 'admin-table');
+    var thead = el('thead');
+    var hr = el('tr');
+    [t('admin.colUser'), t('admin.colHas'), t('admin.colGive')].forEach(function (h) {
+      hr.appendChild(el('th', null, h));
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    var tbody = el('tbody');
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    host.appendChild(wrap);
+
+    function paintTable() {
+      clear(tbody);
+      var f = adminFilter.trim().toLowerCase();
+      var list = adminUsers.filter(function (u) {
+        return !f || String(u.email || '').toLowerCase().indexOf(f) >= 0;
+      });
+      count.textContent = t('admin.count', { n: list.length, all: adminUsers.length });
+
+      list.forEach(function (u) {
+        var tr = el('tr');
+
+        var c1 = el('td', 'admin-user');
+        c1.appendChild(el('div', 'admin-email', u.email || u.id));
+        c1.appendChild(el('div', 'admin-meta',
+          (u.name ? u.name + ' · ' : '') +
+          t('admin.joined', { d: shortDate(u.created_at) }) + ' · ' +
+          t('admin.seen', { d: shortDate(u.last_sign_in_at) })));
+        tr.appendChild(c1);
+
+        var c2 = el('td');
+        if (!u.entitlements.length) c2.appendChild(el('span', 'admin-none', '—'));
+        u.entitlements.forEach(function (e) {
+          var chip = el('span', 'admin-chip' + (e.live ? '' : ' dead'));
+          chip.appendChild(document.createTextNode(
+            e.sku + (e.expires_at ? ' · ' + shortDate(e.expires_at) : '')));
+          var x = el('button', 'admin-x', '✕');
+          x.title = t('admin.revoke');
+          x.addEventListener('click', function () { adminRevoke(u, e.sku); });
+          chip.appendChild(x);
+          c2.appendChild(chip);
+        });
+        tr.appendChild(c2);
+
+        var c3 = el('td');
+        var acts = el('div', 'admin-acts');
+        adminSkus.forEach(function (sku) {
+          var has = u.entitlements.some(function (e) { return e.sku === sku && e.live; });
+          var b = el('button', 'btn', '+ ' + sku);
+          b.disabled = has;
+          b.addEventListener('click', function () { adminGrant(u, sku); });
+          acts.appendChild(b);
+        });
+        c3.appendChild(acts);
+        tr.appendChild(c3);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    paintTable();
+  }
+
+  function shortDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    try {
+      return d.toLocaleDateString(state.lang === 'en' ? 'en-GB' : 'kk-KZ',
+        { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    }
+  }
+
+  function adminGrant(u, sku) {
+    // Asked rather than assumed: "forever" and "a month" are both normal and
+    // the difference is money. Empty means forever, which is the common case.
+    var days = prompt(t('admin.askDays', { email: u.email || u.id, sku: sku }), '');
+    if (days === null) return;
+    days = String(days).trim();
+    var payload = { user_id: u.id, sku: sku, source: 'panel' };
+    if (days) {
+      var n = parseInt(days, 10);
+      if (!(n > 0)) { alert(t('admin.badDays')); return; }
+      payload.days = n;
+    }
+    ENTITLE.adminGrant(payload)
+      .then(function () { renderAdmin(); })
+      .catch(function (e) { alert(String(e.message || e)); });
+  }
+
+  function adminRevoke(u, sku) {
+    if (!confirm(t('admin.confirmRevoke', { email: u.email || u.id, sku: sku }))) return;
+    ENTITLE.adminRevoke({ user_id: u.id, sku: sku })
+      .then(function () { renderAdmin(); })
+      .catch(function (e) { alert(String(e.message || e)); });
+  }
+
   // #/b/<id>[/unit/<n>|/errors|/stats]
   function openBook(id, sub, arg) {
     if (!bookMeta(id)) { location.hash = '#/'; return; }
@@ -4503,6 +4689,9 @@
     }
     // '#/help' and the old '#/books' both land on home; the guide is a dialog
     if (h.indexOf('#/help') === 0) return { view: 'home', help: true };
+    // Not hidden, just useless to anyone else: every request it makes is
+    // refused by the server unless the signed-in address is on its admin list.
+    if (h.indexOf('#/admin') === 0) return { view: 'admin' };
     return { view: 'home' };
   }
 
@@ -4519,6 +4708,7 @@
     if (r.view !== 'drill') Speech.stop();
     if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
+    if (r.view === 'admin') { if (pdfOpen()) hidePdf(false); renderAdmin(); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();
     if (r.help) openHelpModal();

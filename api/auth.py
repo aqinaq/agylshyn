@@ -61,8 +61,13 @@ def _prune(cache: dict, ttl: float):
         cache.clear()
 
 
-async def user_id_for(token: str) -> Optional[str]:
-    """Verify a Supabase access token. Returns the user id, or None."""
+async def user_for(token: str) -> Optional[dict]:
+    """Verify a Supabase access token. Returns {'id', 'email'}, or None.
+
+    The email comes back with the id because the admin check is by address, and
+    fetching it separately would mean a second round trip for every call the
+    panel makes — on the same data GoTrue already returned here.
+    """
     if not token or not config.SUPABASE_READY:
         return None
 
@@ -89,10 +94,23 @@ async def user_id_for(token: str) -> Optional[str]:
         _tokens[token] = (None, time.monotonic())
         return None
 
-    uid = (res.json() or {}).get('id')
+    body = res.json() or {}
+    user = {'id': body.get('id'), 'email': (body.get('email') or '').lower()}
     _prune(_tokens, TOKEN_TTL)
-    _tokens[token] = (uid, time.monotonic())
-    return uid
+    _tokens[token] = (user, time.monotonic())
+    return user
+
+
+async def user_id_for(token: str) -> Optional[str]:
+    u = await user_for(token)
+    return u['id'] if u else None
+
+
+def is_admin(user: Optional[dict]) -> bool:
+    """Whether this account may administer. Derived from the verified token
+    every time it is asked, never from anything the caller sent."""
+    return bool(user and user.get('email') and
+                user['email'] in config.ADMIN_EMAILS)
 
 
 async def skus_for(user_id: str) -> dict:

@@ -27,6 +27,7 @@ window.ENTITLE = (function () {
   var tierOf = {};                      // book id -> sku, from data/index.json
   var skus = null;                      // null = never asked; {} = asked, owns nothing
   var features = {};                    // feature -> owned?
+  var admin = false;                    // is this account on the server's admin list
   var loading = null;                   // in-flight /v1/me, shared by callers
   var listeners = [];
 
@@ -79,6 +80,7 @@ window.ENTITLE = (function () {
       // account owns nothing, and the library should say so immediately.
       skus = CONFIGURED ? {} : null;
       features = {};
+      admin = false;
       emit();
       return Promise.resolve(skus || {});
     }
@@ -89,11 +91,12 @@ window.ENTITLE = (function () {
         headers: { Authorization: 'Bearer ' + tok }
       });
     }).then(function (r) {
-      if (r.status === 401) return { skus: {}, features: [] };   // session died
+      if (r.status === 401) return { skus: {}, features: [], admin: false };  // session died
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }).then(function (j) {
       skus = j.skus || {};
+      admin = !!j.admin;
       features = {};
       (j.features || []).forEach(function (f) { features[f] = true; });
       loading = null;
@@ -149,6 +152,7 @@ window.ENTITLE = (function () {
       }
       if (r.status === 401) {
         skus = {};                      // the session is gone; the library relocks
+        admin = false;
         emit();
         throw locked(tier(id));
       }
@@ -190,6 +194,35 @@ window.ENTITLE = (function () {
     }).then(function (j) { return j.url; });
   }
 
+  /* ================= admin ================= */
+
+  // The panel inside the app talks to the same routes a curl would, with the
+  // reader's own session as the credential. There is no admin password in the
+  // browser: the server decides from the address on the verified token, and
+  // isAdmin() below only ever decides whether to draw a menu item.
+  function adminCall(path, opts) {
+    opts = opts || {};
+    return SYNC.token().then(function (tok) {
+      var init = {
+        method: opts.method || 'GET',
+        headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }
+      };
+      if (opts.body) init.body = JSON.stringify(opts.body);
+      return fetch(BASE + path, init);
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        var j = null;
+        try { j = txt ? JSON.parse(txt) : null; } catch (e) { /* not JSON */ }
+        if (!r.ok) {
+          var err = new Error((j && j.error) || ('HTTP ' + r.status));
+          err.status = r.status;
+          throw err;
+        }
+        return j;
+      });
+    });
+  }
+
   // Signing in or out changes the whole library, so re-ask rather than wait for
   // the reader to open something and be surprised.
   if (CONFIGURED && window.SYNC) {
@@ -206,6 +239,14 @@ window.ENTITLE = (function () {
     known: known,
     hasFeature: hasFeature,
     skus: function () { return skus || {}; },
+    isAdmin: function () { return CONFIGURED && admin; },
+    adminUsers: function () { return adminCall('/v1/admin/users'); },
+    adminGrant: function (body) {
+      return adminCall('/v1/admin/grant', { method: 'POST', body: body });
+    },
+    adminRevoke: function (body) {
+      return adminCall('/v1/admin/revoke', { method: 'POST', body: body });
+    },
     refresh: refresh,
     fetchBook: fetchBook,
     fileUrl: fileUrl,
