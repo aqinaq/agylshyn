@@ -1,0 +1,26 @@
+# Build context for the api/ image. Default deny, then let four things back in.
+#
+# Why it is written this way round: the repository is ~1.2 GB (698 MB of .git,
+# 215 MB of PDFs, 340 MB of audio) and every byte of the build context is packed
+# up and shipped to the builder before the first instruction runs. A deny-list
+# would have to name each of those and would silently start shipping the next
+# large folder somebody adds. This way the context is a few megabytes and stays
+# that way — anything new is excluded until it is named here.
+#
+# Docker cannot re-include a path whose parent is excluded, which is why site/
+# and site/tools/ are re-included and then re-emptied on the way down.
+*
+
+!api
+!site
+site/*
+!site/tools
+site/tools/*
+!site/tools/tiers.py
+!site/tools/tiers.json
+
+# Nothing below is needed at runtime, and __pycache__ from a local run would
+# otherwise be copied over the interpreter's own bytecode.
+api/__pycache__
+api/README.md
+**/.DS_Store

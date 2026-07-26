@@ -359,7 +359,17 @@ window.I18N = {
     'load.failed': 'Кітап жүктелмеді: {id}',
     'load.retry': 'Қайта көру',
     'pdf.loading': 'Кітап жүктелуде… Файл үлкен, біраз уақыт алуы мүмкін.',
-    'load.back': '← Кітапханаға'
+    'load.back': '← Кітапханаға',
+
+    'lock.title': '{id} — жаттығулары ақылы',
+    'lock.body': 'Бұл кітаптың жаттығулары «{sku}» дегенді талап етеді. Сатып алсаң, ' +
+                 'осы аккаунтта бірден ашылады. Кітаптың өзін қазір де оқи бересің.',
+    'lock.signedOut': 'Бұл кітаптың жаттығулары ақылы. Сатып алғаның осы жерде ' +
+                      'көрінуі үшін алдымен аккаунтқа кір. Кітаптың өзі бәрібір ашық.',
+    'lock.signIn': 'Аккаунтқа кіру',
+    'lock.recheck': 'Қайта тексеру',
+    'lock.readPdf': '📖 Кітапты оқу',
+    'lock.badge': 'Ақылы'
   },
 
   en: {
@@ -712,6 +722,16 @@ window.I18N = {
     'load.failed': 'Could not load the book: {id}',
     'load.retry': 'Try again',
     'pdf.loading': 'Loading the book… the file is large, this can take a while.',
-    'load.back': '← Back to library'
+    'load.back': '← Back to library',
+
+    'lock.title': '{id} — paid exercises',
+    'lock.body': 'The exercises in this book need "{sku}". Buy it and they unlock ' +
+                 'on this account straight away. The book itself stays open to read.',
+    'lock.signedOut': 'The exercises in this book are paid. Sign in first, so a ' +
+                      'purchase has somewhere to show up. The book itself stays open.',
+    'lock.signIn': 'Sign in',
+    'lock.recheck': 'Check again',
+    'lock.readPdf': '📖 Read the book',
+    'lock.badge': 'Paid'
   }
 };

@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "Which books are paid, and what has to be bought to read them.",
+    "",
+    "This file is the single source of truth. index_json.py stamps each row of",
+    "data/index.json with its tier so the client can draw a lock without asking",
+    "the server; split_content.py uses it to decide which book files leave the",
+    "public deploy; api/main.py re-reads it and is the only opinion that counts.",
+    "",
+    "A book missing from `books` is free. A value is an sku, matched against the",
+    "entitlements table; the sku 'all' unlocks everything and needs no entry.",
+    "",
+    "Moving a book between tiers is an edit here plus a rerun of the two tools —",
+    "nobody's purchased rows have to change, because rows carry skus, not books."
+  ],
+  "_pending": [
+    "Empty on purpose, for now. Marking a book paid moves its JSON out of",
+    "site/data/ — and until api.config.js carries a working API base, the app",
+    "would ask for a file that is no longer there and show 'could not load'",
+    "rather than a lock. The API base cannot be filled in before Railway has",
+    "built once and issued a domain, and Railway cannot build before this is",
+    "pushed. So the first deploy ships with nothing gated.",
+    "",
+    "Turning it on later is this map plus a rerun of split_content.py and",
+    "index_json.py. A suggested starting point, once /health reports ok:",
+    "  ielts-19 / ielts-20 / ielts-21          -> \"ielts\"",
+    "  advanced-grammar / vocab-adv            -> \"advanced\"",
+    "  academic / business                     -> \"advanced\""
+  ],
+  "books": {},
+  "features": {
+    "_comment": [
+      "Convenience gated in the client only. These are not content, so a reader",
+      "who patches the JS gets a nicer app and no material they did not pay for —",
+      "not worth a server round trip. Content gating is a different matter and",
+      "lives in api/main.py."
+    ],
+    "drill": "pro",
+    "sync": "pro",
+    "export": "pro"
+  }
+}

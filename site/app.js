@@ -840,14 +840,29 @@
       .then(function (r) { return r.json(); })
       .then(function (list) {
         list.forEach(function (b) { INDEX[b.id] = b; });
+        // The index carries each book's tier, so this is the moment the library
+        // learns what costs money. Asking who the reader is comes next and is
+        // deliberately not waited on: the page renders on free content, and the
+        // locks resolve themselves through ENTITLE.onChange when the answer lands.
+        if (window.ENTITLE) {
+          ENTITLE.setTiers(INDEX);
+          ENTITLE.refresh().catch(function () { /* offline — locks stay as they are */ });
+        }
         return INDEX;
       })
       .catch(function () { return INDEX; });
   }
 
   function fetchBook(id) {
-    // No 'force-cache' here: it serves a stale copy without revalidating, so a
-    // rebuilt data file would never reach a reader who already opened the book.
+    // Free books are a static file, same URL and same offline caching as always.
+    // Paid ones go through the entitlement API, which is the only copy that
+    // exists. ENTITLE decides which is which; with api.config.js empty it always
+    // answers "free" and this is the fetch it always was.
+    //
+    // No 'force-cache' on the static path: it serves a stale copy without
+    // revalidating, so a rebuilt data file would never reach a reader who
+    // already opened the book.
+    if (window.ENTITLE) return ENTITLE.fetchBook(id);
     return fetch('data/' + id + '.json')
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -859,8 +874,11 @@
     if (cache[id]) return Promise.resolve(cache[id]);
     if (pending[id]) return pending[id];
     pending[id] = fetchBook(id)
-      .catch(function () {
-        // one retry: a dropped connection should not strand the reader
+      .catch(function (e) {
+        // one retry: a dropped connection should not strand the reader.
+        // A locked book is a settled answer, not a flaky one — retrying it just
+        // doubles the requests and delays the unlock screen by another round trip.
+        if (e && e.locked) throw e;
         return new Promise(function (res) { setTimeout(res, 400); }).then(function () {
           return fetchBook(id);
         });
@@ -997,6 +1015,15 @@
     top.appendChild(el('span', 'bc-level', b.level));
     top.appendChild(el('span', 'bc-kind', t('lib.group.' + b.kind)));
     top.appendChild(el('span', 'bc-units', t('card.units', { n: (idx && idx.units) || b.units })));
+
+    // A lock only once the answer is in. While /v1/me is still in flight the
+    // card stays plain: showing a lock and then removing it half a second later
+    // tells a paying reader their purchase vanished, every single reload.
+    if (window.ENTITLE && ENTITLE.isPaid(b.id) && ENTITLE.known() && !ENTITLE.canOpen(b.id)) {
+      var lock = el('span', 'bc-lock', '🔒');
+      lock.title = t('lock.badge');
+      top.appendChild(lock);
+    }
     card.appendChild(top);
 
     // Icon only — the card's top row is tight, and the full explanation waits
@@ -1771,6 +1798,19 @@
     return n + ':' + sum;
   }
 
+  // The purchase list arrives after the first paint, and signing in or out
+  // changes it. Only the library draws locks, so only the library is redrawn —
+  // and never while an answer is being typed, for the same reason afterMerge
+  // holds off below.
+  if (window.ENTITLE && ENTITLE.configured) {
+    ENTITLE.onChange(function () {
+      if (body.getAttribute('data-view') !== 'home') return;
+      var ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      route();
+    });
+  }
+
   if (window.SYNC) {
     SYNC.onChange(function () {
       refreshAuthButtons();
@@ -2000,14 +2040,37 @@
     handle.addEventListener('dblclick', function () { reset(); applyWidths(); save(); });
   }
 
+  // Dragged narrower than this, the list is asking for the rail. Under ~180px
+  // every title is an ellipsis anyway, so instead of the drag stopping dead at
+  // the minimum width it hands over to the collapsed state — and dragging the
+  // rail back out past the same point brings the titles back. It is the very
+  // preference the « button sets, so it is stored and restored the same way.
+  var SIDEBAR_SNAP = 150;
+
+  // The rail, toggled mid-drag: only when it actually changes, and without the
+  // storage write — the drag saves once, when the pointer comes up.
+  function setSideMinLive(on) {
+    on = !!on && !isNarrow();
+    if (on === sideMin()) return;
+    state.ui.sideMin = on;
+    if (on && searchEl && searchEl.value) searchEl.value = '';
+    applySideMin();
+    renderSidebar();
+    Tips.hide();
+  }
+
   // The unit list is on the right, so its handle sits on the list's left edge:
   // dragging left widens it. The book pane is on the left, handle on its right.
   makeDragger(dragSidebar, -1,
     sidebarW,
-    function (v) { state.ui.sidebarW = clampNum(v, 180, 560); },
+    function (v) {
+      if (v < SIDEBAR_SNAP) { setSideMinLive(true); return; }
+      setSideMinLive(false);
+      state.ui.sidebarW = clampNum(v, 180, 560);
+    },
     // 0 is falsy, so the width goes back to being a share of the window rather
     // than to whatever pixel count happened to be the default when it was set.
-    function () { state.ui.sidebarW = 0; });
+    function () { setSideMinLive(false); state.ui.sidebarW = 0; });
 
   /* ---- collapsing the unit list down to a rail of numbers ----
      Once a reader knows the book, the titles are dead weight: they are reading
@@ -2030,8 +2093,10 @@
       b.setAttribute('aria-label', t(on ? 'side.max' : 'side.min'));
       b.setAttribute('data-tip', on ? 'tip.sideMax' : 'tip.sideMin');
     }
-    // A rail cannot be dragged wider — expanding it is what the button is for.
-    if (dragSidebar) dragSidebar.hidden = on;
+    // The handle stays on a rail too: dragging it right past SIDEBAR_SNAP is
+    // the other way back to the full list, and a handle that disappeared under
+    // the pointer mid-drag would strand the drag that collapsed it.
+    if (dragSidebar) dragSidebar.hidden = false;
   }
 
   function setSideMin(on) {
@@ -2163,15 +2228,18 @@
     });
   }
 
-  function showPdf(page) {
-    var url = pdfUrl(page);
+  // `meta` overrides the open book's — the lock screen shows the textbook for a
+  // book whose exercises never loaded, so there is no `book` to read it from.
+  function showPdf(page, meta) {
+    var m = meta || (book && book.meta);
+    var url = pdfUrl(page, m);
     if (!url) return;
     pdfPane.hidden = false;
     dragPdf.hidden = false;
     document.body.classList.add('pdf-open');
     if (drawPdf()) paintPdf(page || 1);
     else if (pdfCurrentUrl !== url) mountPdf(url);
-    pdfTitle.textContent = (book.meta && book.meta.title) || '';
+    pdfTitle.textContent = (m && m.title) || '';
     pdfNewTab.href = url;
     state.ui.pdfOpen = true;
     save();
@@ -2657,10 +2725,11 @@
 
   // A book may set `pdfWholeFileOnly` when its viewer cannot honour #page=;
   // none does today, but the escape hatch stays.
-  function pdfUrl(page) {
-    var pdf = book.meta && book.meta.pdf;
+  function pdfUrl(page, meta) {
+    var m = meta || (book && book.meta);
+    var pdf = m && m.pdf;
     if (!pdf) return null;
-    if (book.meta.pdfWholeFileOnly || page == null) return pdf;
+    if (m.pdfWholeFileOnly || page == null) return pdf;
     return pdf + '#page=' + page;
   }
 
@@ -4189,7 +4258,62 @@
     main.appendChild(s);
   }
 
+  // A locked book is not a failure, so it does not get the failure screen: no
+  // "try again", no error text, and a way forward instead. The two cases differ
+  // by one question — is there an account yet — because for a signed-out reader
+  // the next step is signing in, not paying.
+  function showLocked(id, sku) {
+    clear(main);
+    var meta = bookMeta(id);
+    var signedIn = !!(window.SYNC && SYNC.signedIn());
+    var s = el('div', 'empty-state');
+    s.appendChild(el('span', 'big', '🔒'));
+    s.appendChild(el('div', null, t('lock.title', { id: (meta && meta.title) || id })));
+    s.appendChild(el('div', 'instructions',
+      t(signedIn ? 'lock.body' : 'lock.signedOut', { sku: String(sku || '') })));
+
+    var row = el('div', 'sub-actions');
+    row.style.justifyContent = 'center';
+
+    if (!signedIn && window.SYNC && SYNC.configured) {
+      var login = el('button', 'btn primary', t('lock.signIn'));
+      login.addEventListener('click', openAuthModal);
+      row.appendChild(login);
+    } else if (signedIn) {
+      // The reader who has just paid and is staring at a lock. ENTITLE caches
+      // the purchase list, so the fix is almost always "ask again" — offering it
+      // as a button is cheaper than a support message.
+      var again = el('button', 'btn primary', t('lock.recheck'));
+      again.addEventListener('click', function () {
+        again.disabled = true;
+        ENTITLE.refresh().then(function () {
+          delete cache[id];
+          delete pending[id];
+          openBook(id, null, null);
+        }).catch(function () { again.disabled = false; });
+      });
+      row.appendChild(again);
+    }
+
+    // The textbook itself is never gated — only the exercises around it are. A
+    // locked book still opens its PDF, which is what keeps this screen from
+    // being a dead end and lets somebody decide whether the book is worth
+    // buying by reading it first.
+    if (meta && meta.pdf) {
+      var read = el('button', 'btn', t('lock.readPdf'));
+      read.addEventListener('click', function () { showPdf(null, meta); });
+      row.appendChild(read);
+    }
+
+    var back = el('a', 'btn', t('load.back'));
+    back.href = '#/';
+    row.appendChild(back);
+    s.appendChild(row);
+    main.appendChild(s);
+  }
+
   function showError(id, e) {
+    if (e && e.locked) return showLocked(id, e.locked);
     clear(main);
     var meta = bookMeta(id);
     var s = el('div', 'empty-state');

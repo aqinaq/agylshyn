@@ -573,6 +573,10 @@ window.SYNC = (function () {
     attach: attach,
     onChange: function (fn) { listeners.push(fn); },
     signedIn: signedIn,
+    // entitle.js needs a live access token to call the entitlement API, and this
+    // is the only place that knows how to refresh an expiring one. Handing out
+    // sess.access_token directly would work right up until it went stale.
+    token: token,
     loadSettings: loadSettings,
     providers: function () { return providers; },
     email: function () { return (sess && sess.user && sess.user.email) || null; },

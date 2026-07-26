@@ -1004,7 +1004,6 @@ if __name__ == '__main__':
     books = [
         build_c20(),
         build_full_book('ielts-21', 'Cambridge IELTS 21 Academic', 'c21'),
-        build_full_book('ielts-17', 'Cambridge IELTS 17 Academic', 'c17', latinise),
     ]
     index = []
     # Cambridge 19 is assembled from its key rather than parsed, so it skips
