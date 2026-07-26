@@ -1769,7 +1769,10 @@
       tg.title = t(why);
       if (q) q.insertBefore(tg, q.firstChild);
       else rbody.appendChild(tg);
-      rbody.appendChild(el('div', 'self-note', t(why)));
+      // Spelled out once per reason per exercise. Six rows in a row that are all
+      // self-check for the same reason want the explanation once, not six times;
+      // the tag on each of them carries it as a tooltip either way.
+      if (!opts || opts.selfNote !== false) rbody.appendChild(el('div', 'self-note', t(why)));
     }
 
     /* --- input + buttons --- */
@@ -2056,9 +2059,12 @@
       return box;
     }
 
-    var hasCheckable = false, hasManual = false;
+    var hasCheckable = false, hasManual = false, notedWhy = {};
     items.forEach(function (it) {
-      box.appendChild(buildRow(unitNo, sub, it, { introPage: introPage }));
+      var why = isManual(it) ? (it.selfWhy || 'open') : null;
+      var first = why != null && !notedWhy[why];
+      if (why != null) notedWhy[why] = 1;
+      box.appendChild(buildRow(unitNo, sub, it, { introPage: introPage, selfNote: first }));
       if (isAuto(it)) hasCheckable = true;
       else if (isManual(it)) hasManual = true;
     });

@@ -288,6 +288,14 @@ def regap_book(units, doc, pages_of):
 
 _STUB = 3        # one side of a real split is nearly always this short or shorter
 
+# The ligature clusters these books set as a single glyph. When the extractor
+# breaks after one, the left fragment ends here: "offi ce", "traffi c", "aff
+# ect", "benefi t", "fift y". Such a fragment turns up in the book's own
+# vocabulary — the page is full of them — so it cannot be used as evidence that
+# the fragment is a word. That is the one case where the vocabulary lies, and
+# the only reason for this exception.
+_LIGATURE_TAIL = re.compile(r'(?:ffi|ffl|ff|fi|fl|ft)$', re.I)
+
 
 def book_vocabulary(doc, max_pages=None):
     words = set()
@@ -303,6 +311,15 @@ def book_vocabulary(doc, max_pages=None):
     return words
 
 
+# A token as (leading punctuation, letters, trailing punctuation).
+_TOKEN = re.compile(r'^([^A-Za-z]*)([A-Za-z]+)([^A-Za-z]*)$')
+
+
+def _split_token(tok):
+    m = _TOKEN.match(tok or '')
+    return m.groups() if m else None
+
+
 def _should_join(a, b, vocab):
     """Are these two tokens one word the extractor cut in half?"""
     # One side has to be a stub. Two full-length words beside each other are a
@@ -312,13 +329,18 @@ def _should_join(a, b, vocab):
     if (a + b).lower() not in vocab:
         return False
     # The decisive test: a left part that is itself a word the book prints is a
-    # word, not half of one. "in form" and "no one" stop here; "offi ce" and
-    # "Ther e" do not, because the book never prints "offi" or "Ther".
-    if a.lower() in vocab:
+    # word, not half of one. "in form" and "no one" stop here; "Ther e" does
+    # not, because the book never prints "Ther". A fragment ending in a ligature
+    # is exempt, for the reason given at _LIGATURE_TAIL — and it is still only
+    # joined when the result is a word the book prints, which is what keeps
+    # "the cliff is" and "a gift for" out.
+    if a.lower() in vocab and not _LIGATURE_TAIL.search(a):
         return False
     # A right part long enough to be a word of its own needs the same doubt; a
-    # one- or two-letter tail ("e", "ce", "ws") does not.
-    if len(b) >= _STUB and b.lower() in vocab:
+    # one- or two-letter tail ("e", "ce", "ws") does not. After a ligature the
+    # vocabulary is no evidence either way, for the same reason as above: "ect"
+    # and "cer" are in it only because "aff ect" and "offi cer" are on the page.
+    if len(b) >= _STUB and b.lower() in vocab and not _LIGATURE_TAIL.search(a):
         return False
     return True
 
@@ -333,19 +355,20 @@ def fix_split_words(text, vocab):
     if not text or ' ' not in text:
         return text
     parts = re.split(r'(\s+)', text)          # word, gap, word, gap, ...
-    word = re.compile(r'[A-Za-z]+')
     out, i = [], 0
-    while i < len(parts):
-        if (i + 2 < len(parts) and parts[i + 1] == ' '
-                and word.fullmatch(parts[i] or '')
-                and word.fullmatch(parts[i + 2] or '')
-                and _should_join(parts[i], parts[i + 2], vocab)):
-            parts[i + 2] = parts[i] + parts[i + 2]   # allow a three-way split
-            i += 2
+    while i + 2 < len(parts):
+        left, right = _split_token(parts[i]), _split_token(parts[i + 2])
+        # Nothing may stand between the halves: a full stop after the first, or
+        # an opening quote before the second, means these are two words. Without
+        # this "from the offi ce." never joins, because "ce." is not a bare word.
+        if (parts[i + 1] == ' ' and left and right and not left[2] and not right[0]
+                and _should_join(left[1], right[1], vocab)):
+            parts[i + 2] = left[0] + left[1] + right[1] + right[2]
+            i += 2                                  # allow a three-way split
             continue
         out.append(parts[i])
         i += 1
-    return ''.join(out)
+    return ''.join(out + parts[i:])
 
 
 def fix_answer_words(units, vocab):

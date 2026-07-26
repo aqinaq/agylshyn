@@ -5,10 +5,11 @@
 # the artifact publishes it at the domain root without moving anything or
 # maintaining a second branch.
 #
-# site/audio/ is in .gitignore (~490 MB), so the checkout — and therefore the
-# artifact — does not contain it. The deployed app reads AUDIO_BASE from
-# site/audio.config.js instead; until that points at object storage, the IELTS
-# and Collins listening tracks 404 and the app hides those players.
+# The artifact carries site/ whole, including pdf/ (223 MB) and audio/ (~550 MB),
+# so AUDIO_BASE in site/audio.config.js stays empty and the relative paths in
+# data/*.json resolve on their own. Pages serves Range requests, which is what
+# lets an <audio> element seek. Roughly 800 MB goes up on every deploy — expect
+# a few minutes — and Pages warns once a published site passes ~1 GB.
 #
 # ONE-TIME MANUAL STEP: Settings → Pages → Build and deployment → Source must be
 # set to "GitHub Actions" before the first run. configure-pages can create that
@@ -43,7 +44,7 @@ jobs:
 
       - uses: actions/configure-pages@v5
 
-      # ~230 MB, almost all of it site/pdf/. Uploading takes a few minutes.
+      # ~800 MB of pdf/ and audio/. Uploading takes a few minutes.
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
