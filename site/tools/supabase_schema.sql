@@ -54,3 +54,28 @@ drop trigger if exists progress_touch on public.progress;
 create trigger progress_touch
   before insert or update on public.progress
   for each row execute function public.progress_touch();
+
+-- "Delete my account" — the anon key cannot touch auth.users, and GoTrue has no
+-- self-serve delete, so the account panel calls this instead. SECURITY DEFINER
+-- lets it reach auth.users while auth.uid() pins it to the caller's own row: a
+-- signed-in reader can delete themselves and nobody else. The progress rows go
+-- with them through the on delete cascade on the foreign key.
+--
+-- Leaving this function out is a safe choice; the panel reports the 404 rather
+-- than claiming an account was removed when it was not.
+create or replace function public.delete_me()
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.delete_me() from public, anon;
+grant execute on function public.delete_me() to authenticated;

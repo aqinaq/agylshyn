@@ -74,10 +74,22 @@ window.SYNC = (function () {
       access_token: json.access_token,
       refresh_token: json.refresh_token,
       expires_at: Date.now() + (Number(json.expires_in) || 3600) * 1000,
-      user: {
-        id: (json.user && json.user.id) || null,
-        email: (json.user && json.user.email) || null
-      }
+      user: userFrom(json.user)
+    };
+  }
+
+  // The display name lives in GoTrue's user_metadata, which is the one part of
+  // the profile the reader owns outright — it is theirs to set and it is what
+  // the avatar and the panel heading prefer over the address.
+  function userFrom(u) {
+    var meta = (u && u.user_metadata) || {};
+    return {
+      id: (u && u.id) || null,
+      email: (u && u.email) || null,
+      name: meta.name || '',
+      // A pending email change sits here until the new address is confirmed.
+      newEmail: (u && u.new_email) || '',
+      createdAt: (u && u.created_at) || null
     };
   }
 
@@ -231,6 +243,10 @@ window.SYNC = (function () {
     var s = sessFrom(json);
     if (!s) throw new Error('no session');
     saveSess(s);
+    // The sign-in response carries id and email but not the metadata or the
+    // join date, so the account panel would open half-empty right after signing
+    // in. One extra call settles the profile for the whole session.
+    fetchUser(true);
     fullSync();
     return s;
   }
@@ -277,13 +293,76 @@ window.SYNC = (function () {
 
   // The implicit-flow fragment carries no profile, so the modal would have no
   // address to show. One call fills it in.
-  function fetchUser() {
-    if (!sess || (sess.user && sess.user.email)) return Promise.resolve();
+  function fetchUser(force) {
+    if (!sess || (!force && sess.user && sess.user.email)) return Promise.resolve();
     return auth('/auth/v1/user').then(function (u) {
-      if (!sess || !u) return;
-      sess.user = { id: u.id || null, email: u.email || null };
+      // Only a real user object may replace what we already know. Anything else
+      // (an empty body, an array, a proxy's error page) would otherwise blank
+      // out a perfectly good address and leave the panel showing nothing.
+      if (!sess || !u || !u.id) return;
+      sess.user = userFrom(u);
       saveSess(sess);
     }).catch(function () { /* cosmetic only */ });
+  }
+
+  /* ================= profile / account management ================= */
+
+  // GoTrue takes email, password and user_metadata through the same endpoint, so
+  // one helper covers all three. It answers with the updated user, which is what
+  // keeps the panel honest after a change without a second round trip.
+  function updateUser(body) {
+    return auth('/auth/v1/user?redirect_to=' + encodeURIComponent(redirectTo()), {
+      method: 'PUT',
+      body: body
+    }).then(function (u) {
+      if (sess && u) { sess.user = userFrom(u); saveSess(sess); }
+      return u;
+    });
+  }
+
+  function setName(name) { return updateUser({ data: { name: name } }); }
+  function setPassword(pw) { return updateUser({ password: pw }); }
+
+  // Supabase mails a confirmation link; with "Secure email change" on it mails
+  // BOTH addresses and the change only lands once each is confirmed. So the
+  // address on screen is deliberately not updated here.
+  function setEmail(email) { return updateUser({ email: email }); }
+
+  // scope=global revokes every refresh token this account has, which is the
+  // "I signed in on a shared computer" button. The local session goes either way.
+  function signOutEverywhere() {
+    return auth('/auth/v1/logout?scope=global', { method: 'POST' })
+      .catch(function () { /* the local session still has to go */ })
+      .then(function () { return signOut(); });
+  }
+
+  // Clears the cloud copy and leaves this device's localStorage alone — the
+  // reader's work stays theirs; only the backup goes.
+  function deleteCloudProgress() {
+    var uid = sess && sess.user && sess.user.id;
+    if (!uid) return Promise.reject(new Error('signed out'));
+    return auth('/rest/v1/progress?user_id=eq.' + encodeURIComponent(uid), {
+      method: 'DELETE',
+      headers: { Prefer: 'return=minimal' }
+    }).then(function () {
+      dirty = {};
+      lastSync = null;
+      emit();
+    });
+  }
+
+  // GoTrue has no self-serve delete for the anon key, so this calls the
+  // delete_me() function in tools/supabase_schema.sql. A project that has not
+  // run that part of the schema answers 404, which the panel reports rather than
+  // pretending the account is gone.
+  function deleteAccount() {
+    return auth('/rest/v1/rpc/delete_me', { method: 'POST', body: {} })
+      .then(function () {
+        saveSess(null);
+        dirty = {};
+        lastSync = null;
+        setStatus('idle');
+      });
   }
 
   /* ================= state <-> rows ================= */
@@ -504,6 +583,14 @@ window.SYNC = (function () {
     loadSettings: loadSettings,
     providers: function () { return providers; },
     email: function () { return (sess && sess.user && sess.user.email) || null; },
+    user: function () { return (sess && sess.user) || null; },
+    refreshUser: function () { return fetchUser(true); },
+    setName: setName,
+    setPassword: setPassword,
+    setEmail: setEmail,
+    signOutEverywhere: signOutEverywhere,
+    deleteCloudProgress: deleteCloudProgress,
+    deleteAccount: deleteAccount,
     status: function () { return status; },
     lastError: function () { return lastError; },
     lastSync: function () { return lastSync; },

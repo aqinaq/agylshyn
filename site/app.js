@@ -667,6 +667,27 @@
     if (text != null) n.textContent = text;
     return n;
   }
+
+  /* Every answer box — in a unit and in a practice session alike.
+     The switches are all aimed at phone keyboards: left alone, iOS
+     capitalises the first letter and silently "corrects" the very word being
+     tested ("dont" → "don't", "recieve" → "receive"), so the reader is marked
+     wrong for a mistake the phone made. enterkeyhint labels the return key
+     "go", because Enter is what checks the answer.
+     `aria` names the question for a screen reader, which would otherwise hear
+     only the placeholder and not know which box it belongs to (AUDIT §У9). */
+  function answerInput(aria) {
+    var input = el('input');
+    input.type = 'text';
+    input.autocomplete = 'off';
+    input.autocapitalize = 'off';
+    input.spellcheck = false;
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('enterkeyhint', 'go');
+    input.placeholder = t('row.placeholder');
+    input.setAttribute('aria-label', aria);
+    return input;
+  }
   function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
 
   var body = document.body;
@@ -1232,8 +1253,10 @@
     authReturnFocus = document.activeElement;
     authMsg = null;
     authBusy = false;
-    // Repaints itself through SYNC.onChange once the answer lands.
-    if (!SYNC.signedIn()) SYNC.loadSettings();
+    // Both repaint through SYNC.onChange once the answer lands: which providers
+    // the project offers, or the profile as the server currently has it (a name
+    // or email changed on another device would otherwise show stale here).
+    if (SYNC.signedIn()) SYNC.refreshUser(); else SYNC.loadSettings();
     renderAuth();
     authModal.hidden = false;
     var c = authModal.querySelector('.modal-close');
@@ -1322,8 +1345,13 @@
       if (pw.length < 6) return authSay(t('auth.needPassword'), true);
       var p = authSignup ? SYNC.signUpPassword(email, pw) : SYNC.signInPassword(email, pw);
       p.then(function (r) {
-        if (r === 'confirm-email') authSay(t('auth.confirmEmail'), false);
-        else { authMsg = null; renderAuth(); }
+        if (r === 'confirm-email') return authSay(t('auth.confirmEmail'), false);
+        // Signed in: the panel swaps to the account view, and the busy flag has
+        // to be dropped with it. Leaving it set rendered that whole view with
+        // every button disabled — dead until the modal was closed and reopened.
+        authMsg = null;
+        authBusy = false;
+        renderAuth();
       }).catch(authFail);
     }
 
@@ -1367,38 +1395,181 @@
     authBody.appendChild(alt);
   }
 
+  /* ---- account management ---- */
+
+  function authSection(title) {
+    authBody.appendChild(el('div', 'auth-sec', title));
+  }
+
+  // One labelled field with its own action button. Every editable thing in the
+  // panel is this shape, so they all behave the same: Enter submits, the button
+  // greys out while the request is in flight, and the result lands in authMsg.
+  function authField(opts) {
+    var wrap = el('div', 'auth-field');
+    var inp = el('input', 'auth-in');
+    inp.type = opts.type || 'text';
+    inp.placeholder = opts.placeholder || '';
+    inp.setAttribute('aria-label', opts.label);
+    if (opts.value) inp.value = opts.value;
+    if (opts.autocomplete) inp.autocomplete = opts.autocomplete;
+
+    var go = el('button', 'btn', opts.action);
+    go.type = 'button';
+    go.disabled = authBusy;
+
+    function run() {
+      var v = (inp.value || '').trim();
+      var err = opts.validate && opts.validate(v);
+      if (err) return authSay(err, true);
+      authBusy = true;
+      renderAuth();
+      // A runner either resolves with its own message or with whatever the API
+      // returned — usually the user object. Only a string is a message; without
+      // this check the panel cheerfully printed "[object Object]".
+      opts.run(v).then(function (m) {
+        authSay(typeof m === 'string' && m ? m : t('auth.saved'), false);
+      }).catch(authFail);
+    }
+    go.addEventListener('click', run);
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); run(); }
+    });
+
+    wrap.appendChild(inp);
+    wrap.appendChild(go);
+    authBody.appendChild(wrap);
+  }
+
   function renderAuthAccount() {
+    var u = SYNC.user() || {};
+    var mail = u.email || '—';
+
     var who = el('div', 'auth-who');
-    who.appendChild(el('div', 'auth-who-k', t('auth.signedInAs')));
-    who.appendChild(el('div', 'auth-who-v', SYNC.email() || '—'));
+    who.appendChild(el('div', 'acct-ava big', (u.name || mail).charAt(0).toUpperCase()));
+    var whoText = el('div', 'auth-who-t');
+    whoText.appendChild(el('div', 'auth-who-v', u.name || mail));
+    if (u.name) whoText.appendChild(el('div', 'auth-who-k', mail));
+    if (u.createdAt) {
+      whoText.appendChild(el('div', 'auth-who-k',
+        t('auth.since', { date: new Date(u.createdAt).toLocaleDateString(t('locale')) })));
+    }
+    who.appendChild(whoText);
     authBody.appendChild(who);
 
+    if (u.newEmail) {
+      authBody.appendChild(el('div', 'auth-sub', t('auth.emailPending', { mail: u.newEmail })));
+    }
+
+    /* ---- sync ---- */
+    authSection(t('auth.secSync'));
     var st = SYNC.status();
     authBody.appendChild(el('div', 'auth-status ' + st, t('auth.st.' + st)));
-
     var ls = SYNC.lastSync();
-    var when = ls
+    authBody.appendChild(el('div', 'auth-sub', ls
       ? t('auth.lastSync', { time: new Date(ls).toLocaleTimeString(t('locale')) })
-      : t('auth.neverSynced');
-    authBody.appendChild(el('div', 'auth-sub', when));
-
+      : t('auth.neverSynced')));
     var pend = SYNC.pending();
     if (pend) authBody.appendChild(el('div', 'auth-sub', t('auth.pending', { n: pend })));
 
-    var row = el('div', 'auth-row');
+    var syncRow = el('div', 'auth-row');
     var now = el('button', 'auth-primary', t('auth.syncNow'));
     now.type = 'button';
     now.disabled = st === 'syncing';
     now.addEventListener('click', function () { SYNC.syncNow(); });
-    row.appendChild(now);
+    syncRow.appendChild(now);
+    authBody.appendChild(syncRow);
 
-    var out = el('button', 'btn danger', t('auth.signOut'));
+    /* ---- profile ---- */
+    authSection(t('auth.secProfile'));
+    authField({
+      label: t('auth.name'), placeholder: t('auth.namePh'), value: u.name,
+      autocomplete: 'name', action: t('auth.save'),
+      run: function (v) { return SYNC.setName(v); }
+    });
+
+    /* ---- security ---- */
+    authSection(t('auth.secSecurity'));
+    authField({
+      label: t('auth.newEmail'), placeholder: t('auth.emailPh'), type: 'email',
+      autocomplete: 'email', action: t('auth.changeEmail'),
+      validate: function (v) { return v ? null : t('auth.needEmail'); },
+      run: function (v) { return SYNC.setEmail(v).then(function () { return t('auth.emailSent'); }); }
+    });
+    authField({
+      label: t('auth.newPassword'), placeholder: t('auth.passwordPh'), type: 'password',
+      autocomplete: 'new-password', action: t('auth.changePassword'),
+      validate: function (v) { return v.length >= 6 ? null : t('auth.needPassword'); },
+      run: function (v) { return SYNC.setPassword(v).then(function () { return t('auth.passwordChanged'); }); }
+    });
+
+    var secRow = el('div', 'auth-row');
+    var everywhere = el('button', 'btn', t('auth.signOutAll'));
+    everywhere.type = 'button';
+    everywhere.addEventListener('click', function () {
+      if (!confirm(t('auth.signOutAllConfirm'))) return;
+      SYNC.signOutEverywhere().then(function () { authMsg = null; renderAuth(); });
+    });
+    secRow.appendChild(everywhere);
+    authBody.appendChild(secRow);
+    authBody.appendChild(el('p', 'auth-note', t('auth.signOutAllNote')));
+
+    /* ---- data ---- */
+    authSection(t('auth.secData'));
+    var dataRow = el('div', 'auth-row');
+    var exp = el('button', 'btn', t('stats.export'));
+    exp.type = 'button';
+    exp.addEventListener('click', exportProgress);
+    var imp = el('button', 'btn', t('stats.import'));
+    imp.type = 'button';
+    imp.addEventListener('click', importProgress);
+    dataRow.appendChild(exp);
+    dataRow.appendChild(imp);
+    authBody.appendChild(dataRow);
+    authBody.appendChild(el('p', 'auth-note', t('auth.dataNote')));
+
+    /* ---- danger zone ---- */
+    // Sign-out first and least alarming, then the two that destroy something.
+    // None of them touch this browser's localStorage: the reader's work was
+    // theirs before the account existed and stays theirs after it is gone.
+    authSection(t('auth.secDanger'));
+    var dangerRow = el('div', 'auth-row');
+
+    var out = el('button', 'btn', t('auth.signOut'));
     out.type = 'button';
     out.addEventListener('click', function () {
       SYNC.signOut().then(function () { authMsg = null; renderAuth(); });
     });
-    row.appendChild(out);
-    authBody.appendChild(row);
+    dangerRow.appendChild(out);
+
+    var wipe = el('button', 'btn danger', t('auth.wipeCloud'));
+    wipe.type = 'button';
+    wipe.addEventListener('click', function () {
+      if (!confirm(t('auth.wipeCloudConfirm'))) return;
+      authBusy = true;
+      renderAuth();
+      SYNC.deleteCloudProgress()
+        .then(function () { authSay(t('auth.wipeCloudOk'), false); })
+        .catch(authFail);
+    });
+    dangerRow.appendChild(wipe);
+
+    var del = el('button', 'btn danger', t('auth.deleteAccount'));
+    del.type = 'button';
+    del.addEventListener('click', function () {
+      if (!confirm(t('auth.deleteConfirm'))) return;
+      authBusy = true;
+      renderAuth();
+      SYNC.deleteAccount().then(function () {
+        authSay(t('auth.deleteOk'), false);
+      }).catch(function (e) {
+        // A project that never ran the delete_me() half of the schema answers
+        // 404 here. Saying so beats "Failed: Not Found".
+        if (e && e.status === 404) return authSay(t('auth.deleteNoRpc'), true);
+        authFail(e);
+      });
+    });
+    dangerRow.appendChild(del);
+    authBody.appendChild(dangerRow);
 
     authBody.appendChild(el('p', 'auth-note', t('auth.signOutNote')));
   }
@@ -1415,14 +1586,18 @@
       b.hidden = !on;
       if (!on) return;
       var inn = SYNC.signedIn();
-      var mail = SYNC.email() || '';
+      var u = SYNC.user() || {};
+      var mail = u.email || '';
+      // A reader who has set a display name expects to see it here too, not the
+      // address they replaced it with in the panel.
+      var shown = u.name || mail;
       clear(b);
       // Avatar + word, not a lone glyph: the mark carries "this is a person's
       // account" and the word says what pressing it does. Signed in the avatar
       // holds the initial and the label becomes the address, so the button also
       // answers "which account?" without being opened.
-      b.appendChild(el('span', 'acct-ava', inn ? (mail.charAt(0) || '●').toUpperCase() : '👤'));
-      b.appendChild(el('span', 'acct-label', inn ? mail : t('auth.signIn')));
+      b.appendChild(el('span', 'acct-ava', inn ? (shown.charAt(0) || '●').toUpperCase() : '👤'));
+      b.appendChild(el('span', 'acct-label', inn ? shown : t('auth.signIn')));
       b.classList.toggle('on', inn);
       var label = inn ? t('auth.signedInAs') + ': ' + mail : t('auth.signIn');
       b.title = label;
@@ -1793,16 +1968,7 @@
 
     /* --- input + buttons --- */
     var line = el('div', 'answer-line');
-    var input = el('input');
-    input.type = 'text';
-    input.autocomplete = 'off';
-    input.autocapitalize = 'off';
-    input.spellcheck = false;
-    input.placeholder = t('row.placeholder');
-    // Screen readers otherwise announce only the placeholder, with no clue
-    // which question this box belongs to (AUDIT §У9).
-    input.setAttribute('aria-label',
-      t('row.aria', { unit: unitNo, sub: sub.number, n: it.n }));
+    var input = answerInput(t('row.aria', { unit: unitNo, sub: sub.number, n: it.n }));
     var r0 = rec(key);
     // On the Mistakes page start from a clean box; the old wrong answer is shown
     // separately as "last time: …" rather than left sitting in the field.
@@ -3192,13 +3358,7 @@
 
     /* --- answer --- */
     var line = el('div', 'answer-line');
-    var input = el('input');
-    input.type = 'text';
-    input.autocomplete = 'off';
-    input.autocapitalize = 'off';
-    input.spellcheck = false;
-    input.placeholder = t('row.placeholder');
-    input.setAttribute('aria-label', t('row.aria', { unit: c.unit.unit, sub: c.sub.number, n: it.n }));
+    var input = answerInput(t('row.aria', { unit: c.unit.unit, sub: c.sub.number, n: it.n }));
     line.appendChild(input);
 
     var chk = el('button', 'btn primary', t('btn.check'));

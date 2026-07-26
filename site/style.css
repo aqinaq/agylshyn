@@ -26,6 +26,10 @@
   --topbar-h: 49px;   /* measured at runtime by app.js */
   --sidebar-w: 268px; /* both set by the draggers, persisted in localStorage */
   --pdf-w: 520px;
+  /* Height of the fixed bottom tab bar (phones only — 0 while the tabs are in
+     the topbar). Everything that must not end up underneath it — the reading
+     column, the unit list, the PDF pane — reserves this much. */
+  --tabbar-h: 0px;
   color-scheme: light;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
@@ -94,16 +98,24 @@ a { color: var(--accent); text-decoration: none; }
 
 .tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 
+/* Three of the tabs are <button> (find, help) and the rest are <a>. Without a
+   reset the buttons keep the browser's own grey face and system font, so the
+   bar ended with two grey blobs where 🔎 and ? should be — plainest on the
+   mobile bottom bar, but it was wrong on the desktop topbar too. */
 .tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-radius: 8px;
+  font: inherit;
   font-size: 13.5px;
   font-weight: 500;
   color: var(--muted);
+  appearance: none;
+  background: none;
   border: 1px solid transparent;
+  cursor: pointer;
 }
 .tab:hover { background: var(--panel-2); color: var(--text); }
 .tab.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
@@ -140,6 +152,7 @@ a { color: var(--accent); text-decoration: none; }
   flex: 0 0 var(--sidebar-w);
   width: var(--sidebar-w);
   height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
   display: flex;
   flex-direction: column;
   background: var(--panel);
@@ -161,6 +174,18 @@ a { color: var(--accent); text-decoration: none; }
 #search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
 .unit-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+
+/* Theme and language, moved out of the cramped phone topbar. Hidden by
+   default — on a wide screen those controls are still up in the topbar. */
+.sidebar-foot {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
 
 .unit-link {
   display: flex;
@@ -208,6 +233,7 @@ body:not(.pdf-open) .main > * { max-width: 900px; margin-inline: auto; }
   flex: 0 0 7px;
   width: 7px;
   height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
   cursor: col-resize;
   background: var(--line);
   background-clip: content-box;
@@ -230,6 +256,7 @@ body.dragging iframe { pointer-events: none; }
   flex: 0 0 var(--pdf-w);
   width: var(--pdf-w);
   height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
   display: flex;
   flex-direction: column;
   background: var(--panel);
@@ -588,6 +615,9 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 
 /* ===== Responsive ===== */
 @media (max-width: 860px) {
+  :root { --tabbar-h: calc(56px + env(safe-area-inset-bottom)); }
+  /* A practice session hides the bar, so nothing needs to clear it. */
+  body[data-view="drill"] { --tabbar-h: 0px; }
   .icon-btn { display: block; }
   .brand-sub { display: none; }
   .dragger { display: none; }
@@ -615,9 +645,12 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
   #menuBtn { order: -1; }
   .brand { min-width: 0; flex: 1; }
   .brand-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .home-link { display: none; }
+  /* ◇ stays: inside a book it is the only way back to the library, since the
+     bottom bar lists sections, not the shelf. (A `display:none` used to sit
+     here and never applied — the base rule is further down the file and wins
+     the cascade at equal specificity.) */
   .sidebar.open { transform: translateX(0); }
-  .main { padding: 16px 14px 78px; }
+  .main { padding: 16px 14px calc(var(--tabbar-h) + 22px); }
 
   .tabs {
     position: fixed;
@@ -632,14 +665,25 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
     flex-wrap: nowrap;
   }
   .tab {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
     justify-content: center;
     padding: 9px 4px;
     font-size: 12px;
     border-radius: 8px;
+    white-space: nowrap;
+    overflow: hidden;
   }
-  .pdf-pane { inset: var(--topbar-h) 0 0 0; }   /* bottom bar sits above it */
-  .unit-list { padding-bottom: 64px; }          /* clear the fixed bottom bar */
+  /* An equal sixth each left "Mistakes" clipped to "listakes" while ⚡ 🔎 ?
+     sat in a third of the bar doing nothing with the room. The three icons
+     take exactly the width a thumb needs; the words share what is left. */
+  .tabs .tab-drill,
+  .tabs .tab-find,
+  .tabs .tab-help { flex: 0 0 44px; padding: 9px 0; font-size: 15px; }
+  /* The bar used to be laid *over* the PDF, hiding a strip of every page and
+     the viewer's own controls. The pane now stops above it. */
+  .pdf-pane { inset: var(--topbar-h) 0 var(--tabbar-h) 0; }
 }
 
 /* ===================================================================
@@ -663,7 +707,7 @@ body[data-view="drill"] #menuBtn,
 body[data-view="drill"] .tabs { display: none; }
 body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 
-.screen { min-height: 100vh; }
+.screen { min-height: 100vh; min-height: 100dvh; }
 
 /* ===== Home banner — the intro sits in its own panel above the picker ===== */
 .home-hero {
@@ -880,6 +924,7 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   top: 20px;
   align-self: start;
   max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -1303,6 +1348,7 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   flex-direction: column;
   width: min(720px, 100%);
   max-height: min(80vh, 780px);
+  max-height: min(80dvh, 780px);
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -1465,9 +1511,36 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 }
 .auth-link:hover { text-decoration: underline; }
 
-.auth-who { margin-bottom: 14px; }
-.auth-who-k { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
-.auth-who-v { font-size: 15px; font-weight: 600; word-break: break-all; }
+/* Signed-in header: the same avatar as the button, at reading size. */
+.auth-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.auth-who-t { min-width: 0; }
+.auth-who-k { font-size: 12px; color: var(--muted); margin-top: 3px; word-break: break-all; }
+.auth-who-v { font-size: 16px; font-weight: 650; word-break: break-all; }
+.acct-ava.big { width: 42px; height: 42px; font-size: 18px; background: var(--accent); color: #fff; }
+
+/* Section rule: the panel is long enough that profile, security, data and the
+   destructive actions have to be told apart at a glance. */
+.auth-sec {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 10px;
+  font-size: 11.5px;
+  font-weight: 640;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.auth-sec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+.auth-field { display: flex; gap: 8px; margin-bottom: 9px; }
+.auth-field .auth-in { margin-bottom: 0; }
+.auth-field .btn { flex: none; white-space: nowrap; }
 
 .auth-status {
   display: inline-block; font-size: 12.5px; font-weight: 560;
@@ -2138,4 +2211,113 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   line-height: 1.45;
   color: var(--muted);
   max-width: 60ch;
+}
+
+/* ===================================================================
+   Phones
+   -------------------------------------------------------------------
+   The desktop layout was designed for a mouse and a wide window; the
+   rules below are everything the same app needs to be workable with a
+   thumb. They sit at the end of the file on purpose — this is the last
+   word on the cascade, so a phone rule can never be quietly undone by a
+   base rule further down.
+   =================================================================== */
+@media (max-width: 860px) {
+
+  /* ---- 1. Never zoom on focus ----------------------------------------
+     iOS Safari zooms the whole page whenever a focused field is smaller
+     than 16px, and it does not zoom back out. Answering used to mean:
+     tap the box, the page jumps in, type, pinch back out — for every
+     single question. Every typed control on a phone is 16px. */
+  input, textarea, select,
+  /* named one by one as well: a bare `input` loses to `.answer-line input`
+     and `#search` on specificity, and losing here is exactly the bug */
+  .answer-line input, .auth-in, #search, #findInput { font-size: 16px; }
+  .answer-line input { padding: 9px 11px; }
+
+  /* ---- 2. Targets a finger can hit -----------------------------------
+     Pointer-sized controls (27–30px) are below what a thumb can land on
+     reliably; 40px is the smallest that stops feeling like a game of
+     darts. Widths stay content-sized — only the hit area grows. */
+  .theme-btn { width: 40px; height: 40px; font-size: 16px; }
+  .lang-switch button { padding: 12px 11px; font-size: 12.5px; }
+  .icon-btn, .home-link { min-width: 42px; min-height: 40px; padding: 4px 8px; }
+  .acct-btn { height: 40px; }
+  .modal-close { width: 40px; height: 40px; font-size: 15px; }
+  .cal-nav { width: 36px; height: 36px; }
+  .btn { padding: 9px 13px; min-height: 40px; }
+  .btn.small { padding: 7px 11px; min-height: 38px; font-size: 12.5px; }
+  .chip { padding: 7px 11px; min-height: 36px; font-size: 12.5px; }
+  .chip-btn.chip-cta { padding: 7px 14px; }
+  .find-scope .fs { padding: 9px 13px; }
+  .unit-link { min-height: 44px; }
+  /* ↗ and ✕ on the PDF pane. On a phone that pane is the whole screen, so
+     these two are the only way out of it — 26×24 was not enough. */
+  .pdf-btn { width: 40px; height: 40px; font-size: 14px; }
+  /* Padding pulled back out by an equal negative margin: the book name gets a
+     row-height hit area without the row growing. */
+  .db-name { display: block; padding: 11px 0; margin: -11px 0; }
+  /* The 🔊 glyph is tiny by design; give it a transparent margin to be
+     tapped by rather than making the icon itself bigger. */
+  .speak { padding: 8px 7px; margin-left: 2px; font-size: 14px; opacity: .6; }
+  /* Kills the ~300ms wait browsers keep in case a tap is a double-tap. */
+  a, button, input, select, label, summary { touch-action: manipulation; }
+
+  /* ---- 3. The book title gets the topbar back ------------------------
+     Six controls in one 390px row left "English Gra…" for the title. The
+     theme and language switches are settings, not navigation, so on a
+     phone they move into the drawer (index.html keeps a second copy
+     there; every control in this app is bound by delegation, so both
+     work). Menu · library · account · title stay. */
+  .topbar { gap: 9px; padding: 7px 11px; }
+  .topbar > .controls { display: none; }
+  .brand-title { font-size: 15px; }
+
+  /* ---- 4. A drawer wide enough to read ------------------------------
+     At the desktop's 268px every unit read "Present contin…", which is
+     no way to choose one. `width` (not the --sidebar-w variable) because
+     app.js writes that variable inline from the drag handles. */
+  .sidebar {
+    width: min(88vw, 400px);
+    flex-basis: auto;
+    /* Stop above the tab bar rather than running underneath it, or the last
+       units and the settings strip below them are unreachable. */
+    bottom: var(--tabbar-h);
+    height: auto;
+  }
+  .unit-list { padding-bottom: 8px; }
+  .sidebar-foot { display: flex; }
+
+  /* ---- 5. Full-screen dialogs ---------------------------------------
+     A centred 80%-tall card wastes the little room there is and leaves
+     the search results clipped after four hits. */
+  .modal { padding: 0; align-items: stretch; }
+  .modal-panel {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .modal-body { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .find-results { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+
+  /* ---- 6. Home: the floating pills stop covering the hero ------------
+     "Sign in" and the icon cluster are positioned over the top of the
+     page; at this width they landed on the hero's first line. */
+  .wrap { padding-top: 62px; }
+}
+
+/* Narrow phones only. */
+@media (max-width: 560px) {
+  /* The statistics table still scrolls sideways inside .table-wrap, but
+     tighter cells mean far less of it is off-screen to begin with. */
+  th, td { padding: 8px 9px; }
+  td .bar { width: 54px; }
+  /* Four hero figures at ~85px each are unreadable; two rows of two. */
+  .hero-stats { flex-wrap: wrap; }
+  .hero-stats > div { flex: 1 1 calc(50% - 4px); }
+  /* Practice-session counters: an odd last card sat alone in a 2-column
+     grid with a hole beside it — let it take the whole row instead. */
+  .ov-cards > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
