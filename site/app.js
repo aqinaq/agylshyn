@@ -1398,17 +1398,22 @@
     authBody.appendChild(el('p', 'auth-note', t('auth.signOutNote')));
   }
 
-  // The button doubles as the status light: filled once signed in, so the state
-  // is visible without opening anything.
+  // This was a bare ○/◉ glyph at first, and it was effectively invisible: a
+  // reader who does not already know the app has accounts will never press an
+  // unlabelled circle sitting between the search and theme icons. Signed out it
+  // is a worded button; signed in it collapses to the initial of the address —
+  // the avatar shape the rest of the web uses for "this is your account" — which
+  // also keeps it working as the status light.
   function refreshAuthButtons() {
     var on = syncOn();
     [].forEach.call(document.querySelectorAll('.acct-btn'), function (b) {
       b.hidden = !on;
       if (!on) return;
       var inn = SYNC.signedIn();
-      b.textContent = inn ? '◉' : '○';
+      var mail = SYNC.email() || '';
+      b.textContent = inn ? (mail.charAt(0) || '●').toUpperCase() : t('auth.signIn');
       b.classList.toggle('on', inn);
-      var label = t('auth.open') + (inn ? ' — ' + (SYNC.email() || '') : '');
+      var label = inn ? t('auth.signedInAs') + ': ' + mail : t('auth.signIn');
       b.title = label;
       b.setAttribute('aria-label', label);
     });

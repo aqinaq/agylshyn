@@ -1342,7 +1342,28 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
 /* The topbar button doubles as the status light — hollow ○ when local-only,
    filled ◉ in the accent once signed in — so "is my progress backed up?" is
    answerable at a glance, without opening the panel. */
-.acct-btn.on { color: var(--accent); border-color: var(--accent); }
+/* Signed out the button carries a word ("Кіру"), so it cannot keep .theme-btn's
+   fixed icon width. Signed in it collapses to a round accent avatar holding the
+   first letter of the address. */
+.acct-btn {
+  width: auto;
+  min-width: 30px;
+  padding: 0 11px;
+  font-size: 12.5px;
+  font-weight: 560;
+  color: var(--text);
+}
+.acct-btn.on {
+  width: 27px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 680;
+}
+.acct-btn.on:hover { background: var(--accent); color: #fff; filter: brightness(1.08); }
 
 .auth-panel { width: min(440px, 100%); }
 .auth-body { padding: 18px 18px 20px; }
