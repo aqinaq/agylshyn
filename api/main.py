@@ -24,6 +24,7 @@ import json
 import os
 import secrets
 import sys
+import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -126,6 +127,19 @@ def book_bytes(book_id: str) -> bytes:
     with open(path, 'rb') as f:
         _books[book_id] = f.read()
     return _books[book_id]
+
+
+def require_supabase():
+    """Fail cleanly rather than in httpx.
+
+    Without SUPABASE_URL every outbound call is made against a URL with no
+    scheme, which raises deep inside the client and surfaces as a 500 with a
+    stack trace. The reader-facing routes never get that far — they check a
+    token first, and an unconfigured service cannot verify one — but the admin
+    routes are reached by the token alone, so the check belongs here too.
+    """
+    if not config.SUPABASE_READY:
+        raise HTTPException(503, 'Supabase is not configured on this service')
 
 
 def admin(header: Optional[str]):
@@ -272,6 +286,7 @@ async def grant(req: Request, x_admin_token: Optional[str] = Header(None)):
       days present → expires that many days from now (a subscription period)
     """
     admin(x_admin_token)
+    require_supabase()
     body = await req.json()
     return await _grant(body, source=body.get('source') or 'manual')
 
@@ -295,6 +310,7 @@ async def webhook(req: Request, x_webhook_secret: Optional[str] = Header(None)):
     if not x_webhook_secret or not secrets.compare_digest(x_webhook_secret,
                                                           config.WEBHOOK_SECRET):
         raise HTTPException(401, 'bad webhook secret')
+    require_supabase()
     body = await req.json()
     return await _grant(body, source=body.get('source') or 'webhook')
 
@@ -349,6 +365,7 @@ async def _grant(body: dict, source: str):
 async def revoke(req: Request, x_admin_token: Optional[str] = Header(None)):
     """Remove an sku — a refund, a chargeback, or a mistaken grant."""
     admin(x_admin_token)
+    require_supabase()
     body = await req.json()
     uid = (body.get('user_id') or '').strip()
     if not uid:
@@ -370,6 +387,86 @@ async def revoke(req: Request, x_admin_token: Optional[str] = Header(None)):
         raise HTTPException(502, 'could not revoke')
     auth.forget(uid)
     return {'ok': True, 'user_id': uid, 'sku': sku}
+
+
+@app.get('/v1/admin/users')
+async def list_users(page: int = 1, x_admin_token: Optional[str] = Header(None)):
+    """Everyone who has signed up, with what they currently hold.
+
+    Two calls, not one per user: GoTrue for the accounts, one PostgREST read for
+    every entitlement row, joined here. A per-user query would turn a hundred
+    accounts into a hundred round trips and make the page unusable exactly when
+    it starts being worth having.
+    """
+    admin(x_admin_token)
+    require_supabase()
+
+    res = await auth.client().get(
+        config.SUPABASE_URL + '/auth/v1/admin/users',
+        params={'page': max(1, page), 'per_page': 200},
+        headers={'apikey': config.SUPABASE_SERVICE_KEY,
+                 'Authorization': 'Bearer ' + config.SUPABASE_SERVICE_KEY},
+    )
+    if res.status_code != 200:
+        raise HTTPException(502, 'could not list accounts')
+    users = (res.json() or {}).get('users', [])
+
+    ent = await auth.client().get(
+        config.SUPABASE_URL + '/rest/v1/entitlements',
+        params={'select': 'user_id,sku,expires_at,source,note,created_at'},
+        headers={'apikey': config.SUPABASE_SERVICE_KEY,
+                 'Authorization': 'Bearer ' + config.SUPABASE_SERVICE_KEY},
+    )
+    if ent.status_code != 200:
+        raise HTTPException(502, 'could not read entitlements')
+
+    held: dict = {}
+    for row in ent.json() or []:
+        held.setdefault(row['user_id'], []).append(row)
+
+    now = time.time()
+
+    def shape(u):
+        rows = held.get(u.get('id'), [])
+        for r in rows:
+            exp = r.get('expires_at')
+            ts = auth.parse_ts(exp) if exp else None
+            # "expired" is computed here so the page never has to reimplement
+            # the same date arithmetic and reach a different answer than the
+            # endpoint that actually serves content.
+            r['live'] = exp is None or (ts is not None and ts > now)
+        return {
+            'id': u.get('id'),
+            'email': u.get('email'),
+            'name': ((u.get('user_metadata') or {}).get('name') or ''),
+            'created_at': u.get('created_at'),
+            'last_sign_in_at': u.get('last_sign_in_at'),
+            'entitlements': sorted(rows, key=lambda r: r['sku']),
+        }
+
+    return {
+        'users': [shape(u) for u in users],
+        'page': max(1, page),
+        # Distinct skus actually in use, so the page's buttons come from
+        # tiers.json rather than from a list somebody has to remember to update.
+        'skus': sorted(set(TIERS['books'].values()) | set(TIERS['features'].values())),
+    }
+
+
+@app.get('/admin')
+def admin_page():
+    """The panel itself. The HTML is public — it is a login form and some
+    script; every byte of data behind it needs the admin token, which is asked
+    for in the browser and kept in sessionStorage, so it is gone when the tab
+    closes and never written to disk."""
+    path = os.path.join(HERE, 'admin.html')
+    if not os.path.isfile(path):
+        raise HTTPException(404, 'admin page not deployed')
+    with open(path, 'rb') as f:
+        body = f.read()
+    return Response(content=body, media_type='text/html; charset=utf-8',
+                    headers={'X-Robots-Tag': 'noindex, nofollow',
+                             'Cache-Control': 'no-store'})
 
 
 async def _lookup_by_email(email: str) -> Optional[str]:
