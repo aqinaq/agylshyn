@@ -209,11 +209,58 @@ async def service_post(path: str, body, params=None, prefer: str = ''):
 # ----------------------------------------------------------------- routes ---
 
 @app.get('/health')
-def health():
+async def health(deep: int = 0):
     """Deliberately says what is configured, never what it is configured with.
-    Enough to tell a broken deploy from a broken client, useless to a stranger."""
-    return {'ok': config.SUPABASE_READY, 'config': config.describe(),
-            'paid_books': len(TIERS['books'])}
+    Enough to tell a broken deploy from a broken client, useless to a stranger.
+
+    `?deep=1` goes further and asks Supabase whether the keys actually work.
+    The plain check only proves the variables are non-empty, which is why a
+    mistyped anon key could sit here reporting "supabase: true" while refusing
+    every reader with "session expired" — the variable was set, it was simply
+    wrong. Two extra requests, so it is not on the default path that uptime
+    checks poll.
+    """
+    out = {'ok': config.SUPABASE_READY, 'config': config.describe(),
+           'paid_books': len(TIERS['books'])}
+    if not deep:
+        return out
+
+    checks = {}
+    if not config.SUPABASE_READY:
+        checks['supabase'] = 'not configured'
+        out['checks'] = checks
+        return out
+
+    # A deliberately invalid token. A working anon key answers "bad_jwt" — the
+    # key was accepted and the token was not, which is exactly what proves the
+    # key good. A bad one answers "Invalid API key" before ever looking at it.
+    try:
+        r = await auth.client().get(
+            config.SUPABASE_URL + '/auth/v1/user',
+            headers={'apikey': config.SUPABASE_ANON_KEY,
+                     'Authorization': 'Bearer probe'})
+        checks['anon_key'] = ('ok' if 'API key' not in (r.text or '')
+                              else 'REJECTED — SUPABASE_ANON_KEY is wrong')
+    except Exception as e:                                  # noqa: BLE001
+        checks['anon_key'] = 'unreachable: %s' % e
+
+    # The service key is checked against the table it actually has to read, so
+    # a key that is valid but pointed at a project without the schema fails here
+    # rather than on somebody's first purchase.
+    try:
+        r = await auth.client().get(
+            config.SUPABASE_URL + '/rest/v1/entitlements',
+            params={'select': 'sku', 'limit': 1},
+            headers={'apikey': config.SUPABASE_SERVICE_KEY,
+                     'Authorization': 'Bearer ' + config.SUPABASE_SERVICE_KEY})
+        checks['service_key'] = ('ok' if r.status_code == 200
+                                 else 'HTTP %s — %s' % (r.status_code, r.text[:120]))
+    except Exception as e:                                  # noqa: BLE001
+        checks['service_key'] = 'unreachable: %s' % e
+
+    out['checks'] = checks
+    out['ok'] = out['ok'] and all(v == 'ok' for v in checks.values())
+    return out
 
 
 @app.get('/v1/me')

@@ -13,6 +13,7 @@ are the deliberate part: they bound how long a revoked session or a lapsed
 subscription keeps working, and 60 seconds of staleness on a language-practice
 app is not worth a cache-invalidation protocol.
 """
+import sys
 import time
 from typing import Optional
 
@@ -88,7 +89,22 @@ async def user_for(token: str) -> Optional[dict]:
         raise Upstream('auth')
 
     if res.status_code != 200:
-        # A negative result is cached too, briefly: a stale tab retrying with a
+        # Two very different failures arrive here and they must not be confused.
+        #
+        # A bad *user* token is 403 bad_jwt: the reader's session really has
+        # ended, and "sign in again" is the right answer.
+        #
+        # A bad *apikey* is 401 "Invalid API key": nothing is wrong with the
+        # reader at all, this service is misconfigured, and telling them their
+        # session expired sends them to sign in over and over while the actual
+        # cause sits in an environment variable. That is an outage, so it is
+        # raised as one.
+        if res.status_code == 401 and 'API key' in (res.text or ''):
+            print('supabase rejected SUPABASE_ANON_KEY: %s' % res.text[:200],
+                  file=sys.stderr)
+            raise Upstream('auth (the anon key is not accepted)')
+
+        # A negative result is cached, briefly: a stale tab retrying with a
         # dead token should not become a request amplifier.
         _prune(_tokens, TOKEN_TTL)
         _tokens[token] = (None, time.monotonic())
