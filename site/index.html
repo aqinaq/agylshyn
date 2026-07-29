@@ -243,13 +243,6 @@
      back from a provider, and app.js would otherwise try to route on it. -->
 <script src="supabase.config.js"></script>
 <script src="sync.js"></script>
-<!-- Which books are paid and how one is fetched. After sync.js, which owns the
-     access token it needs; empty api.config.js means every book is free. -->
-<script src="api.config.js"></script>
-<script src="entitle.js"></script>
-<!-- Prices and the Kaspi link for the lock screen. Public by design; leaving it
-     out drops the offer card and nothing else. -->
-<script src="pricing.js"></script>
 <!-- Defines window.PDFVIEW; the ~1.8 MB of pdf.js behind it is only imported
      the first time a reader on a phone opens a book. -->
 <script src="pdfview.js"></script>

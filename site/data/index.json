@@ -2,79 +2,66 @@
  {
   "id": "essential-grammar",
   "units": 114,
-  "tracked": 1984,
-  "tier": "free"
+  "tracked": 1984
  },
  {
   "id": "grammar",
   "units": 145,
-  "tracked": 4053,
-  "tier": "free"
+  "tracked": 4053
  },
  {
   "id": "advanced-grammar",
   "units": 116,
-  "tracked": 2484,
-  "tier": "advanced"
+  "tracked": 2484
  },
  {
   "id": "vocab-elem",
   "units": 60,
-  "tracked": 1024,
-  "tier": "free"
+  "tracked": 1024
  },
  {
   "id": "vocab-preint",
   "units": 100,
-  "tracked": 2393,
-  "tier": "free"
+  "tracked": 2393
  },
  {
   "id": "vocab-upint",
   "units": 101,
-  "tracked": 2626,
-  "tier": "advanced"
+  "tracked": 2626
  },
  {
   "id": "vocab-adv",
   "units": 101,
-  "tracked": 2462,
-  "tier": "advanced"
+  "tracked": 2462
  },
  {
   "id": "collocations",
   "units": 60,
-  "tracked": 1319,
-  "tier": "free"
+  "tracked": 1319
  },
  {
   "id": "academic",
   "units": 50,
-  "tracked": 1321,
-  "tier": "advanced"
+  "tracked": 1321
  },
  {
   "id": "business",
   "units": 66,
-  "tracked": 1076,
-  "tier": "advanced"
+  "tracked": 1076
  },
  {
   "id": "ielts-19",
   "units": 8,
-  "tracked": 320,
-  "tier": "ielts"
+  "tracked": 320
  },
  {
   "id": "ielts-20",
   "units": 8,
-  "tracked": 320,
-  "tier": "ielts"
+  "tracked": 320
  },
  {
   "id": "ielts-21",
   "units": 8,
-  "tracked": 320,
-  "tier": "ielts"
+  "tracked": 320
  }
 ]

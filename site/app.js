@@ -840,29 +840,17 @@
       .then(function (r) { return r.json(); })
       .then(function (list) {
         list.forEach(function (b) { INDEX[b.id] = b; });
-        // The index carries each book's tier, so this is the moment the library
-        // learns what costs money. Asking who the reader is comes next and is
-        // deliberately not waited on: the page renders on free content, and the
-        // locks resolve themselves through ENTITLE.onChange when the answer lands.
-        if (window.ENTITLE) {
-          ENTITLE.setTiers(INDEX);
-          ENTITLE.refresh().catch(function () { /* offline — locks stay as they are */ });
-        }
         return INDEX;
       })
       .catch(function () { return INDEX; });
   }
 
   function fetchBook(id) {
-    // Free books are a static file, same URL and same offline caching as always.
-    // Paid ones go through the entitlement API, which is the only copy that
-    // exists. ENTITLE decides which is which; with api.config.js empty it always
-    // answers "free" and this is the fetch it always was.
+    // Every book is a static file under data/, cached offline by the service
+    // worker like the rest of the site.
     //
-    // No 'force-cache' on the static path: it serves a stale copy without
-    // revalidating, so a rebuilt data file would never reach a reader who
-    // already opened the book.
-    if (window.ENTITLE) return ENTITLE.fetchBook(id);
+    // No 'force-cache': it serves a stale copy without revalidating, so a
+    // rebuilt data file would never reach a reader who already opened the book.
     return fetch('data/' + id + '.json')
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -874,11 +862,8 @@
     if (cache[id]) return Promise.resolve(cache[id]);
     if (pending[id]) return pending[id];
     pending[id] = fetchBook(id)
-      .catch(function (e) {
-        // one retry: a dropped connection should not strand the reader.
-        // A locked book is a settled answer, not a flaky one — retrying it just
-        // doubles the requests and delays the unlock screen by another round trip.
-        if (e && e.locked) throw e;
+      .catch(function () {
+        // one retry: a dropped connection should not strand the reader
         return new Promise(function (res) { setTimeout(res, 400); }).then(function () {
           return fetchBook(id);
         });
@@ -1015,15 +1000,6 @@
     top.appendChild(el('span', 'bc-level', b.level));
     top.appendChild(el('span', 'bc-kind', t('lib.group.' + b.kind)));
     top.appendChild(el('span', 'bc-units', t('card.units', { n: (idx && idx.units) || b.units })));
-
-    // A lock only once the answer is in. While /v1/me is still in flight the
-    // card stays plain: showing a lock and then removing it half a second later
-    // tells a paying reader their purchase vanished, every single reload.
-    if (window.ENTITLE && ENTITLE.isPaid(b.id) && ENTITLE.known() && !ENTITLE.canOpen(b.id)) {
-      var lock = el('span', 'bc-lock', '🔒');
-      lock.title = t('lock.badge');
-      top.appendChild(lock);
-    }
     card.appendChild(top);
 
     // Icon only — the card's top row is tight, and the full explanation waits
@@ -1629,22 +1605,6 @@
     who.appendChild(whoText);
     authBody.appendChild(who);
 
-    /* ---- admin ---- */
-    // Only for an address the server has already told us is on its admin list.
-    // Hiding it is a courtesy to everyone else, not a control: #/admin can be
-    // typed by anybody and shows nothing without the server agreeing.
-    if (window.ENTITLE && ENTITLE.isAdmin()) {
-      var adminRow = el('div', 'auth-row');
-      var goAdmin = el('button', 'auth-primary', t('admin.link'));
-      goAdmin.type = 'button';
-      goAdmin.addEventListener('click', function () {
-        closeAuthModal();
-        location.hash = '#/admin';
-      });
-      adminRow.appendChild(goAdmin);
-      authBody.appendChild(adminRow);
-    }
-
     /* ---- sync ---- */
     authSection(t('auth.secSync'));
     var st = SYNC.status();
@@ -1812,24 +1772,6 @@
     var n = 0, sum = 0;
     for (var k in st.items) { n++; sum += (st.items[k].ts || 0) % 1e9; }
     return n + ':' + sum;
-  }
-
-  // The purchase list arrives after the first paint, and signing in or out
-  // changes it. Only the library draws locks, so only the library is redrawn —
-  // and never while an answer is being typed, for the same reason afterMerge
-  // holds off below.
-  if (window.ENTITLE && ENTITLE.configured) {
-    ENTITLE.onChange(function () {
-      // The account panel carries the admin entry, and the answer that decides
-      // whether to draw it arrives after the panel can already be open. Without
-      // this the entry only ever appears on the *second* opening — which reads
-      // as "it does not work".
-      if (authModal && !authModal.hidden && authRepaint) authRepaint();
-      if (body.getAttribute('data-view') !== 'home') return;
-      var ae = document.activeElement;
-      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
-      route();
-    });
   }
 
   if (window.SYNC) {
@@ -4279,169 +4221,7 @@
     main.appendChild(s);
   }
 
-  // A locked book is not a failure, so it does not get the failure screen: no
-  // "try again", no error text, and a way forward instead. The two cases differ
-  // by one question — is there an account yet — because for a signed-out reader
-  // the next step is signing in, not paying.
-  // What a package contains, counted rather than written down: every book in
-  // index.json carrying this sku, and the questions inside them. tools/tiers.json
-  // is the only place that decides membership, so an offer can never advertise a
-  // book that has since moved tiers.
-  function packageSize(sku) {
-    var books = 0, items = 0;
-    for (var id in INDEX) {
-      if (INDEX[id].tier !== sku) continue;
-      books++;
-      items += INDEX[id].tracked || 0;
-    }
-    return { books: books, items: items };
-  }
-
-  // The "here is what it costs and how to pay" card. Returns null when there is
-  // nothing honest to show — no pricing.js, or a package with no price set —
-  // rather than an empty box or a button that does nothing.
-  function offerCard(sku) {
-    var cfg = window.PRICING || {};
-    var pack = (cfg.packages || {})[sku];
-    var contact = cfg.contact || {};
-    // A package with neither a price nor a link says nothing a reader can act
-    // on — it would be a box holding a title. Show the card only once at least
-    // one of the three useful things is filled in.
-    if (!((pack && (pack.price > 0 || pack.link)) || cfg.kaspi || contact.label)) return null;
-
-    var box = el('div', 'offer');
-
-    if (pack) {
-      var head = el('div', 'offer-head');
-      head.appendChild(el('div', 'offer-title', pick(pack.title) || sku));
-      var size = packageSize(sku);
-      if (size.books) {
-        head.appendChild(el('div', 'offer-size',
-          t('offer.size', { books: num(size.books), items: num(size.items) })));
-      }
-      box.appendChild(head);
-
-      if (pack.note) box.appendChild(el('div', 'offer-note', pick(pack.note)));
-
-      if (pack.price > 0) {
-        var price = el('div', 'offer-price');
-        price.appendChild(el('strong', null, num(pack.price) + ' ' + (pack.currency || '')));
-        price.appendChild(el('span', null, ' ' + t('offer.once')));
-        box.appendChild(price);
-      }
-
-      if (cfg.kaspi) {
-        var k = el('div', 'offer-kaspi');
-        k.appendChild(document.createTextNode(t('offer.kaspi') + ' '));
-        k.appendChild(el('strong', null, cfg.kaspi));
-        box.appendChild(k);
-      }
-    }
-
-    // One button, and which one depends on how far the setup has got. With a
-    // payment link it is "pay"; without one the sale happens in a conversation,
-    // so the button opens that instead. Two buttons would leave a reader
-    // choosing between steps that are actually sequential.
-    var payHref = pack && pack.link;
-    if (payHref) {
-      var pay = el('a', 'btn primary offer-pay', t('offer.pay'));
-      pay.href = payHref;
-      pay.target = '_blank';
-      // An outside site; noopener keeps it from reaching back into this page
-      // through window.opener.
-      pay.rel = 'noopener noreferrer';
-      box.appendChild(pay);
-    } else if (contact.href) {
-      var write = el('a', 'btn primary offer-pay', pick(contact.cta) || contact.label);
-      write.href = contact.href;
-      write.target = '_blank';
-      write.rel = 'noopener noreferrer';
-      box.appendChild(write);
-    }
-
-    // The step that actually gets the book opened while granting is by hand. It
-    // matters more than the price, so it is never hidden behind a missing one.
-    // With no pay link the wording changes: there is nothing to have paid yet.
-    if (contact.label) {
-      var how = el('div', 'offer-how');
-      how.appendChild(document.createTextNode(
-        t(payHref ? 'offer.after' : 'offer.write') + ' '));
-      if (contact.href) {
-        var a = el('a', null, contact.label);
-        a.href = contact.href;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        how.appendChild(a);
-      } else {
-        how.appendChild(el('strong', null, contact.label));
-      }
-      box.appendChild(how);
-    }
-
-    return box;
-  }
-
-  // pricing.js carries {kk, en} pairs like books.js does.
-  function pick(o) {
-    if (!o) return '';
-    return o[state.lang] || o.kk || '';
-  }
-
-  function showLocked(id, sku) {
-    clear(main);
-    var meta = bookMeta(id);
-    var signedIn = !!(window.SYNC && SYNC.signedIn());
-    var s = el('div', 'empty-state');
-    s.appendChild(el('span', 'big', '🔒'));
-    s.appendChild(el('div', null, t('lock.title', { id: (meta && meta.title) || id })));
-    s.appendChild(el('div', 'instructions',
-      t(signedIn ? 'lock.body' : 'lock.signedOut', { sku: String(sku || '') })));
-
-    var offer = offerCard(sku);
-    if (offer) s.appendChild(offer);
-
-    var row = el('div', 'sub-actions');
-    row.style.justifyContent = 'center';
-
-    if (!signedIn && window.SYNC && SYNC.configured) {
-      var login = el('button', 'btn primary', t('lock.signIn'));
-      login.addEventListener('click', openAuthModal);
-      row.appendChild(login);
-    } else if (signedIn) {
-      // The reader who has just paid and is staring at a lock. ENTITLE caches
-      // the purchase list, so the fix is almost always "ask again" — offering it
-      // as a button is cheaper than a support message.
-      var again = el('button', 'btn primary', t('lock.recheck'));
-      again.addEventListener('click', function () {
-        again.disabled = true;
-        ENTITLE.refresh().then(function () {
-          delete cache[id];
-          delete pending[id];
-          openBook(id, null, null);
-        }).catch(function () { again.disabled = false; });
-      });
-      row.appendChild(again);
-    }
-
-    // The textbook itself is never gated — only the exercises around it are. A
-    // locked book still opens its PDF, which is what keeps this screen from
-    // being a dead end and lets somebody decide whether the book is worth
-    // buying by reading it first.
-    if (meta && meta.pdf) {
-      var read = el('button', 'btn', t('lock.readPdf'));
-      read.addEventListener('click', function () { showPdf(null, meta); });
-      row.appendChild(read);
-    }
-
-    var back = el('a', 'btn', t('load.back'));
-    back.href = '#/';
-    row.appendChild(back);
-    s.appendChild(row);
-    main.appendChild(s);
-  }
-
   function showError(id, e) {
-    if (e && e.locked) return showLocked(id, e.locked);
     clear(main);
     var meta = bookMeta(id);
     var s = el('div', 'empty-state');
@@ -4463,176 +4243,6 @@
     row.appendChild(back);
     s.appendChild(row);
     main.appendChild(s);
-  }
-
-  /* ================= admin ================= */
-
-  // Who has signed up and what they hold, with a button to change it. Reachable
-  // at #/admin by anybody, and useful to nobody else: the account panel only
-  // links here for an admin, and every request underneath is decided by the
-  // server against the address on the verified token. A stranger who types the
-  // URL gets the same page with an error where the table would be.
-  var adminUsers = [];
-  var adminSkus = [];
-  var adminFilter = '';
-
-  function renderAdmin() {
-    setView('home');
-    homeEl.hidden = true;
-    clear(main);
-    body.setAttribute('data-view', 'book');   // reuse the full-width layout
-
-    var head = el('div', 'admin-head');
-    head.appendChild(el('h1', null, t('admin.title')));
-    var back = el('a', 'btn', t('load.back'));
-    back.href = '#/';
-    head.appendChild(back);
-    main.appendChild(head);
-
-    var body_ = el('div', 'admin-body');
-    main.appendChild(body_);
-
-    if (!window.ENTITLE || !ENTITLE.configured) {
-      body_.appendChild(el('div', 'instructions', t('admin.noApi')));
-      return;
-    }
-    if (!(window.SYNC && SYNC.signedIn())) {
-      body_.appendChild(el('div', 'instructions', t('admin.signIn')));
-      return;
-    }
-
-    body_.appendChild(el('div', 'instructions', t('admin.loading')));
-    ENTITLE.adminUsers().then(function (j) {
-      adminUsers = j.users || [];
-      adminSkus = j.skus || [];
-      paintAdmin(body_);
-    }).catch(function (e) {
-      clear(body_);
-      body_.appendChild(el('div', 'instructions',
-        e.status === 403 ? t('admin.notAdmin') : String(e.message || e)));
-    });
-  }
-
-  function paintAdmin(host) {
-    clear(host);
-
-    var bar = el('div', 'admin-bar');
-    var q = el('input');
-    q.type = 'search';
-    q.placeholder = t('admin.filter');
-    q.value = adminFilter;
-    q.addEventListener('input', function () {
-      adminFilter = q.value;
-      paintTable();
-    });
-    bar.appendChild(q);
-    var count = el('span', 'admin-count');
-    bar.appendChild(count);
-    var reload = el('button', 'btn', t('admin.reload'));
-    reload.addEventListener('click', function () { renderAdmin(); });
-    bar.appendChild(reload);
-    host.appendChild(bar);
-
-    var wrap = el('div', 'admin-scroll');
-    var table = el('table', 'admin-table');
-    var thead = el('thead');
-    var hr = el('tr');
-    [t('admin.colUser'), t('admin.colHas'), t('admin.colGive')].forEach(function (h) {
-      hr.appendChild(el('th', null, h));
-    });
-    thead.appendChild(hr);
-    table.appendChild(thead);
-    var tbody = el('tbody');
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    host.appendChild(wrap);
-
-    function paintTable() {
-      clear(tbody);
-      var f = adminFilter.trim().toLowerCase();
-      var list = adminUsers.filter(function (u) {
-        return !f || String(u.email || '').toLowerCase().indexOf(f) >= 0;
-      });
-      count.textContent = t('admin.count', { n: list.length, all: adminUsers.length });
-
-      list.forEach(function (u) {
-        var tr = el('tr');
-
-        var c1 = el('td', 'admin-user');
-        c1.appendChild(el('div', 'admin-email', u.email || u.id));
-        c1.appendChild(el('div', 'admin-meta',
-          (u.name ? u.name + ' · ' : '') +
-          t('admin.joined', { d: shortDate(u.created_at) }) + ' · ' +
-          t('admin.seen', { d: shortDate(u.last_sign_in_at) })));
-        tr.appendChild(c1);
-
-        var c2 = el('td');
-        if (!u.entitlements.length) c2.appendChild(el('span', 'admin-none', '—'));
-        u.entitlements.forEach(function (e) {
-          var chip = el('span', 'admin-chip' + (e.live ? '' : ' dead'));
-          chip.appendChild(document.createTextNode(
-            e.sku + (e.expires_at ? ' · ' + shortDate(e.expires_at) : '')));
-          var x = el('button', 'admin-x', '✕');
-          x.title = t('admin.revoke');
-          x.addEventListener('click', function () { adminRevoke(u, e.sku); });
-          chip.appendChild(x);
-          c2.appendChild(chip);
-        });
-        tr.appendChild(c2);
-
-        var c3 = el('td');
-        var acts = el('div', 'admin-acts');
-        adminSkus.forEach(function (sku) {
-          var has = u.entitlements.some(function (e) { return e.sku === sku && e.live; });
-          var b = el('button', 'btn', '+ ' + sku);
-          b.disabled = has;
-          b.addEventListener('click', function () { adminGrant(u, sku); });
-          acts.appendChild(b);
-        });
-        c3.appendChild(acts);
-        tr.appendChild(c3);
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    paintTable();
-  }
-
-  function shortDate(iso) {
-    if (!iso) return '—';
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '—';
-    try {
-      return d.toLocaleDateString(state.lang === 'en' ? 'en-GB' : 'kk-KZ',
-        { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (e) {
-      return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-    }
-  }
-
-  function adminGrant(u, sku) {
-    // Asked rather than assumed: "forever" and "a month" are both normal and
-    // the difference is money. Empty means forever, which is the common case.
-    var days = prompt(t('admin.askDays', { email: u.email || u.id, sku: sku }), '');
-    if (days === null) return;
-    days = String(days).trim();
-    var payload = { user_id: u.id, sku: sku, source: 'panel' };
-    if (days) {
-      var n = parseInt(days, 10);
-      if (!(n > 0)) { alert(t('admin.badDays')); return; }
-      payload.days = n;
-    }
-    ENTITLE.adminGrant(payload)
-      .then(function () { renderAdmin(); })
-      .catch(function (e) { alert(String(e.message || e)); });
-  }
-
-  function adminRevoke(u, sku) {
-    if (!confirm(t('admin.confirmRevoke', { email: u.email || u.id, sku: sku }))) return;
-    ENTITLE.adminRevoke({ user_id: u.id, sku: sku })
-      .then(function () { renderAdmin(); })
-      .catch(function (e) { alert(String(e.message || e)); });
   }
 
   // #/b/<id>[/unit/<n>|/errors|/stats]
@@ -4694,9 +4304,6 @@
     }
     // '#/help' and the old '#/books' both land on home; the guide is a dialog
     if (h.indexOf('#/help') === 0) return { view: 'home', help: true };
-    // Not hidden, just useless to anyone else: every request it makes is
-    // refused by the server unless the signed-in address is on its admin list.
-    if (h.indexOf('#/admin') === 0) return { view: 'admin' };
     return { view: 'home' };
   }
 
@@ -4713,7 +4320,6 @@
     if (r.view !== 'drill') Speech.stop();
     if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
-    if (r.view === 'admin') { if (pdfOpen()) hidePdf(false); renderAdmin(); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();
     if (r.help) openHelpModal();

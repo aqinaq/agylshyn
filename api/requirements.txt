@@ -1,6 +1,0 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-httpx==0.28.1
-# Only needed once PDFs and audio move to R2; harmless until then (storage.py
-# degrades to a clear 501 if it or the R2_* variables are absent).
-boto3==1.35.92

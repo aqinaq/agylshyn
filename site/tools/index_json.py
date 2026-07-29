@@ -18,8 +18,6 @@ import json
 import os
 import re
 
-import tiers as tiers_mod
-
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(ROOT, 'site', 'data')
 BOOKS_JS = os.path.join(ROOT, 'site', 'books.js')
@@ -70,17 +68,11 @@ def update(entries):
     ours = {e['id'] for e in entries}
     rows = [r for r in rows if r.get('id') not in ours] + list(entries)
 
-    # Stamp the tier on the way out rather than inside entry(), so it lands on
-    # every row no matter which builder produced it — including rows merged in
-    # by an older run that predates tiers.json. Editing tiers.json and rerunning
-    # any builder is therefore enough to move a book; nothing else caches it.
-    #
-    # This is public information and is meant to be: the client needs to know a
-    # book is locked before it asks for it, otherwise the only way to draw a
-    # library page is to attempt every book and collect the refusals.
-    tset = tiers_mod.load()
+    # Rows once carried a `tier` telling the client which books were paid. Every
+    # book is free now, so the field is dropped on the way out rather than left
+    # to linger in an index nobody rebuilt.
     for r in rows:
-        r['tier'] = tiers_mod.sku_of(r.get('id'), tset)
+        r.pop('tier', None)
 
     order = catalogue_order()
     rows.sort(key=lambda r: (order.index(r['id']) if r['id'] in order else len(order),

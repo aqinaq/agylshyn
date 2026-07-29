@@ -42,14 +42,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The paywall's only real defence is that paid books are not in this
-      # artifact. Everything uploaded below is world-readable forever the moment
-      # it is published — a crawler does not give it back — so the check that a
-      # paid book never lands in site/data/ has to happen before the upload, not
-      # in review. Fails the deploy rather than shipping a leak.
-      - name: No paid content in the public artifact
-        run: python3 site/tools/split_content.py --check
-
       - uses: actions/configure-pages@v5
 
       # ~800 MB of pdf/ and audio/. Uploading takes a few minutes.

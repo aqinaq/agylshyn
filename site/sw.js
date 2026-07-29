@@ -16,7 +16,7 @@
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v26';
+var SHELL_VERSION = 'v27';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -120,20 +120,12 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
-  // Anything on another host is left entirely alone — the translation API, the
-  // listening audio when AUDIO_BASE points at object storage, and the
-  // entitlement API on Railway. Intercepting that bucket would only break the
-  // Range requests <audio> depends on.
+  // Anything on another host is left entirely alone — the translation API, and
+  // the listening audio when AUDIO_BASE points at object storage. Intercepting
+  // that bucket would only break the Range requests <audio> depends on.
   if (url.origin !== self.location.origin) return;
 
-  // Paid content, if the API ever ends up on this origin (a reverse proxy, a
-  // custom domain covering both). Caching it would mean a lapsed subscription
-  // keeps working from disk, which is the one failure mode a paywall cannot
-  // have. Offline for paid books needs a leased key, not a cache entry.
-  if (/^\/v1\//.test(url.pathname)) return;
-
-  // Only free books are in data/ — split_content.py moves the paid ones out —
-  // so this cache is the offline library and stays exactly as it was.
+  // Every book is in data/, so this cache is the whole offline library.
   if (/\/data\/.*\.json$/.test(url.pathname)) { e.respondWith(networkFirst(req, DATA_CACHE)); return; }
   // pdf.js: immutable, so cache-first, and in its own cache so a shell bump
   // does not throw it away.
