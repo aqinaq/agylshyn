@@ -930,6 +930,21 @@
       dcta.appendChild(dtxt);
       dcta.appendChild(el('span', 'dc-go', '→'));
       drillBox.appendChild(dcta);
+
+      // Second call to action, same shape: the words the reader saved while
+      // reading. Sits next to the drill because they are the two things you can
+      // do without first choosing a book.
+      if (window.SRS) {
+        var wcta = el('a', 'drill-cta srs-cta-home' + (SRS.dueCount() ? ' hot' : ''));
+        wcta.href = '#/srs';
+        wcta.appendChild(el('span', 'dc-ico', '🗂'));
+        var wtxt = el('span', 'dc-txt');
+        wtxt.appendChild(el('b', null, t('srs.home.title')));
+        wtxt.appendChild(el('span', null, SRS.homeSub()));
+        wcta.appendChild(wtxt);
+        wcta.appendChild(el('span', 'dc-go', '→'));
+        drillBox.appendChild(wcta);
+      }
     }
 
     // Right-hand sidebar: the cross-book snapshot, then the month calendar.
@@ -3498,6 +3513,34 @@
     setBackLink(to);
   }
 
+  /* ================= word cards ================= */
+
+  // #/srs[/review|cards|add|import|settings] — the deck lives in srs.js, which
+  // owns its own storage and draws its own pages. All this side does is give it
+  // the shell: the book chrome, minus the sidebar and the section tabs.
+  function openSrs(sub) {
+    if (!window.SRS) { location.hash = '#/'; return; }
+    setView('srs');
+    document.getElementById('brandTitle').textContent = t('srs.title');
+    document.getElementById('brandSub').textContent = t('srs.sub');
+    setBackLink(backHash);
+    SRS.open(sub);
+    refreshSrsBadge();
+  }
+
+  // The count of words waiting, on the tab that opens them. Kept in the topbar
+  // rather than only on the home page, because the moment a reader saves a word
+  // from an exercise is the moment they want to know the deck is filling up.
+  function refreshSrsBadge() {
+    var badge = document.getElementById('srsBadge');
+    var tab = document.getElementById('tabSrs');
+    if (!badge || !window.SRS) return;
+    var n = SRS.dueCount();
+    badge.textContent = n > 99 ? '99+' : String(n);
+    badge.hidden = n === 0;
+    if (tab) tab.setAttribute('aria-label', t('srs.title'));
+  }
+
   // #/drill or #/drill/<book>
   function openDrill(scope) {
     if (scope !== 'all' && !bookMeta(scope)) { location.hash = '#/drill'; return; }
@@ -4293,6 +4336,14 @@
     // '#/drill' is cross-book; '#/drill/<book>' narrows it to one.
     var d = /^#\/drill(?:\/([a-z0-9-]+))?/.exec(h);
     if (d) return { view: 'drill', id: d[1] || 'all' };
+    // The word deck. Sub-pages are srs.js's own; an unknown one lands on Today
+    // rather than 404-ing, so a stale bookmark still opens something useful.
+    var s = /^#\/srs(?:\/([a-z]+))?/.exec(h);
+    if (s) {
+      var sub = s[1] || '';
+      if (sub && (!window.SRS || SRS.subs.indexOf(sub) < 0)) sub = '';
+      return { view: 'srs', sub: sub };
+    }
     var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)|\/(errors|stats))?/.exec(h);
     if (m) {
       return {
@@ -4316,9 +4367,12 @@
     // book, at the unit that was open — and not the library the reader would
     // otherwise be thrown out to. Two sessions in a row (one book → all books)
     // keep pointing at the same book, since neither of them overwrites this.
-    if (r.view !== 'drill') backHash = location.hash || '#/';
-    if (r.view !== 'drill') Speech.stop();
+    // The deck is a destination like a session is: leaving a book for it and
+    // coming back should land on the unit that was open, not on the library.
+    if (r.view !== 'drill' && r.view !== 'srs') backHash = location.hash || '#/';
+    if (r.view !== 'drill' && r.view !== 'srs') Speech.stop();
     if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
+    if (r.view === 'srs') { if (pdfOpen()) hidePdf(false); openSrs(r.sub); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();
@@ -4352,5 +4406,11 @@
   applyStatic();
   applyWidths();
   refreshAuthButtons();
+  // The deck's badge is driven by srs.js, not by a route: a word saved from a
+  // lookup while reading has to show up in the topbar there and then.
+  if (window.SRS) {
+    refreshSrsBadge();
+    SRS.onChange(refreshSrsBadge);
+  }
   loadIndex().then(route);
 })();

@@ -340,6 +340,8 @@
       if (entry.src === 'online') {
         p.appendChild(line('wl-src', T('wl.online', 'интернеттен · машина аудармасы')));
       }
+      noteRecent(entry, word);
+      if (entry.kk) p.appendChild(saveBtn(entry, word));
     }
 
     var foot = document.createElement('div');
@@ -363,6 +365,62 @@
     d.className = cls;
     d.textContent = text;
     return d;
+  }
+
+  /* ================= saving a word ================= */
+
+  // The moment a reader looks a word up is the moment they care about it, so
+  // the popup is where the deck gets filled: one tap, translation already
+  // there. srs.js owns the storage; a build without it simply shows no button.
+  function saveBtn(entry, word) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'wl-save';
+    var head = entry.base || word;
+    var saved = !!(window.SRS && window.SRS.has(head));
+    b.textContent = saved ? T('wl.saved', '✓ Қосылған') : T('wl.save', '＋ Сөздеріме');
+    if (saved) b.classList.add('done');
+    b.disabled = saved || !window.SRS;
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (!window.SRS) return;
+      window.SRS.addWord({
+        word: head,
+        translation: entry.kk,
+        example: entry.en || '',
+        src: 'lookup'
+      });
+      b.textContent = T('wl.saved', '✓ Қосылған');
+      b.classList.add('done');
+      b.disabled = true;
+    });
+    return b;
+  }
+
+  /* ================= words seen recently ================= */
+
+  // A short list of what has been looked up, so the deck can offer "add the
+  // words you already stopped at" instead of an empty page and a text field.
+  // Deliberately separate from the online `cache` above, which only ever holds
+  // the words the bundled dictionary MISSED — the opposite of the common ones.
+  var RECENT_KEY = 'agylshyn_wl_recent_v1';
+  var RECENT_MAX = 200;
+  var recent = [];
+  try {
+    var savedRecent = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    if (Array.isArray(savedRecent)) recent = savedRecent;
+  } catch (e) { /* no storage — the list is just always empty */ }
+
+  function noteRecent(entry, word) {
+    if (!entry || !entry.kk) return;
+    var head = entry.base || word;
+    var key = String(head).toLowerCase();
+    for (var i = 0; i < recent.length; i++) {
+      if (String(recent[i].word).toLowerCase() === key) { recent.splice(i, 1); break; }
+    }
+    recent.unshift({ word: head, kk: entry.kk, en: entry.en || '', ts: Date.now() });
+    if (recent.length > RECENT_MAX) recent.length = RECENT_MAX;
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (e) {}
   }
 
   function place(p, rect) {
@@ -552,6 +610,8 @@
     },
     hide: hide,
     lookup: lookup,
+    // Newest first: [{word, kk, en, ts}] — srs.js turns these into cards.
+    recent: function () { return recent.slice(); },
     setHover: function (on) { pref.hover = !!on; savePref(); },
     hoverOn: function () { return pref.hover; }
   };

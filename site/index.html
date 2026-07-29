@@ -112,6 +112,9 @@
     <a href="#" data-tab="errors" class="tab" id="tabErrors" data-tip="tip.errors"><span data-i18n="nav.errors"></span> <span id="errBadge" class="badge" hidden>0</span></a>
     <a href="#" data-tab="stats"  class="tab" id="tabStats" data-i18n="nav.stats" data-tip="tip.stats"></a>
     <a href="#/drill" class="tab tab-drill" id="tabDrill" data-i18n-aria="drill.title" data-tip="tip.drill">⚡</a>
+    <!-- The saved-word deck. Fixed href: it is not scoped to the open book —
+         one deck holds whatever the reader has picked up anywhere. -->
+    <a href="#/srs" class="tab tab-srs" id="tabSrs" data-i18n-aria="srs.title" data-tip="tip.srs">🗂<span id="srsBadge" class="badge" hidden>0</span></a>
     <button type="button" class="tab tab-find" data-open-find data-i18n-aria="find.open" data-tip="tip.find">🔎</button>
     <button type="button" class="tab tab-help" data-open-help data-i18n-aria="nav.help" data-tip="tip.help">?</button>
   </nav>
@@ -237,6 +240,9 @@
 <script src="books.js"></script>
 <script src="placement.js"></script>
 <script src="dict.js"></script>
+<!-- Word cards. Loads before dict.js's popup is ever opened, so the ＋ button
+     in a lookup has something to save into. -->
+<script src="srs.js"></script>
 <!-- Where the listening audio is served from; empty means "next to the site". -->
 <script src="audio.config.js"></script>
 <!-- Both must load before app.js: sync.js consumes the OAuth fragment on the way

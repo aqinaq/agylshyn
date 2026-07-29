@@ -16,7 +16,7 @@
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v27';
+var SHELL_VERSION = 'v28';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -37,6 +37,7 @@ var SHELL = [
   './supabase.config.js',
   './sync.js',
   './dict.js',
+  './srs.js',
   './pdfview.js',
   './audio.config.js',
   './manifest.webmanifest',

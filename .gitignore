@@ -13,3 +13,11 @@ __pycache__/
 # Local scratch for the build tools; nothing in the repo needs a secret.
 .env
 .venv/
+
+# The standalone vocab-srs prototype keeps its dependencies here. The deck that
+# ships lives in site/srs.js and needs none of them, and 107 MB of node_modules
+# would swamp a repository already near the Pages size warning.
+node_modules/
+
+# Local tool settings; not part of the project.
+.claude/settings.local.json

@@ -724,8 +724,10 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 /* ===== Responsive ===== */
 @media (max-width: 860px) {
   :root { --tabbar-h: calc(56px + env(safe-area-inset-bottom)); }
-  /* A practice session hides the bar, so nothing needs to clear it. */
-  body[data-view="drill"] { --tabbar-h: 0px; }
+  /* A practice session and the word deck hide the bar, so nothing needs to
+     clear it. */
+  body[data-view="drill"],
+  body[data-view="srs"] { --tabbar-h: 0px; }
   .icon-btn { display: block; }
   .brand-sub { display: none; }
   .dragger { display: none; }
@@ -798,19 +800,28 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
 /* app.js sets data-view on <body>; only one view is ever mounted.
    The drill session borrows the book shell — topbar and main column — but
    without the sidebar, the PDF pane or the book tabs: one question at a time
-   is the whole point of it. */
-body:not([data-view="book"]):not([data-view="drill"]) .topbar,
-body:not([data-view="book"]):not([data-view="drill"]) .layout { display: none; }
+   is the whole point of it. The word deck ("srs") borrows the same shell, for
+   the same reason: it belongs to no book, so a book's unit list and section
+   tabs would only be misleading there. */
+body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]) .topbar,
+body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]) .layout { display: none; }
 body[data-view="book"] .screen,
-body[data-view="drill"] .screen { display: none; }
+body[data-view="drill"] .screen,
+body[data-view="srs"] .screen { display: none; }
 body[data-view="drill"] .sidebar,
 body[data-view="drill"] .pdf-pane,
 body[data-view="drill"] .dragger,
 body[data-view="drill"] #menuBtn,
+body[data-view="srs"] .sidebar,
+body[data-view="srs"] .pdf-pane,
+body[data-view="srs"] .dragger,
+body[data-view="srs"] #menuBtn,
 /* whole bar, not just its buttons: on mobile .tabs is a fixed bottom strip and
    an emptied one would still sit there as a bare line */
-body[data-view="drill"] .tabs { display: none; }
-body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
+body[data-view="drill"] .tabs,
+body[data-view="srs"] .tabs { display: none; }
+body[data-view="drill"] .main,
+body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
 
 .screen { min-height: 100vh; min-height: 100dvh; }
 
@@ -2369,6 +2380,11 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
      work). Menu · library · account · title stay. */
   .topbar { gap: 9px; padding: 7px 11px; }
   .topbar > .controls { display: none; }
+  /* …except in the deck, which is a place to stay rather than a run to finish.
+     On a phone the theme and language buttons normally live in the sidebar
+     footer, and the deck hides the sidebar — leaving no way to switch either
+     without going back to the library first. */
+  body[data-view="srs"] .topbar > .controls { display: inline-flex; }
   .brand-title { font-size: 15px; }
 
   /* ---- 3b. The book is a sheet, not a takeover ----------------------
@@ -2420,7 +2436,8 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
      be restated here — otherwise the bar floats over a practice session that
      was started with the book left open. */
   #dragPdf[hidden] { display: none; }
-  body[data-view="drill"] #dragPdf { display: none; }
+  body[data-view="drill"] #dragPdf,
+  body[data-view="srs"] #dragPdf { display: none; }
 
   /* ---- 4. A drawer wide enough to read ------------------------------
      At the desktop's 268px every unit read "Present contin…", which is
@@ -2531,3 +2548,427 @@ body[data-view="drill"] .main { margin: 0 auto; max-width: 780px; }
   .tip { transition: none; }
 }
 
+
+/* ===================================================================
+   Word cards — the spaced-repetition deck (srs.js)
+   =================================================================== */
+
+.srs-wrap { display: block; }
+
+/* Sub-page switcher. The deck view hides the book tabs, so this row is the
+   only navigation inside it — on a phone it is also what replaces the bottom
+   bar, hence the scroll rather than a wrap to two lines. */
+.srs-nav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.srs-nav::-webkit-scrollbar { display: none; }
+.srs-nav-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.srs-nav-btn:hover { border-color: var(--muted); color: var(--text); }
+.srs-nav-btn.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.srs-nav-n {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  color: var(--muted);
+}
+.srs-nav-btn.on .srs-nav-n { background: var(--panel); color: var(--accent); }
+
+.card.good .v { color: var(--ok); }
+.srs-stat-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+/* Daily goal: how much of today's new-word quota is done. */
+.srs-goal {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  overflow: hidden;
+  margin: -8px 0 20px;
+}
+.srs-goal-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width .25s ease;
+}
+
+.srs-cta {
+  text-align: center;
+  padding: 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.srs-cta .big { font-size: 34px; display: block; margin-bottom: 6px; }
+.srs-cta-line { font-size: 15px; margin-bottom: 12px; }
+.btn.big { padding: 11px 22px; font-size: 15px; }
+
+/* Home page: the deck's call to action, sharing the drill CTA's shape. */
+.srs-cta-home.hot { border-color: var(--accent); }
+
+.srs-streak {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.srs-streak-head { font-size: 14px; margin-bottom: 10px; }
+.srs-heat { display: flex; gap: 4px; }
+.srs-heat-cell {
+  flex: 1 1 0;
+  height: 20px;
+  min-width: 8px;
+  border-radius: 3px;
+  background: var(--line-soft);
+}
+.srs-heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.srs-heat-legend .srs-heat-cell { flex: none; width: 14px; height: 14px; }
+/* The same blue heat scale as the month calendar on the home page, so "a busy
+   day" looks the same everywhere. Literal colours, not color-mix(), for the
+   same reason the calendar uses them: older phone browsers. */
+.srs-heat-cell.heat-1 { background: #cfe0fd; }
+.srs-heat-cell.heat-2 { background: #7fb0f6; }
+.srs-heat-cell.heat-3 { background: #3f83ee; }
+.srs-heat-cell.heat-4 { background: #1e50b8; }
+:root[data-theme="dark"] .srs-heat-cell.heat-1 { background: #123056; }
+:root[data-theme="dark"] .srs-heat-cell.heat-2 { background: #1e57ad; }
+:root[data-theme="dark"] .srs-heat-cell.heat-3 { background: #3f83ee; }
+:root[data-theme="dark"] .srs-heat-cell.heat-4 { background: #6ea8ff; }
+
+.srs-tip {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.srs-tip-ico { flex: none; }
+
+/* ---- first run ---- */
+.srs-how { margin: 4px 0 18px; }
+.srs-how-row {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.srs-how-row:last-child { border-bottom: 0; }
+.srs-how-ico { flex: none; font-size: 17px; }
+.srs-empty-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- review session ---- */
+.srs-review-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.srs-progress { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.srs-progress-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.srs-progress-fill { height: 100%; background: var(--accent); transition: width .2s ease; }
+
+.srs-leech {
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-bg);
+  color: var(--gold);
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.srs-stage { perspective: 1200px; margin-bottom: 18px; }
+.srs-card {
+  position: relative;
+  height: 260px;
+  cursor: pointer;
+  touch-action: pan-y;              /* the horizontal axis belongs to the swipe */
+  user-select: none;
+  transition: transform .18s ease;
+}
+.srs-card.dragging { transition: none; }
+.srs-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .35s ease;
+}
+.srs-card.flipped .srs-card-inner { transform: rotateY(180deg); }
+.srs-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backface-visibility: hidden;
+  overflow: auto;
+}
+.srs-back { transform: rotateY(180deg); }
+.srs-word { font-size: 30px; font-weight: 650; line-height: 1.2; word-break: break-word; }
+.srs-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.srs-face-hint { font-size: 12px; color: var(--muted); }
+.srs-translation { font-size: 21px; font-weight: 600; line-height: 1.35; }
+.srs-example { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; font-style: italic; }
+.srs-tags { font-size: 12.5px; color: var(--muted); }
+.srs-tags-k { font-weight: 600; color: var(--text); }
+.srs-say {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+  padding: 4px;
+}
+
+/* Which way the drag is going, before the finger lifts. */
+.srs-card.to-good .srs-face { border-color: var(--ok-line); box-shadow: 0 0 0 3px var(--ok-bg); }
+.srs-card.to-again .srs-face { border-color: var(--bad-line); box-shadow: 0 0 0 3px var(--bad-bg); }
+
+.srs-grades { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.srs-grade {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.srs-grade:hover { border-color: var(--muted); }
+.srs-grade b { font-size: 13.5px; font-weight: 620; }
+/* The interval each button buys, printed on it: grading stops being a guess
+   about four synonyms and becomes a choice with a visible consequence. */
+.srs-grade-when { font-size: 11.5px; color: var(--muted); }
+.srs-grade-key {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  opacity: .7;
+}
+.srs-grade.g-again { border-color: var(--bad-line); color: var(--bad); }
+.srs-grade.g-hard { border-color: var(--gold-line); color: var(--gold); }
+.srs-grade.g-good { border-color: var(--ok-line); color: var(--ok); }
+.srs-grade.g-easy { border-color: var(--accent); color: var(--accent); }
+.srs-grade .srs-grade-when { color: inherit; opacity: .75; }
+
+.srs-hint { margin-top: 12px; text-align: center; font-size: 12px; color: var(--muted); }
+
+/* ---- word list ---- */
+.srs-search {
+  width: 100%;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.srs-search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.srs-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
+.srs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+.srs-row:last-child { border-bottom: 0; }
+.srs-row.suspended { opacity: .55; }
+.srs-row.editing { display: block; }
+.srs-row-main { flex: 1 1 220px; min-width: 0; }
+.srs-row-word { display: block; font-size: 14.5px; }
+.srs-row-tr { display: block; font-size: 13px; color: var(--muted); }
+.srs-row-meta { display: flex; gap: 6px; flex: none; }
+.srs-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.srs-chip.bad { background: var(--bad-bg); color: var(--bad); }
+.srs-row-acts { display: flex; gap: 6px; flex: none; }
+
+/* ---- forms ---- */
+.srs-form { max-width: 520px; }
+.srs-field { display: block; margin-bottom: 14px; }
+.srs-field-k { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+.srs-field input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 14.5px;
+}
+.srs-field input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.srs-field-hint { display: block; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.srs-edit { padding: 4px 0; }
+
+.srs-msg { min-height: 20px; margin-top: 10px; font-size: 13px; }
+.srs-msg .bad { color: var(--bad); }
+.srs-msg .ok { color: var(--ok); }
+.srs-msg .muted { color: var(--muted); }
+
+.srs-paste {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.srs-paste:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.srs-lookups { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.srs-lookup {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.srs-lookup:hover { border-color: var(--accent); color: var(--accent); }
+.srs-lookup.done { border-color: var(--ok-line); color: var(--ok); cursor: default; }
+
+/* ---- toast ---- */
+.srs-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-h) + 18px);
+  transform: translate(-50%, 12px);
+  z-index: 60;
+  max-width: 90vw;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.srs-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* The ＋ that saves the looked-up word into the deck. */
+.wl-save {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.wl-save:hover { border-color: var(--accent); }
+.wl-save.done { color: var(--ok); border-color: var(--ok-line); cursor: default; }
+
+@media (max-width: 560px) {
+  .srs-card { height: 230px; }
+  .srs-word { font-size: 25px; }
+  .srs-grade { min-width: 0; padding: 9px 4px; }
+  .srs-grade b { font-size: 12.5px; }
+  .srs-grade-when { font-size: 10.5px; }
+  .srs-grade-key { display: none; }   /* no keyboard to hint at */
+  .srs-row-acts { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .srs-card, .srs-card-inner, .srs-goal-fill, .srs-progress-fill, .srs-toast {
+    transition: none;
+  }
+}

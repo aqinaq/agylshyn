@@ -45,7 +45,21 @@ window.HELP = {
       list: [
         'Ctrl/⌘ + K — сұрақтың мәтіні, жауабы, юнит атауы бойынша іздейді; нәтижені бассаң, дәл сол сұраққа апарады.',
         'Кез келген ағылшын сөзіне меңзе (немесе қос шерт, телефонда — басып тұр) — қазақша аудармасы шығады.',
+        'Сол терезедегі «＋ Сөздеріме» — сөзді өз жинағыңа қосады (🗂).',
         '🔊 — сұрақты, дұрыс жауапты, сөзді браузердің өз даусы оқиды.'
+      ]
+    },
+    {
+      icon: '🗂',
+      title: 'Сөз карталары',
+      body: [
+        'Аудармасын қарап шыққан сөзді ＋ арқылы жинағыңа қосасың да, күнде бірнеше минут қайталайсың. Ұмыту қисығына қарсы жұмыс: білген сөз сирей береді, ұмытылғаны жиірек оралады.'
+      ],
+      list: [
+        'Картаны бас — аудармасы шығады. Содан кейін төрт баға: «Қайта», «Қиын», «Білдім», «Оңай». Әр түйменің астында сол сөз келесі рет қашан шығатыны жазулы тұр.',
+        'Телефонда сырғытуға болады: оңға — білдім, солға — жоқ. Компьютерде 1–4 пернелері, U — кері қайтару.',
+        'Күніне қанша жаңа сөз көрсетілетінін «Баптау» бетінен өзгертесің (әдепкі — 10).',
+        'Тізімнен (Excel, Google Sheets) импорттауға, бәрін файлға сақтап басқа құрылғыда ашуға болады.'
       ]
     },
     {
@@ -116,7 +130,21 @@ window.HELP = {
       list: [
         'Ctrl/⌘ + K searches question text, answers and unit titles; picking a result takes you straight to that question.',
         'Rest the mouse on any English word (or double-click it; press and hold on a phone) for a Kazakh translation.',
+        '"＋ Save word" in that popup puts it into your own deck (🗂).',
         '🔊 reads the question, the answer key or the word in the browser’s own voice.'
+      ]
+    },
+    {
+      icon: '🗂',
+      title: 'Word cards',
+      body: [
+        'Save a word you looked up with ＋, then review for a few minutes a day. It works against the forgetting curve: words you know come back rarely, the ones you forget come back sooner.'
+      ],
+      list: [
+        'Tap the card to see the answer, then grade it: Again, Hard, Knew it, Easy. Each button says when that word will come back.',
+        'On a phone you can swipe: right for knew it, left for not. On a keyboard, 1–4 grade and U undoes.',
+        'How many new words a day you meet is yours to set (10 by default).',
+        'Import a list from Excel or Google Sheets, and download the whole deck to move it to another device.'
       ]
     },
     {

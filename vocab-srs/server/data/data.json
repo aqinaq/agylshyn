@@ -1,0 +1,225 @@
+{
+  "cards": [
+    {
+      "id": "75e37680-579a-4c77-93d3-5ddcd5151e8c",
+      "word": "ubiquitous",
+      "translation": "present everywhere",
+      "example": "Smartphones are ubiquitous now.",
+      "collocations": [
+        "ubiquitous presence"
+      ],
+      "synonyms": [
+        "omnipresent"
+      ],
+      "antonyms": [
+        "rare"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 1,
+      "easeFactor": 1.42,
+      "dueDate": "2026-07-20T15:28:58.734Z",
+      "lastReviewedAt": "2026-07-19T15:28:58.734Z",
+      "lapses": 1,
+      "suspended": false
+    },
+    {
+      "id": "a482d63e-197e-4cfe-bd2f-f6c5e8f4921a",
+      "word": "meticulous",
+      "translation": "very careful and precise",
+      "example": "She is meticulous with details.",
+      "collocations": [
+        "meticulous planning"
+      ],
+      "synonyms": [
+        "thorough"
+      ],
+      "antonyms": [
+        "careless"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 1,
+      "interval": 1,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-20T14:48:47.457Z",
+      "lastReviewedAt": "2026-07-19T14:48:47.457Z"
+    },
+    {
+      "id": "117e443a-524e-448a-86da-41ff9336e53e",
+      "word": "ambiguous",
+      "translation": "open to more than one interpretation",
+      "example": "The instructions were ambiguous.",
+      "collocations": [
+        "ambiguous statement"
+      ],
+      "synonyms": [
+        "unclear"
+      ],
+      "antonyms": [
+        "clear"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 1,
+      "interval": 1,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-20T15:28:59.801Z",
+      "lastReviewedAt": "2026-07-19T15:28:59.801Z"
+    },
+    {
+      "id": "a7268e9f-da15-497b-90b1-5a7b9e18459a",
+      "word": "resilient",
+      "translation": "able to recover quickly from difficulty",
+      "example": "The team stayed resilient after the setback.",
+      "collocations": [
+        "resilient economy"
+      ],
+      "synonyms": [
+        "tough"
+      ],
+      "antonyms": [
+        "fragile"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    },
+    {
+      "id": "af457315-5032-4002-8b75-7771f0d303b1",
+      "word": "eloquent",
+      "translation": "fluent and persuasive in speaking or writing",
+      "example": "She gave an eloquent speech.",
+      "collocations": [
+        "eloquent speaker"
+      ],
+      "synonyms": [
+        "articulate"
+      ],
+      "antonyms": [
+        "inarticulate"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    },
+    {
+      "id": "8be6c338-85ac-4eb6-8c07-5eee95154e3a",
+      "word": "candid",
+      "translation": "truthful and straightforward",
+      "example": "He was candid about his mistakes.",
+      "collocations": [
+        "candid opinion"
+      ],
+      "synonyms": [
+        "frank"
+      ],
+      "antonyms": [
+        "evasive"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    },
+    {
+      "id": "305e84dd-6d77-4962-97e3-1e8fab621983",
+      "word": "diligent",
+      "translation": "showing care and effort in work or duties",
+      "example": "She is diligent about her studies.",
+      "collocations": [
+        "diligent worker"
+      ],
+      "synonyms": [
+        "hardworking"
+      ],
+      "antonyms": [
+        "lazy"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    },
+    {
+      "id": "48f525e0-3597-4c31-80b7-46c75ea31aaf",
+      "word": "skeptical",
+      "translation": "not easily convinced; having doubts",
+      "example": "He remained skeptical of the claims.",
+      "collocations": [
+        "skeptical attitude"
+      ],
+      "synonyms": [
+        "doubtful"
+      ],
+      "antonyms": [
+        "trusting"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    },
+    {
+      "id": "aecccbde-fdc4-4c92-aa14-97d428f27fdb",
+      "word": "versatile",
+      "translation": "able to adapt to many different functions",
+      "example": "This tool is versatile and useful.",
+      "collocations": [
+        "versatile skills"
+      ],
+      "synonyms": [
+        "adaptable"
+      ],
+      "antonyms": [
+        "limited"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    },
+    {
+      "id": "850798f2-236b-44a0-afb2-6529cc433dcc",
+      "word": "profound",
+      "translation": "very great or intense; deep",
+      "example": "The book had a profound impact on me.",
+      "collocations": [
+        "profound effect"
+      ],
+      "synonyms": [
+        "deep"
+      ],
+      "antonyms": [
+        "superficial"
+      ],
+      "createdAt": "2026-07-19T14:48:10.031Z",
+      "repetition": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "dueDate": "2026-07-19T14:48:10.031Z",
+      "lastReviewedAt": null
+    }
+  ],
+  "settings": {
+    "dailyGoal": 15
+  },
+  "history": {
+    "2026-07-19": {
+      "newLearned": 2,
+      "reviewed": 12
+    }
+  }
+}
