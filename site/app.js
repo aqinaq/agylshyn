@@ -802,6 +802,28 @@
   }
   function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
 
+  /* Copies a string, and resolves either way rather than rejecting: a caller
+     that only wants to say "copied" should not have to handle a failure it can
+     do nothing about. navigator.clipboard needs a secure context, which the
+     site has over https but not when a file:// copy is opened straight off a
+     phone, so the old selection trick stays as the fallback. */
+  function copyText(s) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(s).catch(function () { return legacyCopy(s); });
+    }
+    return Promise.resolve(legacyCopy(s));
+  }
+  function legacyCopy(s) {
+    var ta = el('textarea');
+    ta.value = s;
+    // Off-screen rather than hidden: display:none cannot be selected.
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* nothing else to try */ }
+    document.body.removeChild(ta);
+  }
+
   var body = document.body;
   var main = document.getElementById('main');
   var unitListEl = document.getElementById('unitList');
@@ -4872,24 +4894,68 @@
 
     // The step that actually gets the book opened while granting is by hand. It
     // matters more than the price, so it is never hidden behind a missing one.
-    // With no pay link the wording changes: there is nothing to have paid yet.
-    if (contact.label) {
-      var paying = names.some(function (n) { return plans[n].link; });
-      var how = el('div', 'offer-how');
-      how.appendChild(document.createTextNode(t(paying ? 'offer.after' : 'offer.write') + ' '));
-      if (contact.href) {
-        var a = el('a', null, contact.label);
-        a.href = contact.href;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        how.appendChild(a);
-      } else {
-        how.appendChild(el('strong', null, contact.label));
-      }
-      box.appendChild(how);
-    }
+    if (contact.label) box.appendChild(howToBuy(cfg, names, plans, contact));
 
     return box;
+  }
+
+  // Granting is manual: money arrives as a Kaspi transfer carrying a name, and
+  // nothing in it says which account to open. So this is not one sentence but
+  // the actual procedure, numbered, with the one piece the reader has to supply
+  // spelled out — and, when they are signed in, their address printed for them
+  // to copy. A learner who sends the wrong address has paid and stays locked,
+  // which is the worst failure this screen has, and it is entirely avoidable by
+  // never asking anybody to remember which mailbox they signed up with.
+  function howToBuy(cfg, names, plans, contact) {
+    var how = el('div', 'offer-how');
+    how.appendChild(el('div', 'offer-how-t', t('offer.how')));
+
+    // With no way to pay published — no link, no number — paying itself has to
+    // be arranged in the conversation, so it cannot be step one.
+    var payable = cfg.kaspi || names.some(function (n) { return plans[n].link; });
+    var steps = el('ol', 'offer-steps');
+
+    if (payable) steps.appendChild(el('li', null, t('offer.step.pay')));
+
+    var send = el('li');
+    send.appendChild(document.createTextNode(t(payable ? 'offer.step.send' : 'offer.step.ask') + ' '));
+    if (contact.href) {
+      var a = el('a', null, contact.label);
+      a.href = contact.href;
+      a.target = '_blank';
+      // An outside site; noopener keeps it from reaching back into this page.
+      a.rel = 'noopener noreferrer';
+      send.appendChild(a);
+    } else {
+      send.appendChild(el('strong', null, contact.label));
+    }
+    steps.appendChild(send);
+
+    steps.appendChild(el('li', null, t('offer.step.wait')));
+    how.appendChild(steps);
+
+    // Signed in: print the address, because "the email you registered with" is
+    // a question a lot of people get wrong about themselves. Signed out: say
+    // that an account has to exist first — there is nothing to open otherwise.
+    var mail = (window.SYNC && SYNC.email && SYNC.email()) || null;
+    if (mail) {
+      var box = el('div', 'offer-mail');
+      box.appendChild(el('span', 'offer-mail-k', t('offer.yourEmail')));
+      box.appendChild(el('strong', null, mail));
+      var copy = el('button', 'btn tiny offer-mail-c', t('offer.copy'));
+      copy.addEventListener('click', function () {
+        copyText(mail).then(function () {
+          copy.textContent = t('offer.copied');
+          copy.disabled = true;
+        });
+      });
+      box.appendChild(copy);
+      how.appendChild(box);
+    } else {
+      how.appendChild(el('div', 'offer-mail', t('offer.noAccount')));
+    }
+
+    return how;
   }
 
   // A locked book is not a failure, so it does not get the failure screen: no

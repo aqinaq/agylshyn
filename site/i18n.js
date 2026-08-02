@@ -544,8 +544,19 @@ window.I18N = {
     'offer.size': 'Жазылым ашатыны: {books} кітап · {items} сұрақ',
     'offer.pay': 'Kaspi арқылы төлеу',
     'offer.kaspi': 'Kaspi:',
-    'offer.after': 'Төлегеннен кейін чекті және поштаңды мына жерге жібер:',
-    'offer.write': 'Төлем жолын осы жерден сұра:',
+    'offer.how': 'Қалай ашылады',
+    'offer.step.pay': 'Жоспарды таңдап, Kaspi арқылы төле.',
+    'offer.step.send': 'Сосын чекті, есіміңді және тіркелген поштаңды ' +
+                       'Telegram-ға жібер:',
+    'offer.step.ask': 'Есіміңді және тіркелген поштаңды Telegram-ға жібер — ' +
+                      'төлем жолын айтамын:',
+    'offer.step.wait': 'Жазылымды қолмен қосамын. Қосылған соң осы беттегі ' +
+                       '«Қайта тексеру» батырмасын бассаң, кітап ашылады.',
+    'offer.yourEmail': 'Тіркелген поштаң:',
+    'offer.copy': 'Көшіру',
+    'offer.copied': 'Көшірілді',
+    'offer.noAccount': 'Алдымен аккаунт аш: жазылым поштаға жазылады, ' +
+                       'сондықтан ашатын пошта болмаса, төлемді байланыстыратын ешнәрсе жоқ.',
 
     'sub.title': 'Жазылым',
     'sub.checking': 'Тексерілуде…',
@@ -1102,8 +1113,19 @@ window.I18N = {
     'offer.size': 'A subscription opens {books} books · {items} questions',
     'offer.pay': 'Pay with Kaspi',
     'offer.kaspi': 'Kaspi:',
-    'offer.after': 'Once paid, send the receipt and your email address to:',
-    'offer.write': 'Ask how to pay:',
+    'offer.how': 'How it gets opened',
+    'offer.step.pay': 'Pick a plan and pay with Kaspi.',
+    'offer.step.send': 'Then send the receipt, your name and the email address ' +
+                       'you registered with, on Telegram:',
+    'offer.step.ask': 'Send your name and the email address you registered with ' +
+                      'on Telegram, and I will tell you how to pay:',
+    'offer.step.wait': 'I turn the subscription on by hand. Once it is on, press ' +
+                       '"Check again" on this page and the book opens.',
+    'offer.yourEmail': 'Your registered email:',
+    'offer.copy': 'Copy',
+    'offer.copied': 'Copied',
+    'offer.noAccount': 'Make an account first: a subscription is attached to an ' +
+                       'email address, so without one there is nothing to attach the payment to.',
 
     'sub.title': 'Subscription',
     'sub.checking': 'Checking…',

@@ -1345,6 +1345,31 @@ body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
   font-size: 12.5px; color: var(--muted); line-height: 1.5;
 }
 .offer-how a, .offer-how strong { color: var(--text); }
+.offer-how-t {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--muted); margin-bottom: 7px;
+}
+/* Numbered because these are sequential and the middle one is the step people
+   skip: paying is the part that feels like the whole transaction, and it is the
+   part that opens nothing on its own. */
+.offer-steps { margin: 0; padding-left: 1.25em; }
+.offer-steps li { margin-top: 5px; }
+.offer-steps li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+/* The address sits apart from the prose, on the panel background, because it is
+   the one thing on this card meant to be read character by character. */
+.offer-mail {
+  margin-top: 11px; padding: 8px 10px; border-radius: 9px;
+  background: var(--panel); border: 1px solid var(--line);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.offer-mail-k { font-size: 11.5px; }
+.offer-mail strong {
+  font-size: 12.5px; word-break: break-all; min-width: 0;
+  /* An address is read to be retyped: a font where l/1 and 0/O differ. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.offer-mail-c { margin-left: auto; flex: none; }
+.btn.tiny { padding: 3px 9px; font-size: 11.5px; border-radius: 7px; }
 
 .bc-title { font-size: 17.5px; font-weight: 680; line-height: 1.22; letter-spacing: -.01em; margin-top: 2px; }
 .bc-author { font-size: 12.5px; color: var(--muted); margin-top: -5px; }

@@ -87,6 +87,10 @@ async function run() {
     JSON.stringify(wall.prices));
   r.ok('the textbook itself is still offered',
     /Кітапты оқу|Read the book/i.test(wall.buttons.join(' ')), JSON.stringify(wall.buttons));
+  // Nobody signed in has an address to be granted against, and saying so here
+  // is cheaper than a payment that arrives with no account to attach it to.
+  r.ok('and with no account it says to make one first',
+    /аккаунт аш|Make an account/i.test(wall.text), wall.text.slice(-160));
 
   // The one thing a paywall must never do: hand the content over anyway.
   const direct = await s.eval(`(async () => {
@@ -105,6 +109,8 @@ async function run() {
     const main = document.getElementById('main');
     return { units: document.querySelectorAll('#unitList li').length,
              text: main.textContent,
+             steps: [...main.querySelectorAll('.offer-steps li')].map(e => e.textContent.trim()),
+             mail: (main.querySelector('.offer-mail strong') || {}).textContent,
              buttons: [...main.querySelectorAll('button, .btn')].map(b => b.textContent.trim()) };
   })()`);
   r.eq('still no units', nosub.units, 0);
@@ -112,6 +118,27 @@ async function run() {
     /Қайта тексеру|Check again/i.test(nosub.buttons.join(' ')), JSON.stringify(nosub.buttons));
   r.ok('and the offer names a contact',
     /alacorda|Telegram/i.test(nosub.text), nosub.text.slice(-120));
+
+  /* The manual grant runs on one piece of information the reader supplies, and
+     a wrong one means money in and no book out. So: it must be asked for, and
+     the reader must not have to remember it. */
+  r.ok('the steps are spelled out, not one sentence',
+    nosub.steps.length >= 2, JSON.stringify(nosub.steps));
+  r.ok('and they ask for a name and the registered email',
+    /есім|name/i.test(nosub.steps.join(' ')) && /пошта|email/i.test(nosub.steps.join(' ')),
+    JSON.stringify(nosub.steps));
+  r.eq('the address itself is printed, so it cannot be misremembered',
+    nosub.mail, 'owner@example.com');
+
+  const copied = await s.eval(`(async () => {
+    let grabbed = null;
+    navigator.clipboard.writeText = (s) => { grabbed = s; return Promise.resolve(); };
+    document.querySelector('.offer-mail-c').click();
+    await new Promise(r=>setTimeout(r,120));
+    return { grabbed, label: document.querySelector('.offer-mail-c').textContent.trim() };
+  })()`);
+  r.eq('and copying it puts it on the clipboard', copied.grabbed, 'owner@example.com');
+  r.ok('with the button saying so', /Көшірілді|Copied/i.test(copied.label), copied.label);
 
   /* ============ a subscriber ============ */
   r.head('a subscriber');
