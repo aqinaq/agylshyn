@@ -133,6 +133,14 @@
   function keyOf(bookId, unit, subNum, n) {
     return bookId + '|' + unit + '|' + subNum + '|' + n;
   }
+
+  // What a row is filed under. Normally its printed number — but a few
+  // exercises print the same number twice (Advanced Grammar 31.2 is two texts,
+  // a and b, each numbered 1-4), and two rows under one key means answering the
+  // second overwrites the first and the unit can never be finished. The builder
+  // gives every repeat a `k` of its own ('1b'); the number the reader sees is
+  // still `n`. See unclash() in tools/build_data.py.
+  function itemKey(it) { return it.k != null ? it.k : it.n; }
   function rec(key) { return state.items[key] || null; }
   function ensure(key) {
     if (!state.items[key]) state.items[key] = { streak: 0, wrong: 0, last: null, mastered: false, val: '', self: false };
@@ -669,7 +677,7 @@
       (sub.items || []).forEach(function (it) {
         if (!isTracked(sub, it)) return;
         total++;
-        var r = rec(keyOf(bookId, u.unit, sub.number, it.n));
+        var r = rec(keyOf(bookId, u.unit, sub.number, itemKey(it)));
         if (!r || !r.last) return;
         done++;
         if (r.last === 'correct') correct++;
@@ -690,7 +698,7 @@
       (u.subExercises || []).forEach(function (sub) {
         (sub.items || []).forEach(function (it) {
           if (isExample(it)) return;
-          var r = rec(keyOf(bk.id, u.unit, sub.number, it.n));
+          var r = rec(keyOf(bk.id, u.unit, sub.number, itemKey(it)));
           if (r && r.wrong > 0 && !r.mastered) list.push({ sub: sub, item: it });
         });
       });
@@ -840,17 +848,31 @@
       .then(function (r) { return r.json(); })
       .then(function (list) {
         list.forEach(function (b) { INDEX[b.id] = b; });
+        // The index carries each book's `paid` flag, so this is the moment the
+        // library learns what costs money. Asking whether this reader has paid
+        // comes next and is deliberately not waited on: the page renders on the
+        // free shelf, and the locks resolve themselves through ENTITLE.onChange
+        // when the answer lands.
+        if (window.ENTITLE) {
+          ENTITLE.setPaid(INDEX);
+          ENTITLE.refresh().catch(function () { /* offline — locks stay as they are */ });
+        }
         return INDEX;
       })
       .catch(function () { return INDEX; });
   }
 
   function fetchBook(id) {
-    // Every book is a static file under data/, cached offline by the service
-    // worker like the rest of the site.
+    // A free book is a static file under data/, cached offline by the service
+    // worker like the rest of the site. A paid one is a row in Supabase and the
+    // only copy that exists — ENTITLE decides which is which, and with
+    // supabase.config.js empty it always answers "free", which is the fetch
+    // this always was.
     //
-    // No 'force-cache': it serves a stale copy without revalidating, so a
-    // rebuilt data file would never reach a reader who already opened the book.
+    // No 'force-cache' on the static path: it serves a stale copy without
+    // revalidating, so a rebuilt data file would never reach a reader who
+    // already opened the book.
+    if (window.ENTITLE) return ENTITLE.fetchBook(id);
     return fetch('data/' + id + '.json')
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -862,8 +884,11 @@
     if (cache[id]) return Promise.resolve(cache[id]);
     if (pending[id]) return pending[id];
     pending[id] = fetchBook(id)
-      .catch(function () {
-        // one retry: a dropped connection should not strand the reader
+      .catch(function (e) {
+        // one retry: a dropped connection should not strand the reader.
+        // A locked book is a settled answer, not a flaky one — retrying it just
+        // doubles the requests and delays the unlock screen by another round trip.
+        if (e && e.locked) throw e;
         return new Promise(function (res) { setTimeout(res, 400); }).then(function () {
           return fetchBook(id);
         });
@@ -883,6 +908,57 @@
 
   /* ================= welcome ================= */
 
+  // The four tiles above add the whole shelf together, and for two of them that
+  // sum is misleading: an IELTS "unit" is a forty-question test section, not a
+  // two-page grammar unit, so "937 units" is two different things stacked. This
+  // line says which is which — and how far along each one is, which is the
+  // number a reader working towards a test actually wants.
+  //
+  // The split is by `kind`, not by a list of book ids: a list is the trap this
+  // codebase has fallen into twice (the library grouping and match_test both
+  // used to carry their own hardcoded set, and a new book vanished off the
+  // page). A shelf with only one of the two groups gets no line at all — there
+  // is nothing to compare, and a fork without the IELTS books should not see an
+  // empty row.
+  function renderHeroSplit() {
+    var box = document.getElementById('heroSplit');
+    if (!box) return;
+    clear(box);
+
+    var groups = [
+      { id: 'course', books: [], units: 0, items: 0, done: 0 },
+      { id: 'ielts', books: [], units: 0, items: 0, done: 0 }
+    ];
+    BOOKS.forEach(function (b) {
+      var g = groups[b.kind === 'ielts' ? 1 : 0];
+      var row = INDEX[b.id];
+      if (!row) return;
+      g.books.push(b.id);
+      g.units += row.units;
+      g.items += row.tracked;
+      g.done += roughBookStats(b.id).done;
+    });
+
+    var real = groups.filter(function (g) { return g.books.length; });
+    if (real.length < 2) { box.hidden = true; return; }
+
+    real.forEach(function (g) {
+      var row = el('div', 'hs-row');
+      row.appendChild(el('span', 'hs-tag', t('hero.split.' + g.id)));
+      // One cell for the figures, so the label column stays a column and the
+      // numbers wrap under themselves rather than under the label.
+      var vals = el('span', 'hs-vals');
+      vals.appendChild(el('span', 'hs-num', t('hero.split.' + g.id + 'Line',
+        { b: num(g.books.length), u: num(g.units), q: num(g.items) })));
+      // Only once there is something to report: a first-time visitor does not
+      // need "0 answered" told to them twice.
+      if (g.done) vals.appendChild(el('span', 'hs-done', t('hero.split.done', { n: num(g.done) })));
+      row.appendChild(vals);
+      box.appendChild(row);
+    });
+    box.hidden = false;
+  }
+
   function renderHome() {
     setView('home');
     var units = 0, items = 0;
@@ -899,6 +975,7 @@
     document.getElementById('hsUnits').textContent = units ? num(units) : '—';
     document.getElementById('hsItems').textContent = items ? num(items) : '—';
     document.getElementById('hsDone').textContent = num(done);
+    renderHeroSplit();
 
     var resume = document.getElementById('heroResume');
     clear(resume);
@@ -1015,6 +1092,15 @@
     top.appendChild(el('span', 'bc-level', b.level));
     top.appendChild(el('span', 'bc-kind', t('lib.group.' + b.kind)));
     top.appendChild(el('span', 'bc-units', t('card.units', { n: (idx && idx.units) || b.units })));
+
+    // A lock only once the answer is in. While my_access is still in flight the
+    // card stays plain: showing a lock and then removing it half a second later
+    // tells a paying reader their subscription vanished, every single reload.
+    if (window.ENTITLE && ENTITLE.isPaid(b.id) && ENTITLE.known() && !ENTITLE.canOpen(b.id)) {
+      var lock = el('span', 'bc-lock', '🔒');
+      lock.title = t('lock.badge');
+      top.appendChild(lock);
+    }
     card.appendChild(top);
 
     // Icon only — the card's top row is tight, and the full explanation waits
@@ -1430,6 +1516,7 @@
     if (!authModal || authModal.hidden) return;
     authModal.hidden = true;
     authRepaint = null;
+    forgetAdminList();          // reopened panel = a fresh list, not last week's
     if (authReturnFocus && authReturnFocus.focus) authReturnFocus.focus();
     authReturnFocus = null;
   }
@@ -1608,10 +1695,25 @@
     var u = SYNC.user() || {};
     var mail = u.email || '—';
 
+    // Asked here rather than when the modal opens, because signing in happens
+    // inside the open modal: a reader who arrives signed out would otherwise
+    // have to close the panel and reopen it before the badge appeared. null
+    // means "not asked yet"; SYNC shares the in-flight request, so the repaint
+    // this triggers does not ask again. Nothing outside this panel needs the
+    // answer, so a reader who never opens it never makes the request.
+    if (SYNC.isAdmin() === null) SYNC.refreshAdmin();
+
     var who = el('div', 'auth-who');
     who.appendChild(el('div', 'acct-ava big', (u.name || mail).charAt(0).toUpperCase()));
     var whoText = el('div', 'auth-who-t');
-    whoText.appendChild(el('div', 'auth-who-v', u.name || mail));
+    var line = el('div', 'auth-who-v');
+    line.appendChild(document.createTextNode(u.name || mail));
+    // The badge is drawn from a flag the server gave us, and it is the only
+    // thing that flag does. Everything an admin can actually read is decided
+    // again inside Postgres, so faking this in devtools buys a badge and
+    // nothing else.
+    if (SYNC.isAdmin()) line.appendChild(el('span', 'auth-badge', t('auth.adminBadge')));
+    whoText.appendChild(line);
     if (u.name) whoText.appendChild(el('div', 'auth-who-k', mail));
     if (u.createdAt) {
       whoText.appendChild(el('div', 'auth-who-k',
@@ -1619,6 +1721,64 @@
     }
     who.appendChild(whoText);
     authBody.appendChild(who);
+
+    /* ---- subscription ---- */
+    // The one place a reader can see what they hold and when it runs out. It
+    // sits above sync because it is the thing they paid for; sync is a feature
+    // that happens to need the same account.
+    if (window.ENTITLE && ENTITLE.configured) {
+      authSection(t('sub.title'));
+      var acc = ENTITLE.access();
+      if (!acc) {
+        authBody.appendChild(el('div', 'auth-sub', t('sub.checking')));
+        ENTITLE.refresh().catch(function () {});
+      } else if (acc.active) {
+        authBody.appendChild(el('div', 'auth-status idle',
+          acc.plan === 'lifetime'
+            ? t('sub.lifetime')
+            : t('sub.until', { date: authDate(acc.until) })));
+        authBody.appendChild(el('div', 'auth-sub', t('sub.covers',
+          { n: num(paidSize().books) })));
+      } else {
+        // Expired reads differently from never-bought: one is a renewal and the
+        // other is a first purchase, and telling somebody who paid last month
+        // that they have "no subscription" is how a renewal turns into a
+        // support message.
+        authBody.appendChild(el('div', 'auth-sub',
+          acc.plan ? t('sub.lapsed', { date: authDate(acc.until) }) : t('sub.none')));
+        var offer = offerCard();
+        if (offer) authBody.appendChild(offer);
+      }
+
+      var subRow = el('div', 'auth-row');
+      var recheck = el('button', 'auth-primary', t('sub.recheck'));
+      recheck.type = 'button';
+      recheck.addEventListener('click', function () {
+        recheck.disabled = true;
+        ENTITLE.refresh()
+          .then(function () { renderAuth(); })
+          .catch(function () { recheck.disabled = false; });
+      });
+      subRow.appendChild(recheck);
+      authBody.appendChild(subRow);
+    }
+
+    /* ---- users (admins only) ---- */
+    // A door, not the room. This panel is about one account — its own sync,
+    // name, password — and a roster of everybody else read badly in the middle
+    // of that. The list lives at #/users, where it has room for a table.
+    if (SYNC.isAdmin()) {
+      authSection(t('auth.secUsers'));
+      var uRow = el('div', 'auth-row');
+      var goUsers = el('button', 'auth-primary', t('auth.usersOpen'));
+      goUsers.type = 'button';
+      goUsers.addEventListener('click', function () {
+        closeAuthModal();
+        location.hash = '#/users';
+      });
+      uRow.appendChild(goUsers);
+      authBody.appendChild(uRow);
+    }
 
     /* ---- sync ---- */
     authSection(t('auth.secSync'));
@@ -1691,7 +1851,11 @@
     var out = el('button', 'btn', t('auth.signOut'));
     out.type = 'button';
     out.addEventListener('click', function () {
-      SYNC.signOut().then(function () { authMsg = null; renderAuth(); });
+      SYNC.signOut().then(function () {
+        authMsg = null;
+        forgetAdminList();      // whoever signs in next gets their own answer
+        renderAuth();
+      });
     });
     dangerRow.appendChild(out);
 
@@ -1714,6 +1878,7 @@
       authBusy = true;
       renderAuth();
       SYNC.deleteAccount().then(function () {
+        forgetAdminList();
         authSay(t('auth.deleteOk'), false);
       }).catch(function (e) {
         // A project that never ran the delete_me() half of the schema answers
@@ -1726,6 +1891,46 @@
     authBody.appendChild(dangerRow);
 
     authBody.appendChild(el('p', 'auth-note', t('auth.signOutNote')));
+  }
+
+  /* ---- the user list: state shared with the #/users page ---- */
+
+  // Kept at this level rather than inside the page, so that a repaint (a merged
+  // sync calls route(), which redraws whatever page is open) does not re-fetch
+  // the whole roster. null = not loaded, [] = loaded and empty.
+  var adminUsers = null;
+  var adminErr = null;
+  var adminLoading = false;
+
+  function forgetAdminList() { adminUsers = null; adminErr = null; }
+
+  function loadAdminUsers(done) {
+    if (adminLoading) return;
+    adminLoading = true;
+    adminErr = null;
+    SYNC.listUsers().then(function (rows) {
+      adminUsers = rows || [];
+    }).catch(function (e) {
+      // 404: the project never ran the admin half of supabase_schema.sql.
+      // 403/42501: the function ran and said no — the badge was stale or forged.
+      adminErr = (e && e.status === 404) ? t('users.noRpc')
+        : (e && e.status === 403) ? t('users.notAdmin')
+        : t('auth.failed', { msg: (e && e.message) || '' });
+    }).then(function () {
+      adminLoading = false;
+      if (done) done();
+    });
+  }
+
+  function authDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    try {
+      return d.toLocaleDateString(t('locale'), { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    }
   }
 
   // This was a bare ○/◉ glyph at first, and it was effectively invisible: a
@@ -1789,10 +1994,41 @@
     return n + ':' + sum;
   }
 
+  // The subscription answer arrives after the first paint, and signing in or
+  // out changes it. Only the library draws locks, so only the library is
+  // redrawn — and never while an answer is being typed, for the same reason
+  // afterMerge holds off below.
+  if (window.ENTITLE && ENTITLE.configured) {
+    ENTITLE.onChange(function () {
+      // The account panel carries the subscription section, and the answer that
+      // fills it in arrives after the panel can already be open. Without this it
+      // would only ever appear on the *second* opening — which reads as "it does
+      // not work".
+      if (authModal && !authModal.hidden && authRepaint) authRepaint();
+      if (body.getAttribute('data-view') !== 'home') return;
+      var ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      route();
+    });
+  }
+
   if (window.SYNC) {
+    // Who the app currently believes is signed in. SYNC emits on every status
+    // tick, and #/users is a whole page rebuild — repainting on all of them
+    // would take the filter field's focus away mid-word.
+    var lastWho = null;
     SYNC.onChange(function () {
       refreshAuthButtons();
       if (authModal && !authModal.hidden && authRepaint) authRepaint();
+      // Signing out (or in as somebody else) has to reach the roster: it is a
+      // page of other people's addresses, and leaving it up until the reader
+      // happens to navigate is the wrong way for it to go away.
+      var who = SYNC.signedIn() ? ((SYNC.user() || {}).id || 'in') : null;
+      if (who !== lastWho) {
+        lastWho = who;
+        forgetAdminList();
+        if (body.getAttribute('data-view') === 'users') renderUsers();
+      }
     });
     SYNC.attach({
       getState: function () { return state; },
@@ -2312,7 +2548,7 @@
     // In review mode the book key stays hidden until the learner answers again
     // this session — otherwise the answer sits in plain sight (AUDIT §У1).
     var reveal = !review;
-    var key = keyOf(book.id, unitNo, sub.number, it.n);
+    var key = keyOf(book.id, unitNo, sub.number, itemKey(it));
     var row = el('div', 'row');
     row.setAttribute('data-key', key);
 
@@ -3076,7 +3312,7 @@
       (u.subExercises || []).forEach(function (sub) {
         (sub.items || []).forEach(function (it) {
           if (!isTracked(sub, it)) return;
-          var r = rec(keyOf(bk.id, u.unit, sub.number, it.n));
+          var r = rec(keyOf(bk.id, u.unit, sub.number, itemKey(it)));
           if (r && r.last && r.due != null && r.due <= now) n++;
         });
       });
@@ -3470,7 +3706,7 @@
             if (!isTracked(sub, it) || !isAuto(it) || !it.question) return;
             var card = {
               bookId: bk.id, book: bk, unit: u, sub: sub, item: it,
-              key: keyOf(bk.id, u.unit, sub.number, it.n)
+              key: keyOf(bk.id, u.unit, sub.number, itemKey(it))
             };
             var r = rec(card.key);
             if (!r || !r.last) { fresh.push(card); return; }
@@ -3539,6 +3775,291 @@
     badge.textContent = n > 99 ? '99+' : String(n);
     badge.hidden = n === 0;
     if (tab) tab.setAttribute('aria-label', t('srs.title'));
+  }
+
+  /* ================= users (admin only) ================= */
+
+  // #/users — who has an account here. A page rather than a section inside the
+  // account panel: that panel is about one account, and a roster grows, so it
+  // wants room to be sorted and filtered. The chrome is the same one the deck
+  // and the sessions use — no sidebar, no unit tabs.
+  //
+  // Anyone can type this URL and nobody else can get anything out of it: the
+  // account panel only links here for an admin, and the rows come from a
+  // SECURITY DEFINER function that re-decides that question inside Postgres.
+  // A stranger gets this page with a message where the table would be.
+  // The key must be one of the column names below — anything else silently
+  // sorts by nothing at all, since val() falls through to r[key].
+  var usersSort = { key: 'joined', dir: -1 };    // newest signup first
+  var usersFilter = '';
+
+  function openUsers() {
+    setView('users');
+    document.getElementById('brandTitle').textContent = t('users.title');
+    document.getElementById('brandSub').textContent = t('users.sub');
+    setBackLink(backHash);
+    renderUsers();
+  }
+
+  // Every path out of here ends in "draw something on this page", so the guard
+  // against a repaint arriving after the reader has navigated away lives in one
+  // place: the view attribute.
+  function onUsersPage() { return body.getAttribute('data-view') === 'users'; }
+
+  function usersNote(msg, withSignIn) {
+    var s = el('div', 'empty-state');
+    s.appendChild(el('span', 'big', '👥'));
+    s.appendChild(el('div', null, msg));
+    if (withSignIn) {
+      var row = el('div', 'sub-actions');
+      row.style.justifyContent = 'center';
+      var b = el('button', 'btn primary', t('auth.signIn'));
+      b.addEventListener('click', openAuthModal);
+      row.appendChild(b);
+      s.appendChild(row);
+    }
+    main.appendChild(s);
+  }
+
+  function renderUsers() {
+    if (!onUsersPage()) return;
+    clear(main);
+
+    if (!syncOn() || !SYNC.signedIn()) return usersNote(t('users.needSignIn'), syncOn());
+
+    // Landing here straight from a bookmark, the admin flag has not been asked
+    // for yet — the account panel is what normally asks. Ask, and come back.
+    if (SYNC.isAdmin() === null) {
+      usersNote(t('users.loading'));
+      SYNC.refreshAdmin().then(function () { renderUsers(); });
+      return;
+    }
+    if (!SYNC.isAdmin()) return usersNote(t('users.notAdmin'));
+
+    if (adminErr) {
+      usersNote(adminErr);
+      var again = el('div', 'sub-actions');
+      again.style.justifyContent = 'center';
+      again.appendChild(usersReloadBtn());
+      main.appendChild(again);
+      return;
+    }
+    if (adminUsers === null) {
+      usersNote(t('users.loading'));
+      loadAdminUsers(renderUsers);
+      return;
+    }
+    // Nobody has signed up yet: a search field over nothing is furniture, and
+    // drawing it would also put the "no accounts" line in the wrong box, once
+    // per keystroke.
+    if (!adminUsers.length) return usersNote(t('users.empty'));
+
+    var bar = el('div', 'users-bar');
+    var find = el('input', 'users-find');
+    find.type = 'search';
+    find.placeholder = t('users.filter');
+    find.setAttribute('aria-label', t('users.filter'));
+    find.value = usersFilter;
+    bar.appendChild(find);
+    var count = el('span', 'users-count');
+    bar.appendChild(count);
+    bar.appendChild(usersReloadBtn());
+    main.appendChild(bar);
+
+    var host = el('div');
+    main.appendChild(host);
+    main.appendChild(el('p', 'instructions', t('users.note')));
+
+    // Only the table is redrawn while filtering, so the field keeps focus and
+    // the caret — rebuilding the page on every keystroke would not.
+    function paint() {
+      clear(host);
+      var f = usersFilter.trim().toLowerCase();
+      var rows = adminUsers.filter(function (r) {
+        return !f || (String(r.email || '') + ' ' + String(r.name || '')).toLowerCase().indexOf(f) >= 0;
+      });
+      count.textContent = f
+        ? t('users.countFiltered', { n: rows.length, all: adminUsers.length })
+        : t('users.count', { n: adminUsers.length });
+      if (!rows.length) {
+        host.appendChild(el('div', 'instructions', t('users.noMatch')));
+        return;
+      }
+      host.appendChild(buildUsersTable(rows, paint));
+    }
+
+    find.addEventListener('input', function () { usersFilter = find.value; paint(); });
+    paint();
+    window.scrollTo(0, 0);
+  }
+
+  function usersReloadBtn() {
+    var b = el('button', 'btn', t('users.reload'));
+    b.type = 'button';
+    b.disabled = adminLoading;
+    b.addEventListener('click', function () {
+      forgetAdminList();
+      renderUsers();
+    });
+    return b;
+  }
+
+  function buildUsersTable(rows, repaint) {
+    var me = SYNC.user() || {};
+    var wrap = el('div', 'table-wrap users-table');
+    var table = el('table');
+    // The subscription column sits second, next to the name: it is the reason
+    // this page gets opened at all once money is involved, and a column that
+    // needs a sideways scroll to reach is a column that gets missed. A project
+    // without the paywall half of the schema simply never draws it.
+    var cols = window.ENTITLE && ENTITLE.configured
+      ? ['user', 'sub', 'joined', 'seen', 'books', 'answers', 'active']
+      : ['user', 'joined', 'seen', 'books', 'answers', 'active'];
+
+    var trh = el('tr');
+    cols.forEach(function (c) {
+      var th = el('th', (c === 'books' || c === 'answers' ? 'num ' : '') + 'sortable',
+        t('users.th.' + c));
+      if (usersSort.key === c) th.classList.add(usersSort.dir > 0 ? 'asc' : 'desc');
+      th.setAttribute('tabindex', '0');
+      th.setAttribute('role', 'button');
+      function sort() {
+        usersSort.dir = usersSort.key === c ? -usersSort.dir : (c === 'user' ? 1 : -1);
+        usersSort.key = c;
+        repaint();
+      }
+      th.addEventListener('click', sort);
+      th.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sort(); }
+      });
+      trh.appendChild(th);
+    });
+    var thead = el('thead');
+    thead.appendChild(trh);
+    table.appendChild(thead);
+
+    function val(r, k) {
+      if (k === 'user') return String(r.name || r.email || '').toLowerCase();
+      if (k === 'joined') return Date.parse(r.created_at) || 0;
+      if (k === 'seen') return Date.parse(r.last_sign_in_at) || 0;
+      if (k === 'active') return Date.parse(r.last_active) || 0;
+      // Sorting by subscription puts lifetime at the top, then the monthly ones
+      // by how long they have left, then everybody who has never paid. A lapsed
+      // month keeps its date and so sorts just under the live ones, which is
+      // where the renewals to chase are.
+      if (k === 'sub') {
+        if (r.plan === 'lifetime') return 8.64e15;
+        return Date.parse(r.expires_at) || 0;
+      }
+      return r[k] || 0;
+    }
+    var sorted = rows.slice().sort(function (a, b) {
+      var va = val(a, usersSort.key), vb = val(b, usersSort.key);
+      if (va < vb) return -usersSort.dir;
+      if (va > vb) return usersSort.dir;
+      return (Date.parse(a.created_at) || 0) - (Date.parse(b.created_at) || 0);
+    });
+
+    var tbody = el('tbody');
+    sorted.forEach(function (r) {
+      var mail = r.email || '—';
+      var shown = r.name || mail;
+      var isMe = r.id && me.id === r.id;
+      var tr = el('tr', isMe ? 'me' : null);
+
+      var c1 = el('td');
+      var cell = el('div', 'u-cell');
+      cell.appendChild(el('span', 'acct-ava sm', (shown.charAt(0) || '●').toUpperCase()));
+      var txt = el('div', 'u-t');
+      var top = el('div', 'u-name');
+      top.appendChild(document.createTextNode(shown));
+      if (r.admin) top.appendChild(el('span', 'auth-badge', t('auth.adminBadge')));
+      if (isMe) top.appendChild(el('span', 'au-you', t('users.you')));
+      if (!r.confirmed) top.appendChild(el('span', 'au-warn', t('users.unconfirmed')));
+      txt.appendChild(top);
+      // The address only repeats when the name above is not already it.
+      if (r.name) txt.appendChild(el('div', 'u-mail', mail));
+      cell.appendChild(txt);
+      c1.appendChild(cell);
+      tr.appendChild(c1);
+
+      if (cols.indexOf('sub') > 0) tr.appendChild(subCell(r, repaint));
+      tr.appendChild(el('td', null, authDate(r.created_at)));
+      tr.appendChild(el('td', null, authDate(r.last_sign_in_at)));
+      tr.appendChild(el('td', 'num', String(r.books || 0)));
+      tr.appendChild(el('td', 'num', String(r.answers || 0)));
+      tr.appendChild(el('td', null, authDate(r.last_active)));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  // What this account holds, and the two buttons that change it. Payment is a
+  // Kaspi transfer and this is the other half of it: you see the money arrive,
+  // you press a button here. Both buttons are re-decided inside Postgres
+  // against the verified token, so they are a convenience and not the control.
+  function subCell(r, repaint) {
+    var td = el('td', 'u-sub');
+
+    var chip;
+    if (r.subscribed) {
+      chip = el('span', 'sub-chip live', r.plan === 'lifetime'
+        ? t('users.sub.lifetime')
+        : authDate(r.expires_at));
+    } else if (r.plan) {
+      // A lapsed row keeps its date rather than collapsing to a dash: "ran out
+      // on the 4th" is the row worth writing to, and it is invisible otherwise.
+      chip = el('span', 'sub-chip dead', authDate(r.expires_at));
+      chip.title = t('users.sub.lapsed');
+    } else {
+      chip = el('span', 'sub-none', '—');
+    }
+    td.appendChild(chip);
+
+    var acts = el('div', 'sub-acts');
+
+    function run(label, cls, fn, confirmMsg) {
+      var b = el('button', 'btn ' + cls, label);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        if (confirmMsg && !confirm(confirmMsg)) return;
+        var all = acts.querySelectorAll('button');
+        for (var i = 0; i < all.length; i++) all[i].disabled = true;
+        fn().then(function (row) {
+          // Patch the row in place rather than reloading the whole roster: a
+          // reload would lose the filter's caret and the scroll position, and
+          // the function hands back exactly the row that changed.
+          var got = (row && row.length ? row[0] : row) || null;
+          r.plan = got ? got.plan : null;
+          r.expires_at = got ? got.expires_at : null;
+          r.subscribed = !!(got && (got.plan === 'lifetime' ||
+            (Date.parse(got.expires_at) || 0) > Date.now()));
+          repaint();
+        }).catch(function (e) {
+          for (var j = 0; j < all.length; j++) all[j].disabled = false;
+          alert(String((e && e.message) || e));
+        });
+      });
+      acts.appendChild(b);
+    }
+
+    var who = r.email || r.id;
+    run(t('users.grantMonth'), '', function () {
+      return ENTITLE.grant(r.id, 'monthly', 30);
+    });
+    run(t('users.grantLife'), '', function () {
+      return ENTITLE.grant(r.id, 'lifetime');
+    }, t('users.confirmLife', { email: who }));
+    if (r.plan) {
+      run(t('users.revoke'), 'sub-x', function () {
+        return ENTITLE.revoke(r.id).then(function () { return null; });
+      }, t('users.confirmRevoke', { email: who }));
+    }
+
+    td.appendChild(acts);
+    return td;
   }
 
   // #/drill or #/drill/<book>
@@ -4089,7 +4610,7 @@
               rank: inQ ? 1 : 2,
               bookId: bk.id, bookTitle: title, unit: u.unit,
               sub: sub.number,
-              key: keyOf(bk.id, u.unit, sub.number, it.n),
+              key: keyOf(bk.id, u.unit, sub.number, itemKey(it)),
               text: inQ ? hay : String(it.answer),
               note: inA ? t('find.inAnswer') : ''
             });
@@ -4264,7 +4785,171 @@
     main.appendChild(s);
   }
 
+  /* ================= the lock screen ================= */
+
+  // pricing.js carries {kk, en} pairs the way books.js does.
+  function langPick(o) {
+    if (!o) return '';
+    return o[state.lang] || o.kk || '';
+  }
+
+  // What a subscription contains, counted rather than written down: every book
+  // in index.json marked paid, and the questions inside them. tools/tiers.json
+  // is the only place that decides membership, so the offer can never advertise
+  // a book that has since gone free.
+  function paidSize() {
+    var books = 0, items = 0;
+    for (var id in INDEX) {
+      if (!INDEX[id].paid) continue;
+      books++;
+      items += INDEX[id].tracked || 0;
+    }
+    return { books: books, items: items };
+  }
+
+  // One plan — a price, what it buys, and the button that starts paying for it.
+  function planCard(name, plan) {
+    var cfg = window.PRICING || {};
+    var box = el('div', 'plan' + (plan.best ? ' best' : ''));
+    box.appendChild(el('div', 'plan-name', langPick(plan.title) || name));
+
+    var price = el('div', 'plan-price');
+    price.appendChild(el('strong', null, num(plan.price) + ' ' + (plan.currency || '')));
+    if (plan.per) price.appendChild(el('span', null, ' ' + langPick(plan.per)));
+    box.appendChild(price);
+
+    if (plan.note) box.appendChild(el('div', 'plan-note', langPick(plan.note)));
+
+    // With a Kaspi link the button pays; without one the sale happens in a
+    // conversation, so it writes instead. Two buttons would leave a reader
+    // choosing between steps that are actually sequential.
+    var href = plan.link || (cfg.contact && cfg.contact.href);
+    if (href) {
+      var go = el('a', 'btn' + (plan.best ? ' primary' : '') + ' plan-go',
+        plan.link ? t('offer.pay') : (langPick(cfg.contact.cta) || cfg.contact.label));
+      go.href = href;
+      go.target = '_blank';
+      // An outside site; noopener keeps it from reaching back into this page
+      // through window.opener.
+      go.rel = 'noopener noreferrer';
+      box.appendChild(go);
+    }
+    return box;
+  }
+
+  // The "here is what it costs and how to pay" card. Returns null when there is
+  // nothing honest to show — no pricing.js, or no plan with a price — rather
+  // than an empty box or a button that does nothing.
+  function offerCard() {
+    var cfg = window.PRICING || {};
+    var plans = cfg.plans || {};
+    var contact = cfg.contact || {};
+    var names = ['monthly', 'lifetime'].filter(function (n) {
+      return plans[n] && (plans[n].price > 0 || plans[n].link);
+    });
+    if (!names.length && !cfg.kaspi && !contact.label) return null;
+
+    var box = el('div', 'offer');
+
+    var size = paidSize();
+    if (size.books) {
+      box.appendChild(el('div', 'offer-size',
+        t('offer.size', { books: num(size.books), items: num(size.items) })));
+    }
+
+    if (names.length) {
+      var grid = el('div', 'plan-grid');
+      names.forEach(function (n) { grid.appendChild(planCard(n, plans[n])); });
+      box.appendChild(grid);
+    }
+
+    if (cfg.kaspi) {
+      var k = el('div', 'offer-kaspi');
+      k.appendChild(document.createTextNode(t('offer.kaspi') + ' '));
+      k.appendChild(el('strong', null, cfg.kaspi));
+      box.appendChild(k);
+    }
+
+    // The step that actually gets the book opened while granting is by hand. It
+    // matters more than the price, so it is never hidden behind a missing one.
+    // With no pay link the wording changes: there is nothing to have paid yet.
+    if (contact.label) {
+      var paying = names.some(function (n) { return plans[n].link; });
+      var how = el('div', 'offer-how');
+      how.appendChild(document.createTextNode(t(paying ? 'offer.after' : 'offer.write') + ' '));
+      if (contact.href) {
+        var a = el('a', null, contact.label);
+        a.href = contact.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        how.appendChild(a);
+      } else {
+        how.appendChild(el('strong', null, contact.label));
+      }
+      box.appendChild(how);
+    }
+
+    return box;
+  }
+
+  // A locked book is not a failure, so it does not get the failure screen: no
+  // "try again", no error text, and a way forward instead. The two cases differ
+  // by one question — is there an account yet — because for a signed-out reader
+  // the next step is signing in, not paying.
+  function showLocked(id, reason) {
+    clear(main);
+    var meta = bookMeta(id);
+    var signedIn = !!(window.SYNC && SYNC.signedIn() && reason !== 'signed-out');
+    var s = el('div', 'empty-state');
+    s.appendChild(el('span', 'big', '🔒'));
+    s.appendChild(el('div', null, t('lock.title', { id: (meta && meta.title) || id })));
+    s.appendChild(el('div', 'instructions', t(signedIn ? 'lock.body' : 'lock.signedOut')));
+
+    var offer = offerCard();
+    if (offer) s.appendChild(offer);
+
+    var row = el('div', 'sub-actions');
+    row.style.justifyContent = 'center';
+
+    if (!signedIn && window.SYNC && SYNC.configured) {
+      var login = el('button', 'btn primary', t('lock.signIn'));
+      login.addEventListener('click', openAuthModal);
+      row.appendChild(login);
+    } else if (signedIn) {
+      // The reader who has just paid and is staring at a lock. ENTITLE caches
+      // the answer, so the fix is almost always "ask again" — offering it as a
+      // button is cheaper than a support message.
+      var again = el('button', 'btn primary', t('lock.recheck'));
+      again.addEventListener('click', function () {
+        again.disabled = true;
+        ENTITLE.refresh().then(function () {
+          delete cache[id];
+          delete pending[id];
+          openBook(id, null, null);
+        }).catch(function () { again.disabled = false; });
+      });
+      row.appendChild(again);
+    }
+
+    // The textbook itself is never gated — only the exercises around it are. A
+    // locked book still opens its PDF, which is what keeps this screen from
+    // being a dead end and lets somebody decide whether the book is worth
+    // buying by reading it first.
+    if (meta && meta.pdf) {
+      var read = el('button', 'btn', t('lock.readPdf'));
+      read.addEventListener('click', function () { showPdf(null, meta); });
+      row.appendChild(read);
+    }
+
+    var back = el('a', 'btn', t('load.back'));
+    back.href = '#/';
+    row.appendChild(back);
+    s.appendChild(row);
+    main.appendChild(s);
+  }
+
   function showError(id, e) {
+    if (e && e.locked) return showLocked(id, e.locked);
     clear(main);
     var meta = bookMeta(id);
     var s = el('div', 'empty-state');
@@ -4353,6 +5038,7 @@
         arg: m[3] ? parseInt(m[3], 10) : null
       };
     }
+    if (h.indexOf('#/users') === 0) return { view: 'users' };
     // '#/help' and the old '#/books' both land on home; the guide is a dialog
     if (h.indexOf('#/help') === 0) return { view: 'home', help: true };
     return { view: 'home' };
@@ -4369,10 +5055,15 @@
     // keep pointing at the same book, since neither of them overwrites this.
     // The deck is a destination like a session is: leaving a book for it and
     // coming back should land on the unit that was open, not on the library.
-    if (r.view !== 'drill' && r.view !== 'srs') backHash = location.hash || '#/';
+    // The user list is the same kind of side trip.
+    var aside = r.view === 'drill' || r.view === 'srs' || r.view === 'users';
+    if (!aside) backHash = location.hash || '#/';
+    // Speech is the exception: a session and the deck keep reading, but leaving
+    // a book for the roster is leaving the book.
     if (r.view !== 'drill' && r.view !== 'srs') Speech.stop();
     if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
     if (r.view === 'srs') { if (pdfOpen()) hidePdf(false); openSrs(r.sub); return; }
+    if (r.view === 'users') { if (pdfOpen()) hidePdf(false); openUsers(); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();

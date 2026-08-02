@@ -16,7 +16,7 @@
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v28';
+var SHELL_VERSION = 'v31';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -36,6 +36,8 @@ var SHELL = [
   './placement.js',
   './supabase.config.js',
   './sync.js',
+  './entitle.js',
+  './pricing.js',
   './dict.js',
   './srs.js',
   './pdfview.js',
@@ -121,12 +123,16 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
-  // Anything on another host is left entirely alone — the translation API, and
-  // the listening audio when AUDIO_BASE points at object storage. Intercepting
-  // that bucket would only break the Range requests <audio> depends on.
+  // Anything on another host is left entirely alone — the translation API, the
+  // listening audio when AUDIO_BASE points at object storage, and Supabase.
+  // Intercepting that bucket would only break the Range requests <audio>
+  // depends on, and caching Supabase would mean a lapsed subscription keeps
+  // opening paid books from disk — the one failure a paywall cannot have.
+  // Offline for a paid book would need a leased key, not a cache entry.
   if (url.origin !== self.location.origin) return;
 
-  // Every book is in data/, so this cache is the whole offline library.
+  // Only the free books are in data/ — split_content.py moves the paid ones out
+  // — so this cache is the offline library and stays exactly what it was.
   if (/\/data\/.*\.json$/.test(url.pathname)) { e.respondWith(networkFirst(req, DATA_CACHE)); return; }
   // pdf.js: immutable, so cache-first, and in its own cache so a shell bump
   // does not throw it away.

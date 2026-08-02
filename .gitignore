@@ -6,6 +6,16 @@
 # stay empty. Keep an eye on the total — GitHub Pages starts warning past ~1 GB,
 # and the repo sits near 800 MB once the PDFs are counted.
 
+# The paid books. site/tools/split_content.py moves them here out of
+# site/data/, and site/tools/upload_content.py pushes them to Supabase, which is
+# the only place a reader can get them from. This repository is public, so a
+# paid book committed anywhere in it is a paid book anyone can download and the
+# lock in the app becomes a picture of a lock.
+#
+# They are not lost by being ignored: the builders regenerate them from the PDFs
+# in site/pdf/, and the copy that serves readers lives in the book_content table.
+content/
+
 # Python bytecode from the build tools.
 __pycache__/
 *.pyc
@@ -19,5 +29,7 @@ __pycache__/
 # would swamp a repository already near the Pages size warning.
 node_modules/
 
-# Local tool settings; not part of the project.
-.claude/settings.local.json
+# Local tool settings; not part of the project. The pattern has to be anchored
+# with ** — a plain `.claude/…` matches only at the repository root, which left
+# vocab-srs/.claude/ showing up as untracked.
+**/.claude/settings.local.json

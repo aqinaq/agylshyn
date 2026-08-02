@@ -18,6 +18,8 @@ import json
 import os
 import re
 
+import tiers as tiers_mod
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(ROOT, 'site', 'data')
 BOOKS_JS = os.path.join(ROOT, 'site', 'books.js')
@@ -68,11 +70,23 @@ def update(entries):
     ours = {e['id'] for e in entries}
     rows = [r for r in rows if r.get('id') not in ours] + list(entries)
 
-    # Rows once carried a `tier` telling the client which books were paid. Every
-    # book is free now, so the field is dropped on the way out rather than left
-    # to linger in an index nobody rebuilt.
+    # Stamp `paid` on the way out rather than inside entry(), so it lands on
+    # every row no matter which builder produced it — including rows merged in
+    # by an older run that predates tiers.json. Editing tiers.json and rerunning
+    # any builder is therefore enough to move a book; nothing else caches it.
+    #
+    # This is public information and is meant to be: the client has to know a
+    # book is locked before it asks for it, otherwise the only way to draw the
+    # library is to attempt every book and collect the refusals. `tier`, the
+    # per-package sku this field replaced, is dropped if an old index still
+    # carries it.
+    paid = tiers_mod.load()
     for r in rows:
         r.pop('tier', None)
+        if r.get('id') in paid:
+            r['paid'] = 1
+        else:
+            r.pop('paid', None)
 
     order = catalogue_order()
     rows.sort(key=lambda r: (order.index(r['id']) if r['id'] in order else len(order),
@@ -91,13 +105,20 @@ def rebuild():
     index matches what is actually shipped, whichever books were rebuilt last.
     """
     entries = []
+    paid = tiers_mod.load()
     for book_id in catalogue_order():
-        path = os.path.join(DATA, book_id + '.json')
+        # A paid book's file no longer lives in data/ — split_content.py has
+        # moved it to content/. The index still has to count it: the library
+        # draws a locked card with its unit and question totals, which is a
+        # large part of what makes the offer worth taking.
+        path = tiers_mod.source_of(book_id, paid)
+        if not path:
+            continue                      # book not built yet — leave it out
         try:
             with open(path, encoding='utf-8') as f:
                 data = json.load(f)
         except (IOError, ValueError):
-            continue                      # book not built yet — leave it out
+            continue
         entries.append(entry(book_id, data.get('units', [])))
     return update(entries)
 

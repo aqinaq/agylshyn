@@ -450,6 +450,10 @@ BOOKS = [
 # with trailing junk ("c r i t i c s u h b a l"). They cannot be matched.
 _SPACED_LETTERS = re.compile(r'(?:\b[A-Za-z]\s){4,}')
 
+# What scrub() did to the book it was last handed, so main() can print it on
+# the same line as refine()'s log. Cleared per book.
+SCRUB_LOG = []
+
 
 def scrub(units):
     """Post-process shared by every book, applied after page fixing.
@@ -464,6 +468,7 @@ def scrub(units):
     could never be completed, yet they counted towards the total, which is why a
     book could never reach 100 %.
     """
+    ghosts = 0
     for u in units:
         for s in u.get('subExercises', []) or []:
             for it in s.get('items', []) or []:
@@ -473,14 +478,88 @@ def scrub(units):
                     it['selfWhy'] = 'key'
 
             if s.get('type') in ('items', 'text'):
-                s['items'] = [
-                    it for it in (s.get('items') or [])
-                    if it.get('isExample')
-                    or (it.get('question') or '').strip()
-                    or (it.get('answer') or '').strip()
-                    or it.get('selfCheck')
-                ]
+                keep = []
+                for it in (s.get('items') or []):
+                    if not (it.get('isExample')
+                            or (it.get('question') or '').strip()
+                            or (it.get('answer') or '').strip()
+                            or it.get('selfCheck')):
+                        continue
+                    if _ghost(it):
+                        ghosts += 1
+                        continue
+                    keep.append(it)
+                s['items'] = keep
+    if ghosts:
+        SCRUB_LOG.append('%d unanswerable rows dropped' % ghosts)
+    rekeyed = unclash(units)
+    if rekeyed:
+        SCRUB_LOG.append('%d repeated numbers re-keyed' % rekeyed)
     return units
+
+
+# A word, for the purpose below: three letters in a row. Shorter than that and
+# the "question" is a page number, an axis label or a stray fragment.
+_HAS_WORD = re.compile(r'[A-Za-z]{3}')
+
+
+def _ghost(it):
+    """A row that can be neither answered nor checked, and so is not a question.
+
+    The rule above already drops a row with nothing in it at all. What survived
+    it, and shouldn't have, is the row whose question is what the extractor
+    swept up off the page instead of a sentence — "70 58 48" from the axis of a
+    chart, "___" from a gap that lost its text, a bare "35" from a page number —
+    with no answer to check against and no self-check to fall back on. Thirty of
+    those were spread across five books; each one is a box a learner is asked to
+    fill and cannot, and each one keeps a unit permanently short of 100 %.
+
+    Deliberately narrow: an answer of any kind, an example, or a self-check
+    marker all keep the row, and so does any question with a word in it — a
+    short prompt like "am" or "to" is only dropped when nothing can verify it.
+    """
+    if it.get('isExample') or it.get('selfCheck'):
+        return False
+    if (it.get('answer') or '').strip() or (it.get('blank') or '').strip():
+        return False
+    return not _HAS_WORD.search(it.get('question') or '')
+
+
+def unclash(units):
+    """Give every answerable row in an exercise a storage key of its own.
+
+    The app files an answer under `book|unit|sub|n`, so two rows that print the
+    same number inside one exercise share one record. Answering the second one
+    overwrites the first, the verdict shown against both is whichever was typed
+    last, and only one of the two can ever count as done — the unit is then
+    unfinishable. Advanced Grammar in Use has this in three exercises: 31.2 is
+    two texts, a and b, each numbered 1-4, exactly as the book prints them; 17.2
+    and 80.1 restart because the extractor ran two exercises together.
+
+    The printed number stays what the book says. What changes is the key: a
+    repeat takes `k` ('1b' for the second row numbered 1), which app.js prefers
+    over `n`. Examples are skipped — they have no input and never reach storage,
+    and Advanced Grammar prints several of them twice, once as the prompt and
+    once worked out.
+    """
+    rekeyed = 0
+    for u in units:
+        for s in u.get('subExercises', []) or []:
+            if s.get('type') not in ('items', 'text'):
+                continue
+            seen = {}
+            for it in s.get('items') or []:
+                n = it.get('n')
+                if n is None or it.get('isExample'):
+                    continue
+                c = seen.get(n, 0)
+                if c:
+                    # Counted rather than positional, so the key of a given row
+                    # does not move when a row before it is repaired away.
+                    it['k'] = '%s%s' % (n, chr(ord('a') + c))
+                    rekeyed += 1
+                seen[n] = c + 1
+    return rekeyed
 
 
 def book_pdf(bid):
@@ -537,7 +616,9 @@ def main():
     index = []
     for bid, fn in BOOKS:
         units, log = refine(bid, fix_pages(bid, fn()))
+        del SCRUB_LOG[:]
         units = clean(scrub(units))
+        log += SCRUB_LOG
         path = os.path.join(OUT, bid + '.json')
         with open(path, 'w', encoding='utf-8') as f:
             json.dump({'id': bid, 'units': units}, f, ensure_ascii=False,

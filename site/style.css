@@ -727,7 +727,8 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
   /* A practice session and the word deck hide the bar, so nothing needs to
      clear it. */
   body[data-view="drill"],
-  body[data-view="srs"] { --tabbar-h: 0px; }
+  body[data-view="srs"],
+  body[data-view="users"] { --tabbar-h: 0px; }
   .icon-btn { display: block; }
   .brand-sub { display: none; }
   .dragger { display: none; }
@@ -803,11 +804,12 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
    is the whole point of it. The word deck ("srs") borrows the same shell, for
    the same reason: it belongs to no book, so a book's unit list and section
    tabs would only be misleading there. */
-body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]) .topbar,
-body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]) .layout { display: none; }
+body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]):not([data-view="users"]) .topbar,
+body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]):not([data-view="users"]) .layout { display: none; }
 body[data-view="book"] .screen,
 body[data-view="drill"] .screen,
-body[data-view="srs"] .screen { display: none; }
+body[data-view="srs"] .screen,
+body[data-view="users"] .screen { display: none; }
 body[data-view="drill"] .sidebar,
 body[data-view="drill"] .pdf-pane,
 body[data-view="drill"] .dragger,
@@ -816,12 +818,20 @@ body[data-view="srs"] .sidebar,
 body[data-view="srs"] .pdf-pane,
 body[data-view="srs"] .dragger,
 body[data-view="srs"] #menuBtn,
+body[data-view="users"] .sidebar,
+body[data-view="users"] .pdf-pane,
+body[data-view="users"] .dragger,
+body[data-view="users"] #menuBtn,
 /* whole bar, not just its buttons: on mobile .tabs is a fixed bottom strip and
    an emptied one would still sit there as a bare line */
 body[data-view="drill"] .tabs,
-body[data-view="srs"] .tabs { display: none; }
+body[data-view="srs"] .tabs,
+body[data-view="users"] .tabs { display: none; }
 body[data-view="drill"] .main,
 body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
+/* Wider than the deck and the sessions: this one holds a six-column table, and
+   780px would put it in a sideways scroll on a laptop for no reason. */
+body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
 
 .screen { min-height: 100vh; min-height: 100dvh; }
 
@@ -901,6 +911,44 @@ body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
 }
 .hero-stats .v { font-size: 19px; font-weight: 720; font-variant-numeric: tabular-nums; line-height: 1.15; }
 .hero-stats .k { font-size: 9.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+/* The tiles above, split into coursebooks and IELTS. Quieter than the tiles
+   on purpose — it is the footnote to them, not a second headline — and laid
+   out as a grid so the two labels and the two number runs line up in columns
+   whatever they say in either language. */
+.hero-split {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 9px;
+  align-items: baseline;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.hero-split[hidden] { display: none; }
+.hs-row { display: contents; }
+.hs-tag {
+  font-weight: 650;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text);
+  opacity: .72;
+  white-space: nowrap;
+}
+.hs-vals { min-width: 0; }
+.hs-num { font-variant-numeric: tabular-nums; }
+/* Reads as progress rather than as one more total, so it takes the accent and
+   follows the run of grey figures behind a separator. */
+.hs-done {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  /* On a phone the line wraps, and it has to break BEFORE this, not between
+     the count and the word after it. Each figure in .hs-num is tied to its own
+     word by a non-breaking space in i18n.js for the same reason. */
+  white-space: nowrap;
+}
+.hs-done::before { content: ' · '; color: var(--muted); font-weight: 400; }
 
 .hero-resume {
   font-size: 12.5px;
@@ -1260,6 +1308,44 @@ body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
 }
 .bc-kind { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bc-units { margin-left: auto; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; }
+/* Sits after .bc-units, which holds the margin-left:auto — so the lock lands at
+   the far right of the row without a second auto margin fighting the first. */
+.bc-lock { font-size: 12px; line-height: 1; flex: none; opacity: .75; }
+
+/* The offer, on a locked book's page and inside the account panel. Deliberately
+   quiet: on the book page it sits inside an empty-state that is already an
+   interruption, so it should read as an answer to "what now" rather than an
+   advert. */
+.offer {
+  margin: 18px auto 4px; max-width: 380px; padding: 16px 18px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--panel-2); text-align: left;
+}
+.offer-size { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* Two plans side by side, because the comparison is the argument: 2000 a month
+   next to 5000 forever answers itself. Under ~330px they stack instead of
+   squeezing the prices onto two lines each. */
+.plan-grid { display: flex; gap: 10px; margin-top: 12px; }
+@media (max-width: 360px) { .plan-grid { display: block; } .plan + .plan { margin-top: 10px; } }
+.plan {
+  flex: 1 1 0; min-width: 0; padding: 12px 12px 13px;
+  border: 1px solid var(--line); border-radius: 11px; background: var(--panel);
+}
+.plan.best { border-color: var(--accent); }
+.plan-name { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.plan-price { margin-top: 4px; white-space: nowrap; }
+.plan-price strong { font-size: 20px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.plan-price span { font-size: 12px; color: var(--muted); }
+.plan-note { margin-top: 7px; font-size: 12px; color: var(--muted); line-height: 1.45; }
+.plan-go { display: block; margin-top: 11px; text-align: center; text-decoration: none; font-size: 13px; }
+.offer-kaspi { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.offer-kaspi strong { color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.offer-how {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--muted); line-height: 1.5;
+}
+.offer-how a, .offer-how strong { color: var(--text); }
+
 .bc-title { font-size: 17.5px; font-weight: 680; line-height: 1.22; letter-spacing: -.01em; margin-top: 2px; }
 .bc-author { font-size: 12.5px; color: var(--muted); margin-top: -5px; }
 .bc-blurb { font-size: 13px; color: var(--muted); line-height: 1.55; flex: 1; }
@@ -1677,6 +1763,75 @@ body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
 .auth-msg.bad { color: var(--bad); background: var(--bad-bg); border-color: var(--bad-line); }
 
 .auth-note { margin: 14px 0 0; font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+/* ===== Admin: the badge, and the user list page =====
+   The badge has to read as a role rather than as a status light, so it takes
+   the accent as a filled chip — nothing else in the account panel is filled
+   that way, which is the point. */
+.auth-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+.au-you, .au-warn {
+  display: inline-block; margin-left: 6px; padding: 1px 7px;
+  border-radius: 999px; font-size: 11px; font-weight: 560;
+  border: 1px solid var(--line); color: var(--muted); background: var(--panel-2);
+  vertical-align: 2px; white-space: nowrap;
+}
+.au-warn { color: var(--gold); background: var(--gold-bg); border-color: var(--gold-line); }
+
+/* ---- #/users ---- */
+.users-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.users-find {
+  flex: 1 1 220px; max-width: 320px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--text);
+  font: inherit; font-size: 14px; padding: 9px 12px;
+}
+.users-find:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.users-count { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.users-bar .btn { margin-left: auto; }
+
+/* Nothing in a row is clickable, so it must not pretend to be. */
+.users-table tbody tr { cursor: default; }
+.users-table tbody tr.me { background: var(--accent-soft); }
+.users-table tbody tr.me:hover { background: var(--accent-soft); }
+.u-cell { display: flex; align-items: center; gap: 10px; }
+.acct-ava.sm { width: 28px; height: 28px; font-size: 12.5px; }
+.u-t { min-width: 0; }
+.u-name { font-weight: 600; }
+.u-mail { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+/* The subscription column. The chip says what they hold; the buttons under it
+   change it. Buttons are small and sit on their own line so a mis-tap on a
+   phone cannot grant a stranger a lifetime subscription while aiming at the
+   next row. */
+.u-sub { white-space: nowrap; }
+.sub-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11.5px;
+  border: 1px solid transparent; font-variant-numeric: tabular-nums;
+}
+.sub-chip.live { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-line); }
+/* A run-out subscription keeps its date and is struck through: it is a renewal
+   to chase, not an empty cell. */
+.sub-chip.dead {
+  background: var(--bad-bg); color: var(--bad); border-color: var(--bad-line);
+  text-decoration: line-through;
+}
+.sub-none { color: var(--muted); }
+.sub-acts { display: flex; gap: 5px; margin-top: 6px; }
+.sub-acts .btn { font-size: 11.5px; padding: 3px 8px; }
+.sub-acts .btn.sub-x { color: var(--bad); }
 
 /* ===== Placement quiz ("where do I start?") ===== */
 /* The home entry sits above the "how to use" band and reads as the primary
@@ -2384,7 +2539,8 @@ body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
      On a phone the theme and language buttons normally live in the sidebar
      footer, and the deck hides the sidebar — leaving no way to switch either
      without going back to the library first. */
-  body[data-view="srs"] .topbar > .controls { display: inline-flex; }
+  body[data-view="srs"] .topbar > .controls,
+  body[data-view="users"] .topbar > .controls { display: inline-flex; }
   .brand-title { font-size: 15px; }
 
   /* ---- 3b. The book is a sheet, not a takeover ----------------------
@@ -2437,7 +2593,8 @@ body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
      was started with the book left open. */
   #dragPdf[hidden] { display: none; }
   body[data-view="drill"] #dragPdf,
-  body[data-view="srs"] #dragPdf { display: none; }
+  body[data-view="srs"] #dragPdf,
+  body[data-view="users"] #dragPdf { display: none; }
 
   /* ---- 4. A drawer wide enough to read ------------------------------
      At the desktop's 268px every unit read "Present contin…", which is

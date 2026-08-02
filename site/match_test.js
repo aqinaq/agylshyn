@@ -12,6 +12,12 @@ function matchesAsSet(input,answer){const want=listParts(answer);if(want.length<
 function isMatch(input,it){const t=norm(input);if(!t)return false;if(buildVariants(it.answer)[t])return true;if(it.blank&&buildVariants(it.blank)[t])return true;return matchesAsSet(input,it.answer);}
 
 const BOOKS=JSON.parse(require('fs').readFileSync(__dirname+'/data/index.json','utf8')).map(b=>b.id);
+// A paid book is not in site/data/ — split_content.py moves it to content/, out
+// of the deploy and out of the repository. The matcher still has to be measured
+// against it: those five books hold half the answer keys, and a checker that
+// only ever sees the free shelf is a checker with a blind spot exactly where
+// the answers are hardest.
+const bookPath=b=>[`${SITE}/data/${b}.json`,`${SITE}/../content/${b}.json`].find(p=>fs.existsSync(p));
 // learner-input transforms that SHOULD still count as correct
 const T=[
  ['exact',           a=>a],
@@ -27,7 +33,9 @@ const T=[
 ];
 const res={};
 for(const b of BOOKS){
-  const d=JSON.parse(fs.readFileSync(`${SITE}/data/${b}.json`,'utf8'));
+  const p=bookPath(b);
+  if(!p){console.error(`skipped ${b}: no JSON in site/data/ or content/`);continue;}
+  const d=JSON.parse(fs.readFileSync(p,'utf8'));
   const c={}; T.forEach(([n])=>c[n]=[0,0]);
   for(const u of d.units) for(const s of (u.subExercises||[])) for(const it of (s.items||[])){
     if(it.isExample) continue;
@@ -41,7 +49,7 @@ const names=T.map(t=>t[0]);
 process.stdout.write('transform'.padEnd(18)); BOOKS.forEach(b=>process.stdout.write(b.slice(0,11).padEnd(13))); console.log();
 for(const n of names){
   process.stdout.write(n.padEnd(18));
-  for(const b of BOOKS){const [ok,tot]=res[b][n];process.stdout.write(((100*ok/(tot||1)).toFixed(1)+'%').padEnd(13));}
+  for(const b of BOOKS){const [ok,tot]=(res[b]||{})[n]||[0,0];process.stdout.write((res[b]?(100*ok/(tot||1)).toFixed(1)+'%':'—').padEnd(13));}
   console.log();
 }
 
@@ -54,7 +62,9 @@ const HARD=[
  ['long prose answer — types the first clause', a=>a.length>90, a=>a.split(/[.;(]/)[0].trim()],
 ];
 for(const b of BOOKS){
-  const d=JSON.parse(fs.readFileSync(`${SITE}/data/${b}.json`,'utf8'));
+  const p=bookPath(b);
+  if(!p){console.error(`skipped ${b}: no JSON in site/data/ or content/`);continue;}
+  const d=JSON.parse(fs.readFileSync(p,'utf8'));
   const c={};HARD.forEach(([n])=>c[n]=[0,0]);
   for(const u of d.units) for(const s of (u.subExercises||[])) for(const it of (s.items||[])){
     if(it.isExample) continue; const a=(it.answer||'').trim(); if(!a) continue;
@@ -67,7 +77,9 @@ for(const b of BOOKS){
 console.log('\nfalse-positive check (nonsense input must be rejected):');
 let fp=0,fpt=0;
 for(const b of BOOKS){
-  const d=JSON.parse(fs.readFileSync(`${SITE}/data/${b}.json`,'utf8'));
+  const p=bookPath(b);
+  if(!p){console.error(`skipped ${b}: no JSON in site/data/ or content/`);continue;}
+  const d=JSON.parse(fs.readFileSync(p,'utf8'));
   for(const u of d.units) for(const s of (u.subExercises||[])) for(const it of (s.items||[])){
     if(it.isExample||!it.answer) continue;
     for(const junk of ['qwerty','zzz','a','the','1',' ']){ fpt++; if(isMatch(junk,it)) fp++; }

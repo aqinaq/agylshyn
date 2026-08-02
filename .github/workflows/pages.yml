@@ -42,6 +42,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The deploy is what publishes the site, so it is the right place to stop
+      # a paid book from being published by accident. This fails the job if any
+      # book listed in site/tools/tiers.json is still sitting in site/data/ —
+      # the one mistake that turns the paywall back into a picture of a lock.
+      - name: No paid content in the artifact
+        run: python3 site/tools/split_content.py --check
+
       - uses: actions/configure-pages@v5
 
       # ~800 MB of pdf/ and audio/. Uploading takes a few minutes.

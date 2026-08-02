@@ -45,6 +45,7 @@ window.SYNC = (function () {
   var lastError = null;             // i18n key of the last failure, for the modal
   var lastSync = null;              // ms epoch of the last successful round trip
   var providers = null;             // which sign-in methods the project actually has
+  var admin = null;                 // null = not asked yet, then true/false
 
   /* ================= session storage ================= */
 
@@ -59,6 +60,7 @@ window.SYNC = (function () {
 
   function saveSess(s) {
     sess = s;
+    if (!s) admin = null;             // a fresh session has to prove it again
     try {
       if (s) localStorage.setItem(SESS_KEY, JSON.stringify(s));
       else localStorage.removeItem(SESS_KEY);
@@ -358,6 +360,45 @@ window.SYNC = (function () {
       });
   }
 
+  /* ================= admin ================= */
+
+  // "Am I an admin?" is one row read: public.admins has a select-own policy and
+  // no write policy at all, so this answers for the caller and nobody else, and
+  // no client can put itself in that table. A project that never ran the admin
+  // half of the schema 404s here, which reads as "no admins exist" — the right
+  // answer for a fork that only wants progress sync.
+  //
+  // The in-flight request is shared: the panel repaints on every status tick and
+  // asks again each time it finds the answer still missing, which without this
+  // would be one request per tick for as long as the first one is in the air.
+  var adminReq = null;
+  function checkAdmin() {
+    if (!signedIn()) { admin = false; return Promise.resolve(false); }
+    if (adminReq) return adminReq;
+    adminReq = auth('/rest/v1/admins?select=user_id&limit=1').then(function (rows) {
+      adminReq = null;
+      // Signed out while this was in the air: that answer belongs to a session
+      // that no longer exists, and adopting it would leave the next reader with
+      // somebody else's badge.
+      admin = signedIn() ? !!(rows && rows.length) : null;
+      emit();
+      return admin === true;
+    }).catch(function () {
+      adminReq = null;
+      admin = signedIn() ? false : null;
+      emit();
+      return false;
+    });
+    return adminReq;
+  }
+
+  // The list of accounts. The flag above only decides whether the panel draws
+  // the section: this function re-derives the same answer inside Postgres from
+  // the verified token, so flipping `admin` in devtools gets a 403, not a list.
+  function listUsers() {
+    return auth('/rest/v1/rpc/admin_list_users', { method: 'POST', body: {} });
+  }
+
   /* ================= state <-> rows ================= */
 
   // Answer keys are 'bookId|…' (the same prefix the per-book reset in app.js
@@ -573,11 +614,21 @@ window.SYNC = (function () {
     attach: attach,
     onChange: function (fn) { listeners.push(fn); },
     signedIn: signedIn,
+    // A fresh access token, refreshed if it is about to expire. entitle.js needs
+    // one for every paid book it fetches, and this is the only place that knows
+    // when the current one has to be renewed.
+    token: token,
     loadSettings: loadSettings,
     providers: function () { return providers; },
     email: function () { return (sess && sess.user && sess.user.email) || null; },
     user: function () { return (sess && sess.user) || null; },
     refreshUser: function () { return fetchUser(true); },
+    // Tri-state on purpose: null means "not asked", and the panel asks then.
+    // Nothing else in the app needs it, so no reader who never opens the
+    // account panel ever pays for this request.
+    isAdmin: function () { return admin; },
+    refreshAdmin: checkAdmin,
+    listUsers: listUsers,
     setName: setName,
     setPassword: setPassword,
     signOutEverywhere: signOutEverywhere,

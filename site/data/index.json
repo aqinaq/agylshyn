@@ -7,12 +7,13 @@
  {
   "id": "grammar",
   "units": 145,
-  "tracked": 4053
+  "tracked": 4045
  },
  {
   "id": "advanced-grammar",
   "units": 116,
-  "tracked": 2484
+  "tracked": 2480,
+  "paid": 1
  },
  {
   "id": "vocab-elem",
@@ -22,17 +23,19 @@
  {
   "id": "vocab-preint",
   "units": 100,
-  "tracked": 2393
+  "tracked": 2391
  },
  {
   "id": "vocab-upint",
   "units": 101,
-  "tracked": 2626
+  "tracked": 2621,
+  "paid": 1
  },
  {
   "id": "vocab-adv",
   "units": 101,
-  "tracked": 2462
+  "tracked": 2451,
+  "paid": 1
  },
  {
   "id": "collocations",
@@ -42,26 +45,31 @@
  {
   "id": "academic",
   "units": 50,
-  "tracked": 1321
+  "tracked": 1321,
+  "paid": 1
  },
  {
   "id": "business",
   "units": 66,
-  "tracked": 1076
+  "tracked": 1076,
+  "paid": 1
  },
  {
   "id": "ielts-19",
   "units": 8,
-  "tracked": 320
+  "tracked": 320,
+  "paid": 1
  },
  {
   "id": "ielts-20",
   "units": 8,
-  "tracked": 320
+  "tracked": 320,
+  "paid": 1
  },
  {
   "id": "ielts-21",
   "units": 8,
-  "tracked": 320
+  "tracked": 320,
+  "paid": 1
  }
 ]
