@@ -18,13 +18,19 @@
     "list of books."
   ],
   "_free": [
-    "Five free books, and they are the ones a beginner starts with. The funnel is:",
+    "Six free books, and they are the ones a beginner starts with. The funnel is:",
     "learn on the free shelf, pay when the level you need is behind a lock.",
     "",
-    "  essential-grammar, grammar, vocab-elem, vocab-preint, collocations",
+    "  essential-grammar, grammar, vocab-elem, vocab-preint, collocations,",
+    "  ielts-19",
     "",
-    "Those five carry a learner from A1 to B1, which is where most people who will",
-    "never pay stop anyway."
+    "The first five carry a learner from A1 to B1, which is where most people who",
+    "will never pay stop anyway.",
+    "",
+    "ielts-19 is free for a different reason: it is the sample. Somebody deciding",
+    "whether to buy needs to work a whole IELTS test, not read about one, and one",
+    "of three tests given away is the cheapest way to show what the other two are.",
+    "The exam shelf is where the money is, so the free taste belongs there too."
   ],
   "paid": [
     "advanced-grammar",
@@ -32,7 +38,6 @@
     "vocab-adv",
     "academic",
     "business",
-    "ielts-19",
     "ielts-20",
     "ielts-21"
   ]

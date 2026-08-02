@@ -494,7 +494,7 @@ that is the coursebook text.
 
 ## Ақылы қабат (жазылым)
 
-Бес кітап тегін, сегізі жазылыммен. Жазылым — кітапқа емес, қосымшаға: бір
+Алты кітап тегін, жетеуі жазылыммен. Жазылым — кітапқа емес, қосымшаға: бір
 аккаунтта бір ғана жол, екі жоспардың бірі.
 
 | | Бағасы | Мерзімі |
@@ -503,9 +503,10 @@ that is the coursebook text.
 | Мәңгілік | 5000 ₸ | бітпейді |
 
 Тегін: `essential-grammar`, `grammar`, `vocab-elem`, `vocab-preint`,
-`collocations` — A1-ден B1-ге дейін жеткізетін бес кітап. Ақылы:
-`advanced-grammar`, `vocab-upint`, `vocab-adv`, `academic`, `business` және
-үш IELTS. Тізім — `tools/tiers.json`, басқа ешбір жерде қайталанбайды.
+`collocations` — A1-ден B1-ге дейін жеткізетін бес кітап, әрі `ielts-19` —
+емтихан сөресінің үлгісі. Ақылы: `advanced-grammar`, `vocab-upint`,
+`vocab-adv`, `academic`, `business` және қалған екі IELTS. Тізім —
+`tools/tiers.json`, басқа ешбір жерде қайталанбайды.
 
 **Құлып қайда шешіледі.** Браузерде емес. Ақылы кітаптың JSON-ы `site/`
 ішінде мүлде жоқ: `tools/split_content.py` оны репозиторийден тыс `content/`-ке
