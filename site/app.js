@@ -1898,6 +1898,23 @@
       authBody.appendChild(subRow);
     }
 
+    /* ---- classes ---- */
+    // Not admin-only: anybody may teach. The panel is about one account, so
+    // this is a door to the page rather than the page itself.
+    if (window.CLASSES && CLASSES.configured && !CLASSES.unavailable()) {
+      authSection(t('auth.secClasses'));
+      var cRow = el('div', 'auth-row');
+      var goCls = el('button', 'auth-primary', t('auth.classesOpen'));
+      goCls.type = 'button';
+      goCls.addEventListener('click', function () {
+        closeAuthModal();
+        location.hash = '#/class';
+      });
+      cRow.appendChild(goCls);
+      authBody.appendChild(cRow);
+      authBody.appendChild(el('div', 'auth-sub', t('auth.classesSub')));
+    }
+
     /* ---- users (admins only) ---- */
     // A door, not the room. This panel is about one account — its own sync,
     // name, password — and a roster of everybody else read badly in the middle
@@ -2037,7 +2054,7 @@
   var adminErr = null;
   var adminLoading = false;
 
-  function forgetAdminList() { adminUsers = null; adminErr = null; }
+  function forgetAdminList() { adminUsers = null; adminErr = null; forgetClasses(); }
 
   function loadAdminUsers(done) {
     if (adminLoading) return;
@@ -5314,6 +5331,321 @@
   }
 
   // #/drill or #/drill/<book>
+  /* ================= classes ================= */
+
+  /* A teacher with a group of students, which is how English is actually
+     studied here, had no way to use any of this: everything in the app is one
+     learner's own progress, and the only view of anybody else's is the admin
+     roster — the whole database, which is not a thing to hand to a tutor.
+
+     A class is a name, a six-character code, and whoever typed that code. The
+     owner sees counters: answered, right, last seen. Never what a student
+     typed. Every rule about who may see what is enforced in Postgres
+     (tools/supabase_schema.sql, "classes"); this page can only ask.
+
+     `classList` is module-level so that the sync tick, which repaints this page
+     like every other, does not refetch on each pass — the same trap the admin
+     roster hit, including the one that matters: the ERROR branch has to be
+     remembered too, or a failed request is retried forever. */
+
+  var classList = null;        // [{id,name,code,mine,students,...}] once loaded
+  var classErr = null;
+  var classRoster = {};        // class id -> rows, loaded when one is opened
+  var classOpen = null;        // which class's roster is on screen
+  var classBusy = false;
+  var classMsg = null;         // {text, bad} — the last thing that happened
+
+  function forgetClasses() {
+    classList = null;
+    classErr = null;
+    classRoster = {};
+    classOpen = null;
+  }
+
+  function openClasses() {
+    setView('class');
+    document.getElementById('brandTitle').textContent = t('cls.title');
+    document.getElementById('brandSub').textContent = t('cls.sub');
+    setBackLink(backHash);
+    renderClasses();
+  }
+
+  function onClassPage() { return body.getAttribute('data-view') === 'class'; }
+
+  function classNote(msg, withSignIn) {
+    var s = el('div', 'empty-state');
+    s.appendChild(el('span', 'big', '👩‍🏫'));
+    s.appendChild(el('div', null, msg));
+    if (withSignIn) {
+      var row = el('div', 'sub-actions');
+      row.style.justifyContent = 'center';
+      var b = el('button', 'btn primary', t('auth.signIn'));
+      b.addEventListener('click', openAuthModal);
+      row.appendChild(b);
+      s.appendChild(row);
+    }
+    main.appendChild(s);
+  }
+
+  function classFail(e) {
+    classMsg = { text: (e && e.message) || String(e), bad: true };
+    classBusy = false;
+    renderClasses();
+  }
+
+  function renderClasses() {
+    if (!onClassPage()) return;
+    clear(main);
+
+    if (!window.CLASSES || !CLASSES.configured) return classNote(t('cls.noSync'));
+    if (!syncOn() || !SYNC.signedIn()) return classNote(t('cls.needSignIn'), true);
+    if (CLASSES.unavailable()) return classNote(t('cls.notSetUp'));
+
+    if (classErr) {
+      classNote(classErr);
+      var again = el('div', 'sub-actions');
+      again.style.justifyContent = 'center';
+      var btn = el('button', 'btn', t('users.reload'));
+      btn.addEventListener('click', function () { forgetClasses(); renderClasses(); });
+      again.appendChild(btn);
+      main.appendChild(again);
+      return;
+    }
+    if (classList === null) {
+      classNote(t('cls.loading'));
+      CLASSES.mine().then(function (rows) {
+        classList = rows || [];
+        renderClasses();
+      }, function (e) {
+        classErr = e && e.missing ? t('cls.notSetUp') : ((e && e.message) || String(e));
+        renderClasses();
+      });
+      return;
+    }
+
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null, t('cls.h1')));
+    head.appendChild(el('div', 'instructions', t('cls.intro')));
+    main.appendChild(head);
+
+    if (classMsg) {
+      main.appendChild(el('div', 'cls-msg ' + (classMsg.bad ? 'bad' : 'ok'), classMsg.text));
+      classMsg = null;
+    }
+
+    var teaching = classList.filter(function (c) { return c.mine; });
+    var studying = classList.filter(function (c) { return !c.mine; });
+
+    main.appendChild(el('div', 'section-title', t('cls.teaching')));
+    if (!teaching.length) main.appendChild(el('div', 'note', t('cls.noneTeaching')));
+    teaching.forEach(function (c) { main.appendChild(classCard(c)); });
+    main.appendChild(classCreateForm());
+
+    main.appendChild(el('div', 'section-title', t('cls.studying')));
+    if (!studying.length) main.appendChild(el('div', 'note', t('cls.noneStudying')));
+    studying.forEach(function (c) { main.appendChild(classCard(c)); });
+    main.appendChild(classJoinForm());
+
+    // What a teacher can see, said where a student can read it. A progress
+    // board that does not say what it shows is a surprise waiting to happen.
+    main.appendChild(el('div', 'note cls-privacy', t('cls.privacy')));
+  }
+
+  function classCard(c) {
+    var box = el('div', 'cls-card');
+    var head = el('div', 'cls-head');
+    head.appendChild(el('b', 'cls-name', c.name));
+    if (c.mine) {
+      head.appendChild(el('span', 'cls-count', t('cls.students', { n: c.students })));
+    } else {
+      head.appendChild(el('span', 'cls-count', t('cls.by', { name: c.owner_name || '—' })));
+    }
+    box.appendChild(head);
+
+    if (c.mine && c.code) {
+      // The code is the whole product for a teacher: they read it out once and
+      // the class exists. It gets the big treatment and a copy button.
+      var codeRow = el('div', 'cls-code-row');
+      codeRow.appendChild(el('span', 'muted', t('cls.code')));
+      codeRow.appendChild(el('b', 'cls-code', c.code));
+      var copy = el('button', 'btn small ghost', t('cls.copy'));
+      copy.addEventListener('click', function () {
+        copyText(c.code);
+        copy.textContent = t('cls.copied');
+        setTimeout(function () { copy.textContent = t('cls.copy'); }, 1500);
+      });
+      codeRow.appendChild(copy);
+      box.appendChild(codeRow);
+    }
+
+    var acts = el('div', 'sub-actions');
+    if (c.mine) {
+      var open = el('button', 'btn small primary',
+        t(classOpen === c.id ? 'cls.hide' : 'cls.open'));
+      open.addEventListener('click', function () {
+        classOpen = classOpen === c.id ? null : c.id;
+        renderClasses();
+      });
+      acts.appendChild(open);
+
+      var del = el('button', 'btn small danger', t('cls.delete'));
+      del.addEventListener('click', function () {
+        if (!confirm(t('cls.deleteConfirm', { name: c.name }))) return;
+        CLASSES.remove(c.id).then(function () {
+          forgetClasses();
+          classMsg = { text: t('cls.deleted', { name: c.name }) };
+          renderClasses();
+        }, classFail);
+      });
+      acts.appendChild(del);
+    } else {
+      var leave = el('button', 'btn small', t('cls.leave'));
+      leave.addEventListener('click', function () {
+        if (!confirm(t('cls.leaveConfirm', { name: c.name }))) return;
+        CLASSES.leave(c.id).then(function () {
+          forgetClasses();
+          classMsg = { text: t('cls.left', { name: c.name }) };
+          renderClasses();
+        }, classFail);
+      });
+      acts.appendChild(leave);
+    }
+    box.appendChild(acts);
+
+    if (c.mine && classOpen === c.id) box.appendChild(classRosterBox(c));
+    return box;
+  }
+
+  function classRosterBox(c) {
+    var box = el('div', 'cls-roster');
+    var rows = classRoster[c.id];
+    if (rows === undefined) {
+      box.appendChild(el('div', 'note', t('cls.loading')));
+      CLASSES.progress(c.id).then(function (list) {
+        classRoster[c.id] = list || [];
+        renderClasses();
+      }, function (e) {
+        // Remember the failure as a value, or the repaint that follows asks
+        // again, and again, for as long as the page is open.
+        classRoster[c.id] = [];
+        classMsg = { text: (e && e.message) || String(e), bad: true };
+        renderClasses();
+      });
+      return box;
+    }
+    if (!rows.length) {
+      box.appendChild(el('div', 'note', t('cls.empty')));
+      return box;
+    }
+
+    var tbl = el('table', 'cls-table');
+    var thead = el('thead');
+    var hr = el('tr');
+    [t('cls.th.student'), t('cls.th.answers'), t('cls.th.accuracy'),
+     t('cls.th.books'), t('cls.th.seen'), ''].forEach(function (h) {
+      hr.appendChild(el('th', null, h));
+    });
+    thead.appendChild(hr);
+    tbl.appendChild(thead);
+
+    var tb = el('tbody');
+    rows.forEach(function (r) {
+      var tr = el('tr');
+      var who = el('td');
+      who.appendChild(el('b', null, r.name || (r.email || '').split('@')[0]));
+      who.appendChild(el('span', 'muted cls-mail', r.email || ''));
+      tr.appendChild(who);
+      tr.appendChild(el('td', 'num', num(r.answers || 0)));
+      var acc = r.answers ? Math.round((r.correct || 0) / r.answers * 100) : 0;
+      tr.appendChild(el('td', 'num', r.answers ? acc + '%' : '—'));
+      tr.appendChild(el('td', 'num', String(r.books || 0)));
+      tr.appendChild(el('td', null, r.last_active ? authDate(r.last_active) : '—'));
+      var act = el('td');
+      var kick = el('button', 'btn small ghost', t('cls.remove'));
+      kick.addEventListener('click', function () {
+        if (!confirm(t('cls.removeConfirm', { name: r.name || r.email }))) return;
+        CLASSES.leave(c.id, r.user_id).then(function () {
+          delete classRoster[c.id];
+          classList = null;                 // the student count moved
+          renderClasses();
+        }, classFail);
+      });
+      act.appendChild(kick);
+      tr.appendChild(act);
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    box.appendChild(tbl);
+    return box;
+  }
+
+  function classCreateForm() {
+    var box = el('div', 'cls-form');
+    var input = el('input', 'cls-in');
+    input.type = 'text';
+    input.placeholder = t('cls.namePh');
+    input.setAttribute('aria-label', t('cls.namePh'));
+    input.maxLength = 60;
+    var go = el('button', 'btn primary', t('cls.create'));
+    function submit() {
+      var name = input.value.trim();
+      if (!name || classBusy) { input.focus(); return; }
+      classBusy = true;
+      go.disabled = true;
+      CLASSES.create(name).then(function (row) {
+        classBusy = false;
+        forgetClasses();
+        var made = (row && row.length ? row[0] : row) || {};
+        classMsg = { text: t('cls.created', { name: made.name || name, code: made.code || '' }) };
+        renderClasses();
+      }, classFail);
+    }
+    go.addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    box.appendChild(input);
+    box.appendChild(go);
+    return box;
+  }
+
+  function classJoinForm() {
+    var box = el('div', 'cls-form');
+    var input = el('input', 'cls-in cls-code-in');
+    input.type = 'text';
+    input.placeholder = t('cls.codePh');
+    input.setAttribute('aria-label', t('cls.codePh'));
+    input.maxLength = 6;
+    input.autocapitalize = 'characters';
+    var go = el('button', 'btn primary', t('cls.join'));
+    function submit() {
+      var code = input.value.trim().toUpperCase();
+      if (!code || classBusy) { input.focus(); return; }
+      classBusy = true;
+      go.disabled = true;
+      CLASSES.join(code).then(function (row) {
+        classBusy = false;
+        forgetClasses();
+        var got = (row && row.length ? row[0] : row) || {};
+        classMsg = { text: t('cls.joined', { name: got.name || code }) };
+        renderClasses();
+      }, function (e) {
+        // The one error worth a sentence of its own: a code that does not
+        // exist is a typo, not a broken app.
+        if (e && (e.code === 'P0002' || /no class with that code/i.test(e.message || ''))) {
+          classBusy = false;
+          classMsg = { text: t('cls.badCode'), bad: true };
+          renderClasses();
+          return;
+        }
+        classFail(e);
+      });
+    }
+    go.addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    box.appendChild(input);
+    box.appendChild(go);
+    return box;
+  }
+
   function openDrill(scope) {
     if (scope !== 'all' && !bookMeta(scope)) { location.hash = '#/drill'; return; }
     setView('drill');
@@ -6343,6 +6675,7 @@
       };
     }
     if (h.indexOf('#/users') === 0) return { view: 'users' };
+    if (h.indexOf('#/class') === 0) return { view: 'class' };
     // '#/help' and the old '#/books' both land on home; the guide is a dialog
     if (h.indexOf('#/help') === 0) return { view: 'home', help: true };
     return { view: 'home' };
@@ -6365,7 +6698,8 @@
     // The deck is a destination like a session is: leaving a book for it and
     // coming back should land on the unit that was open, not on the library.
     // The user list is the same kind of side trip.
-    var aside = r.view === 'drill' || r.view === 'srs' || r.view === 'users';
+    var aside = r.view === 'drill' || r.view === 'srs' || r.view === 'users' ||
+      r.view === 'class';
     if (!aside) backHash = location.hash || '#/';
     // Speech is the exception: a session and the deck keep reading, but leaving
     // a book for the roster is leaving the book.
@@ -6373,6 +6707,7 @@
     if (r.view === 'drill') { if (pdfOpen()) hidePdf(false); openDrill(r.id); return; }
     if (r.view === 'srs') { if (pdfOpen()) hidePdf(false); openSrs(r.sub); return; }
     if (r.view === 'users') { if (pdfOpen()) hidePdf(false); openUsers(); return; }
+    if (r.view === 'class') { if (pdfOpen()) hidePdf(false); openClasses(); return; }
     if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();

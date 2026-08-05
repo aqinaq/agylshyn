@@ -76,6 +76,14 @@ function mock(s, opts) {
   opts = opts || {};
   const calls = { grant: [], revoke: [], content: [] };
   let access = opts.access === undefined ? null : opts.access;
+  // Classes this fake project holds. A test can seed some; class_create adds
+  // to the same list, so "create it, then see it in the list" is a real round
+  // trip rather than two independent fixtures.
+  const classes = (opts.classes && opts.classes !== 404 ? opts.classes : []).map(c => ({
+    id: c.id, owner: c.owner || USER.id, name: c.name, code: c.code,
+    members: c.members ? c.members.slice() : [],
+    created_at: c.created_at || '2026-07-01T10:00:00Z'
+  }));
 
   return s.send('Fetch.enable', {
     // Not '*supabase.co*': that also matches supabase.config.js, which would
@@ -147,6 +155,79 @@ function mock(s, opts) {
         return send(200, '[{"data":' + raw + '}]');
       }
 
+      /* ---- classes ----
+         A small in-memory Postgres: the rules the real functions enforce
+         (a code belongs to its owner, a roster is the owner's alone, a wrong
+         code is P0002) are what the page is being tested against, so they are
+         reproduced here rather than waved through. `classes: 404` plays a
+         project that never ran that half of the schema. */
+      if (url.includes('/rest/v1/rpc/class_') || url.includes('/rest/v1/rpc/my_classes')) {
+        if (opts.classes === 404) return reply(404, { message: 'Not Found' });
+        const body = posted();
+        if (url.includes('my_classes')) {
+          // The real function's where-clause: mine to teach, or one I joined.
+          // Without this the mock would hand back every class on the project,
+          // which is the one thing the page must never show.
+          return reply(200, classes.filter(
+            c => c.owner === USER.id || c.members.indexOf(USER.id) > -1
+          ).map(c => ({
+            id: c.id, name: c.name,
+            code: c.owner === USER.id ? c.code : null,
+            mine: c.owner === USER.id,
+            students: c.members.length,
+            owner_name: c.owner === USER.id ? 'Owner' : 'Another Teacher',
+            created_at: c.created_at
+          })));
+        }
+        if (url.includes('class_create')) {
+          const row = { id: 'c-' + (classes.length + 1), owner: USER.id,
+                        name: String(body.p_name || '').trim().slice(0, 60),
+                        code: 'ABC' + (classes.length + 1) + 'XY', members: [],
+                        created_at: new Date().toISOString() };
+          if (!row.name) return reply(400, { message: 'a class needs a name' });
+          classes.push(row);
+          return reply(200, row);
+        }
+        if (url.includes('class_join')) {
+          const code = String(body.p_code || '').trim().toUpperCase();
+          const row = classes.find(c => c.code === code);
+          if (!row) return reply(400, { message: 'no class with that code', code: 'P0002' });
+          if (row.owner === USER.id) return reply(400, { message: 'this is your own class' });
+          if (row.members.indexOf(USER.id) < 0) row.members.push(USER.id);
+          return reply(200, row);
+        }
+        if (url.includes('class_progress')) {
+          const row = classes.find(c => c.id === body.p_class);
+          if (!row || row.owner !== USER.id) return reply(403, { message: 'not your class' });
+          return reply(200, row.members.map((id, i) => ({
+            user_id: id,
+            email: id === USER.id ? USER.email : 'student' + i + '@example.com',
+            name: id === USER.id ? 'Owner' : 'Student ' + (i + 1),
+            joined_at: '2026-07-01T10:00:00Z',
+            books: i + 1, answers: 100 * (i + 1), correct: 75 * (i + 1),
+            last_active: '2026-08-01T09:00:00Z'
+          })));
+        }
+        if (url.includes('class_leave')) {
+          const row = classes.find(c => c.id === body.p_class);
+          const target = body.p_user || USER.id;
+          if (!row) return reply(200, null);
+          if (target !== USER.id && row.owner !== USER.id) {
+            return reply(403, { message: 'not your class' });
+          }
+          row.members = row.members.filter(m => m !== target);
+          return reply(200, null);
+        }
+        if (url.includes('class_delete')) {
+          const i = classes.findIndex(c => c.id === body.p_class);
+          if (i < 0 || classes[i].owner !== USER.id) {
+            return reply(403, { message: 'not your class' });
+          }
+          classes.splice(i, 1);
+          return reply(200, null);
+        }
+      }
+
       if (url.includes('/rest/v1/progress')) return reply(200, []);
       return reply(200, {});
     });
@@ -154,7 +235,8 @@ function mock(s, opts) {
     calls,
     // Lets a test change the answer mid-session — "they have just paid, press
     // Check again" is exactly the case the recheck button exists for.
-    setAccess: a => { access = a; }
+    setAccess: a => { access = a; },
+    classes: () => classes
   }));
 }
 

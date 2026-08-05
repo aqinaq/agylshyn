@@ -728,7 +728,7 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
      clear it. */
   body[data-view="drill"],
   body[data-view="srs"],
-  body[data-view="users"] { --tabbar-h: 0px; }
+  body[data-view="users"], body[data-view="class"] { --tabbar-h: 0px; }
   .icon-btn { display: block; }
   .brand-sub { display: none; }
   .dragger { display: none; }
@@ -804,12 +804,13 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
    is the whole point of it. The word deck ("srs") borrows the same shell, for
    the same reason: it belongs to no book, so a book's unit list and section
    tabs would only be misleading there. */
-body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]):not([data-view="users"]) .topbar,
-body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]):not([data-view="users"]) .layout { display: none; }
+body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]):not([data-view="users"]):not([data-view="class"]) .topbar,
+body:not([data-view="book"]):not([data-view="drill"]):not([data-view="srs"]):not([data-view="users"]):not([data-view="class"]) .layout { display: none; }
 body[data-view="book"] .screen,
 body[data-view="drill"] .screen,
 body[data-view="srs"] .screen,
-body[data-view="users"] .screen { display: none; }
+body[data-view="users"] .screen,
+body[data-view="class"] .screen { display: none; }
 body[data-view="drill"] .sidebar,
 body[data-view="drill"] .pdf-pane,
 body[data-view="drill"] .dragger,
@@ -822,16 +823,22 @@ body[data-view="users"] .sidebar,
 body[data-view="users"] .pdf-pane,
 body[data-view="users"] .dragger,
 body[data-view="users"] #menuBtn,
+body[data-view="class"] .sidebar,
+body[data-view="class"] .pdf-pane,
+body[data-view="class"] .dragger,
+body[data-view="class"] #menuBtn,
 /* whole bar, not just its buttons: on mobile .tabs is a fixed bottom strip and
    an emptied one would still sit there as a bare line */
 body[data-view="drill"] .tabs,
 body[data-view="srs"] .tabs,
-body[data-view="users"] .tabs { display: none; }
+body[data-view="users"] .tabs,
+body[data-view="class"] .tabs { display: none; }
 body[data-view="drill"] .main,
 body[data-view="srs"] .main { margin: 0 auto; max-width: 780px; }
 /* Wider than the deck and the sessions: this one holds a six-column table, and
    780px would put it in a sideways scroll on a laptop for no reason. */
-body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
+body[data-view="users"] .main,
+body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
 
 .screen { min-height: 100vh; min-height: 100dvh; }
 
@@ -2565,7 +2572,8 @@ body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
      footer, and the deck hides the sidebar — leaving no way to switch either
      without going back to the library first. */
   body[data-view="srs"] .topbar > .controls,
-  body[data-view="users"] .topbar > .controls { display: inline-flex; }
+  body[data-view="users"] .topbar > .controls,
+  body[data-view="class"] .topbar > .controls { display: inline-flex; }
   .brand-title { font-size: 15px; }
 
   /* ---- 3b. The book is a sheet, not a takeover ----------------------
@@ -2619,7 +2627,8 @@ body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
   #dragPdf[hidden] { display: none; }
   body[data-view="drill"] #dragPdf,
   body[data-view="srs"] #dragPdf,
-  body[data-view="users"] #dragPdf { display: none; }
+  body[data-view="users"] #dragPdf,
+  body[data-view="class"] #dragPdf { display: none; }
 
   /* ---- 4. A drawer wide enough to read ------------------------------
      At the desktop's 268px every unit read "Present contin…", which is
@@ -3460,3 +3469,59 @@ body.side-min .ue-head { display: none; }
 }
 .locked-link { color: var(--muted); }
 .locked-link:hover { color: var(--accent); }
+
+/* ===== classes ===== */
+
+.cls-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 15px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.cls-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cls-name { font-size: 16px; }
+.cls-count { color: var(--muted); font-size: 13px; }
+
+.cls-code-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; font-size: 13px; }
+.cls-code {
+  padding: 3px 12px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 22px;
+  letter-spacing: .18em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cls-form { display: flex; gap: 9px; flex-wrap: wrap; margin: 10px 0 4px; }
+.cls-in {
+  flex: 1 1 240px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.cls-in:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cls-code-in { flex: 0 0 150px; text-transform: uppercase; letter-spacing: .18em; font-size: 17px; }
+
+.cls-msg { padding: 9px 13px; border-radius: var(--radius); margin-bottom: 12px; font-size: 13.5px; }
+.cls-msg.ok { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok); }
+.cls-msg.bad { background: var(--bad-bg); border: 1px solid var(--bad-line); color: var(--bad); }
+
+.cls-roster { margin-top: 14px; overflow-x: auto; }
+.cls-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cls-table th, .cls-table td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); text-align: left; white-space: nowrap; }
+.cls-table th { color: var(--muted); font-weight: 600; }
+.cls-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.cls-mail { display: block; font-size: 11.5px; }
+.cls-privacy { margin-top: 22px; }
+
+@media (max-width: 560px) {
+  .cls-code { font-size: 18px; }
+  .cls-form .btn { flex: 1 1 auto; }
+}
