@@ -32,6 +32,23 @@
     "of three tests given away is the cheapest way to show what the other two are.",
     "The exam shelf is where the money is, so the free taste belongs there too."
   ],
+  "sample": {
+    "_comment": [
+      "How many units of each paid book are given away as a free sample.",
+      "build_samples.py writes site/data/sample/<id>.json with that many units,",
+      "and the app opens a locked book onto them instead of a bare lock screen.",
+      "",
+      "This is a pricing decision, not a technical one. Two units of a grammar",
+      "book is a spread and a half — enough to work, not enough to learn from.",
+      "An IELTS unit is a whole forty-question test section, so those give one,",
+      "and ielts-19 is already free in its entirety as the exam-shelf sample.",
+      "",
+      "0 means no sample at all: the book keeps the plain lock screen."
+    ],
+    "default": 2,
+    "ielts-20": 1,
+    "ielts-21": 1
+  },
   "paid": [
     "advanced-grammar",
     "vocab-upint",

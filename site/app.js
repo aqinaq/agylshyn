@@ -1004,6 +1004,15 @@
     if (pending[id]) return pending[id];
     pending[id] = fetchBook(id)
       .catch(function (e) {
+        // Locked, but not necessarily a dead end: every paid book publishes its
+        // first unit or two as a plain static file. Open those instead of the
+        // bare lock screen, and let the reader work rather than read about it.
+        if (e && e.locked && window.ENTITLE) {
+          return ENTITLE.fetchSample(id).catch(function () { throw e; });
+        }
+        throw e;
+      })
+      .catch(function (e) {
         // one retry: a dropped connection should not strand the reader.
         // A locked book is a settled answer, not a flaky one — retrying it just
         // doubles the requests and delays the unlock screen by another round trip.
@@ -1017,6 +1026,10 @@
         // not units and not gradable, so they hang off the book rather than
         // being forced into the unit shape; only Cambridge 21 has them today.
         var bk = { id: id, meta: bookMeta(id), units: d.units || [], prompts: d.prompts || [] };
+        // A sample carries only its first units, and has to say so everywhere:
+        // the progress bars, the unit list and the statistics page would all
+        // otherwise report a two-unit book as finished.
+        if (d.sample) { bk.sample = true; bk.unitsOf = d.unitsOf || bk.units.length; }
         cache[id] = bk;
         delete pending[id];
         return bk;
@@ -2127,6 +2140,17 @@
       // would only ever appear on the *second* opening — which reads as "it does
       // not work".
       if (authModal && !authModal.hidden && authRepaint) authRepaint();
+      // A reader looking at a sample who has just been granted a subscription
+      // must get the whole book, not the two units they were given. The cached
+      // copy IS the sample, so it has to go before anything re-renders.
+      if (book && book.sample && ENTITLE.active()) {
+        var id = book.id;
+        delete cache[id];
+        delete pending[id];
+        book = null;
+        openBook(id, null, null);
+        return;
+      }
       if (body.getAttribute('data-view') !== 'home') return;
       var ae = document.activeElement;
       if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
@@ -2224,6 +2248,19 @@
       unitListEl.appendChild(li);
     });
     if (!shown) unitListEl.appendChild(el('div', 'empty-hint', t('sidebar.empty')));
+
+    // What the sample does not include, said where the reader is looking for
+    // it: at the bottom of a very short list of units.
+    if (book.sample && !q) {
+      var rest = (book.unitsOf || book.units.length) - book.units.length;
+      var li0 = el('li', 'unit-extra');
+      var lock = el('a', 'unit-link ue-link locked-link');
+      lock.href = '#/b/' + book.id + '/unlock';
+      lock.appendChild(el('span', 'u-num', '🔒'));
+      lock.appendChild(el('span', 'u-title', t('sample.more', { n: rest })));
+      li0.appendChild(lock);
+      unitListEl.appendChild(li0);
+    }
 
     // The Writing and Speaking tasks are not units — they are not numbered,
     // not graded and not part of the progress bar — so they sit under the list
@@ -4154,11 +4191,30 @@
     return box;
   }
 
+  /* The line that has to be on every page of a sample: this is two units of a
+     book, not a book. Without it a reader finishes unit 2, sees 100%, and
+     concludes the product is tiny — which is the opposite of what a sample is
+     for. */
+  function sampleBanner() {
+    if (!book || !book.sample) return null;
+    var box = el('div', 'sample-bar');
+    box.appendChild(el('span', 'sb-tag', t('sample.tag')));
+    box.appendChild(document.createTextNode(
+      t('sample.body', { n: book.units.length, of: book.unitsOf || book.units.length })));
+    var go = el('a', 'btn small primary', t('sample.unlock'));
+    go.href = '#/b/' + book.id + '/unlock';
+    box.appendChild(go);
+    return box;
+  }
+
   function renderUnit(no) {
     var u = null;
     for (var i = 0; i < book.units.length; i++) {
       if (book.units[i].unit === no) { u = book.units[i]; break; }
     }
+    // In a sample every other unit of the book exists — it is simply not in
+    // this file. That is a lock, not a missing page.
+    if (!u && book.sample) { showLocked(book.id, 'paid'); return; }
     if (!u) { renderNotFound(no); return; }
     stopExamTick();
 
@@ -4173,6 +4229,9 @@
     save();
     setTab('units');
     clear(main);
+
+    var sb = sampleBanner();
+    if (sb) main.appendChild(sb);
 
     var head = el('div', 'page-head');
     // An IELTS unit is a test section, and its title already says so
@@ -4350,6 +4409,8 @@
     clear(main);
     afterChange = function () { renderSidebar(); refreshBadge(); bookChanged(book); };
 
+    var sbE = sampleBanner();
+    if (sbE) main.appendChild(sbE);
     var head = el('div', 'page-head');
     head.appendChild(el('h1', null, t('err.h1')));
     main.appendChild(head);
@@ -4476,6 +4537,8 @@
     var streak = dayStreak();
     var due = dueCount(book);
 
+    var sbS = sampleBanner();
+    if (sbS) main.appendChild(sbS);
     var head = el('div', 'page-head');
     head.appendChild(el('h1', null, t('stats.h1')));
     head.appendChild(el('div', 'instructions', (book.meta && book.meta.title) || book.id));
@@ -6242,6 +6305,7 @@
     if (pdfOpen() && (sub === 'errors' || sub === 'stats') && window.innerWidth <= 860) {
       hidePdf(false);
     }
+    if (sub === 'unlock') { showLocked(book.id, 'paid'); return; }
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
     else if (sub === 'exam') renderExam(arg);
@@ -6269,7 +6333,7 @@
     // '#/b/<id>/tasks/<test>' — the Writing and Speaking half of an IELTS test.
     var tk = /^#\/b\/([a-z0-9-]+)\/tasks(?:\/(\d+))?/.exec(h);
     if (tk) return { view: 'book', id: tk[1], sub: 'tasks', arg: tk[2] ? parseInt(tk[2], 10) : null };
-    var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)(\/exam)?|\/(errors|stats))?/.exec(h);
+    var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)(\/exam)?|\/(errors|stats|unlock))?/.exec(h);
     if (m) {
       return {
         view: 'book',

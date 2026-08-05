@@ -1,0 +1,345 @@
+{
+ "id": "academic",
+ "sample": true,
+ "unitsOf": 50,
+ "units": [
+  {
+   "unit": 1,
+   "title": "What is special about academic English?",
+   "pdfIntroPage": 12,
+   "pdfExercisePage": 13,
+   "pdfPages": [
+    13
+   ],
+   "subExercises": [
+    {
+     "number": "1.1",
+     "type": "items",
+     "instructions": "The words in the box each have an everyday use and an academic use. Complete each",
+     "items": [
+      {
+       "n": 2,
+       "answer": "focus, focus",
+       "question": "The photograph was useless. It was blurred and out of …"
+      },
+      {
+       "n": 3,
+       "answer": "confirmed, confirms / confirmed",
+       "question": "I went online and … my flight reservation."
+      },
+      {
+       "n": 4,
+       "answer": "generates, generates",
+       "question": "The power plant … electricity for the whole region."
+      },
+      {
+       "n": 5,
+       "answer": "indentified, identified",
+       "question": "The murderer was … from fingerprints discovered at the scene."
+      },
+      {
+       "n": 6,
+       "answer": "turn, turn",
+       "question": "I saw her … to her husband and whisper something in his ear."
+      },
+      {
+       "n": 7,
+       "answer": "underlines, underlines / underlined",
+       "question": "He always … every new word when he’s reading."
+      },
+      {
+       "n": 8,
+       "answer": "solid, solid",
+       "question": "The liquid became … as the temperature was lowered."
+      }
+     ]
+    },
+    {
+     "number": "1.2",
+     "type": "items",
+     "instructions": "Rewrite the underlined words using more formal words and phrases from B opposite.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "The book is primarily concerned with the problem of policing the internet.",
+       "question": "The book is mainly concerned with the problem of policing the internet.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 2,
+       "answer": "Virtually every school in the county had reported problems with the new system.",
+       "question": "Almost every school in the county had reported problems with the new system.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 3,
+       "answer": "The work of the Institute is not solely devoted to cancer research.",
+       "question": "The work of the Institute is not only devoted to cancer research.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 4,
+       "answer": "Fundamentally, we believe we have demonstrated a significant link between the two events.",
+       "question": "Basically, we believe we have demonstrated a significant link between the two events.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 5,
+       "answer": "Several research teams have attempted to solve the problem, without success.",
+       "question": "Several research teams have had a shot at solving the problem, without success.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 6,
+       "answer": "The reaction is characteristic of the way large corporations keep control of their markets.",
+       "question": "The reaction is typical of the way large corporations keep control of their markets.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      }
+     ]
+    },
+    {
+     "number": "1.3",
+     "type": "items",
+     "instructions": "Read the text and answer the questions.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "depends heavily, be produced cheaply",
+       "question": "Underline two verbs followed by adverbs …"
+      },
+      {
+       "n": 2,
+       "answer": "relatively easily",
+       "question": "Underline two adverbs next to each other …"
+      },
+      {
+       "n": 3,
+       "answer": "production, reliance, discovery, claim",
+       "question": "What are the noun forms of the verbs …"
+      },
+      {
+       "n": 4,
+       "answer": "new and different from previous ways",
+       "question": "A novel is a kind of book, but what does …"
+      }
+     ]
+    },
+    {
+     "number": "1.4",
+     "type": "items",
+     "instructions": "Complete the second sentence using a noun phrase. Use a dictionary if necessary.",
+     "items": [
+      {
+       "n": 2,
+       "answer": "development of, revolution",
+       "question": "When they developed antibiotics, it revolutionised medicine."
+      },
+      {
+       "n": 3,
+       "answer": "solution, alteration",
+       "question": "They solved the problem by altering the deck of the bridge."
+      },
+      {
+       "n": 4,
+       "answer": "exploration, challenges",
+       "question": "Exploring Antarctica has always been especially challenging."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "unit": 2,
+   "title": "Key nouns",
+   "pdfIntroPage": 14,
+   "pdfExercisePage": 15,
+   "pdfPages": [
+    15
+   ],
+   "subExercises": [
+    {
+     "number": "2.1",
+     "type": "items",
+     "instructions": "Look at the nouns in A and B opposite and note the prepositions that are associated",
+     "items": [
+      {
+       "n": 1,
+       "answer": "of",
+       "question": "Which preposition often follows the nouns in both A and B?"
+      },
+      {
+       "n": 2,
+       "answer": "on (on the subject/issue/topic of)",
+       "question": "Which preposition is often used before the nouns in A?"
+      },
+      {
+       "n": 3,
+       "answer": "beyond the scope of",
+       "question": "Which preposition would fill this gap – The postwar period is … the scope of this"
+      }
+     ]
+    },
+    {
+     "number": "2.2",
+     "type": "items",
+     "instructions": "Choose the best noun to complete each sentence.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "issues",
+       "question": "Environmental topics / issues / principles should be at the top of today’s political agenda."
+      },
+      {
+       "n": 2,
+       "answer": "topics",
+       "question": "In the exam students had to choose three from a choice of ten essay subjects / theories / topics."
+      },
+      {
+       "n": 3,
+       "answer": "theory",
+       "question": "There are still people who are reluctant to accept Darwin’s nature / topic / theory of evolution."
+      },
+      {
+       "n": 4,
+       "answer": "theme",
+       "question": "The professor decided to take moral courage as the issue / theme / model for his inaugural lecture."
+      },
+      {
+       "n": 5,
+       "answer": "model",
+       "question": "Economists used a model / principle / topic of human behaviour to help them forecast likely …"
+      },
+      {
+       "n": 6,
+       "answer": "Principle",
+       "question": "The Peter Issue / Principle / Theme states that members of a hierarchical group will usually end up …"
+      }
+     ]
+    },
+    {
+     "number": "2.3",
+     "type": "items",
+     "instructions": "Match the beginnings and endings of the sentences.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "g"
+      },
+      {
+       "n": 2,
+       "answer": "f"
+      },
+      {
+       "n": 3,
+       "answer": "h"
+      },
+      {
+       "n": 4,
+       "answer": "e"
+      },
+      {
+       "n": 5,
+       "answer": "b"
+      },
+      {
+       "n": 6,
+       "answer": "a"
+      },
+      {
+       "n": 7,
+       "answer": "d"
+      },
+      {
+       "n": 8,
+       "answer": "c"
+      }
+     ]
+    },
+    {
+     "number": "2.4",
+     "type": "items",
+     "instructions": "Correct the mistakes in the underlined phrases.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "Recent research that was carried out"
+      },
+      {
+       "n": 2,
+       "answer": "a strong case for boosting"
+      },
+      {
+       "n": 3,
+       "answer": "Its methodology"
+      },
+      {
+       "n": 4,
+       "answer": "their views on how best to prevent crime"
+      },
+      {
+       "n": 5,
+       "answer": "beyond the scope of the study"
+      },
+      {
+       "n": 6,
+       "answer": "raising awareness of the issue"
+      }
+     ]
+    },
+    {
+     "number": "2.5",
+     "type": "items",
+     "instructions": "These book titles have been rephrased to sound more academic. Complete them using words",
+     "items": [
+      {
+       "n": 1,
+       "answer": "Nature",
+       "question": "What democracy is really like – The … of Democracy"
+      },
+      {
+       "n": 2,
+       "answer": "Significance",
+       "question": "Why dreams are important – The … of Dreams"
+      },
+      {
+       "n": 3,
+       "answer": "Features",
+       "question": "What do we see in glaciated landscapes? – The … of Glaciated Landscapes"
+      },
+      {
+       "n": 4,
+       "answer": "Assessment",
+       "question": "How to evaluate language skills – The … of Language Skills"
+      },
+      {
+       "n": 5,
+       "answer": "Patterns",
+       "question": "Ways in which human behaviour repeats itself – … of Human Behaviour"
+      },
+      {
+       "n": 6,
+       "answer": "Identification",
+       "question": "How to recognise diff erent species of bees – The … of Bees"
+      },
+      {
+       "n": 7,
+       "answer": "Perspectives",
+       "question": "Thinking about taxation from diff erent angle – … on Modern Taxation"
+      },
+      {
+       "n": 8,
+       "answer": "Principles",
+       "question": "How to make sure that a business is successful – The … of Successful Business"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

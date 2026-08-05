@@ -383,8 +383,9 @@ async function run() {
 
   /* ================= every book opens ================= */
   // This pass is signed out, which is what most readers are. A free book has to
-  // open; a paid one has to reach the lock screen rather than an error, and is
-  // opened for real in tests/paywall_e2e.js against a mocked subscription.
+  // open whole; a paid one opens onto its free sample — a couple of units and a
+  // banner saying so — rather than an error or a bare lock. The lock screen
+  // itself, and a subscribed reader, are tests/paywall_e2e.js's job.
   r.head('every book opens');
   const paid = new Set(await s.eval(
     `(window.ENTITLE ? (window.BOOKS||[]).filter(b => ENTITLE.isPaid(b.id)).map(b=>b.id) : [])`));
@@ -393,14 +394,16 @@ async function run() {
       location.hash = '#/b/${id}';
       await new Promise(r=>setTimeout(r,500));
       return { view: document.body.getAttribute('data-view'),
-               units: document.querySelectorAll('#unitList li').length,
-               lock: !!document.querySelector('#main .empty-state .offer, #main .offer'),
+               units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
+               sample: !!document.querySelector('.sample-bar'),
+               unlock: !!document.querySelector('.locked-link, .sample-bar .btn'),
                text: document.getElementById('main').textContent.trim().length,
                title: document.getElementById('brandTitle').textContent };
     })()`);
     if (paid.has(id)) {
-      r.ok(id + ' is paid, and offers a subscription instead',
-        got.view === 'book' && got.units === 0 && got.lock, JSON.stringify(got));
+      r.ok(id + ' is paid, and opens onto a sample with a way to unlock',
+        got.view === 'book' && got.units > 0 && got.units <= 2 && got.sample && got.unlock,
+        JSON.stringify(got));
     } else {
       r.ok(id + ' opens with ' + got.units + ' units',
         got.view === 'book' && got.units > 0 && got.text > 40, JSON.stringify(got));

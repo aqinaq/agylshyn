@@ -207,6 +207,24 @@ window.ENTITLE = (function () {
       });
   }
 
+  /* ================= the free sample ================= */
+
+  /* Two units of every paid book are published as ordinary static files
+     (site/data/sample/<id>.json, cut by tools/build_samples.py). A lock with
+     nothing behind it asks somebody to pay for a thing they have never used;
+     this is what the app opens instead.
+
+     It is not a weaker paywall: what is in the sample was deliberately given
+     away, and the other 99% of the book is still a row in Postgres that only a
+     subscription reaches. A missing sample file is not an error either — the
+     book simply keeps the plain lock screen. */
+  function fetchSample(id) {
+    return fetch('data/sample/' + id + '.json').then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
   /* ================= admin ================= */
 
   // The panel's grant buttons. Both functions below are re-decided inside
@@ -246,6 +264,7 @@ window.ENTITLE = (function () {
     access: function () { return access; },
     refresh: refresh,
     fetchBook: fetchBook,
+    fetchSample: fetchSample,
     grant: grant,
     revoke: revoke,
     onChange: function (fn) { listeners.push(fn); }

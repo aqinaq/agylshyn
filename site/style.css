@@ -3432,3 +3432,31 @@ body.side-min .ue-head { display: none; }
 
 .srs-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; cursor: pointer; }
 .srs-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* ===== the free sample of a paid book ===== */
+
+.sample-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 9px 13px;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-bg);
+  color: var(--gold);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
+.sample-bar .btn { margin-left: auto; text-decoration: none; }
+.sb-tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--panel);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.locked-link { color: var(--muted); }
+.locked-link:hover { color: var(--accent); }

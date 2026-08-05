@@ -1,0 +1,192 @@
+{
+ "id": "business",
+ "sample": true,
+ "unitsOf": 66,
+ "units": [
+  {
+   "unit": 1,
+   "title": "Work and jobs",
+   "pdfIntroPage": 12,
+   "pdfExercisePage": 13,
+   "pdfPages": [
+    13
+   ],
+   "subExercises": [
+    {
+     "number": "1.1",
+     "type": "items",
+     "instructions": "Look at A opposite. Margaux is talking about her work. Correct the expressions in italics.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "I work on"
+      },
+      {
+       "n": 2,
+       "answer": "In fact, I run"
+      },
+      {
+       "n": 3,
+       "answer": "I manage"
+      },
+      {
+       "n": 4,
+       "answer": "One of my main responsibilities"
+      },
+      {
+       "n": 5,
+       "answer": "I’m also in charge of"
+      },
+      {
+       "n": 6,
+       "answer": "I deal with"
+      },
+      {
+       "n": 7,
+       "answer": "I’m responsible for"
+      },
+      {
+       "n": 8,
+       "answer": "I work closely with"
+      }
+     ]
+    },
+    {
+     "number": "1.2",
+     "type": "items",
+     "instructions": "Complete each gap in the text with one of the prepositions from B opposite.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "to"
+      },
+      {
+       "n": 2,
+       "answer": "to"
+      },
+      {
+       "n": 3,
+       "answer": "at"
+      },
+      {
+       "n": 4,
+       "answer": "off"
+      },
+      {
+       "n": 5,
+       "answer": "in"
+      },
+      {
+       "n": 6,
+       "answer": "out"
+      }
+     ]
+    },
+    {
+     "number": "1.3",
+     "type": "items",
+     "instructions": "What is being advertised in each of these job advertisements (1–6)? Use an expression from C",
+     "items": [
+      {
+       "n": 2,
+       "answer": "full-time work"
+      },
+      {
+       "n": 3,
+       "answer": "part-time work"
+      },
+      {
+       "n": 4,
+       "answer": "a temporary job",
+       "question": "weeks holiday per year. (job) …"
+      },
+      {
+       "n": 5,
+       "answer": "permanent work"
+      },
+      {
+       "n": 6,
+       "answer": "a permanent job"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "unit": 2,
+   "title": "Ways of working",
+   "pdfIntroPage": 14,
+   "pdfExercisePage": 15,
+   "pdfPages": [
+    15
+   ],
+   "subExercises": [
+    {
+     "number": "2.1",
+     "type": "items",
+     "instructions": "Look at the six expressions (a–f) from A opposite. Which person (1–6) is most likely to do each",
+     "items": [
+      {
+       "n": 1,
+       "answer": "b",
+       "question": "A designer in a website design company. Has to be in the office,"
+      },
+      {
+       "n": 2,
+       "answer": "d",
+       "question": "A manager in a department store in a large city. Lives in the …"
+      },
+      {
+       "n": 3,
+       "answer": "a",
+       "question": "A construction worker on a building site where work goes on …"
+      },
+      {
+       "n": 4,
+       "answer": "f",
+       "question": "A worker in a chocolate factory in the three months before …"
+      },
+      {
+       "n": 5,
+       "answer": "c",
+       "question": "A technical writer for a computer company. Lives in the country …"
+      },
+      {
+       "n": 6,
+       "answer": "e",
+       "question": "An office worker in a large, traditional manufacturing company."
+      }
+     ]
+    },
+    {
+     "number": "2.2",
+     "type": "items",
+     "instructions": "Look at the words and expressions in B and C opposite. Five people describe their jobs. Match",
+     "items": [
+      {
+       "n": 1,
+       "answer": "c working, boring, involves",
+       "question": "accountant 2 postwoman 3 flight attendant 4 software developer 5 teacher …"
+      },
+      {
+       "n": 2,
+       "answer": "e being / to be"
+      },
+      {
+       "n": 3,
+       "answer": "a travelling, demanding, dealing"
+      },
+      {
+       "n": 4,
+       "answer": "d tiring"
+      },
+      {
+       "n": 5,
+       "answer": "b stimulating, repetitive"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

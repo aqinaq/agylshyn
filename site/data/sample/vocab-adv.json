@@ -1,0 +1,281 @@
+{
+ "id": "vocab-adv",
+ "sample": true,
+ "unitsOf": 101,
+ "units": [
+  {
+   "unit": 1,
+   "title": "Cramming for success: study and academic work",
+   "pdfExercisePage": 11,
+   "pdfIntroPage": 10,
+   "subExercises": [
+    {
+     "number": "1.1",
+     "type": "items",
+     "instructions": "Correct the wrong usage of words to do with written work in these sentences.",
+     "items": [
+      {
+       "n": 1,
+       "question": "His PhD assignment was 90,000 words long and was on the history of US place names.",
+       "answer": "His PhD thesis …"
+      },
+      {
+       "n": 2,
+       "question": "Little Martha did her first dissertation in school today. It was called ‘My family’.",
+       "answer": "Little Martha did her first composition …"
+      },
+      {
+       "n": 3,
+       "question": "We have to hand in an essay at the end of the course. It can consist of up to five different pieces of work.",
+       "answer": "We have to hand in a portfolio …"
+      },
+      {
+       "n": 4,
+       "question": "The teacher gave us the title of this week’s project today. We have to write 1,000 words on the topic of ‘If I ruled the world’ and hand it in next Monday.",
+       "answer": "The teacher gave us the title of this week’s essay …"
+      },
+      {
+       "n": 5,
+       "question": "At the end of this course, you have to do a 5,000-word thesis which will be assessed, and the grade will contribute to your final degree.",
+       "answer": "At the end of this course you have to do a 5,000-word assignment …",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 6,
+       "question": "I think I’ll do a study of people’s personal banking habits for my MSc composition. It has to be about 12,000 words.",
+       "answer": "I think I’ll do a study of people’s personal banking habits for my MSc dissertation …",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 7,
+       "question": "I’ve chosen to do the portfolio instead of the two exams, because I like to do one single piece of work where I can research something that interests me personally.",
+       "answer": "I’ve chosen to do the project …"
+      }
+     ]
+    },
+    {
+     "number": "1.2",
+     "type": "freeform",
+     "instructions": "Rewrite this text using words and phrases from the opposite page instead of the underlined words. When I’m studying in a very focused way because I’m preparing hard for an exam, I don’t see any point in looking up exam papers from previous years, nor is there any point in just learning things by memory. I know some people develop very clever memory tricks to help them remember the material, but there’s no real substitute for rereading and going over the term’s work. It’s a good idea to have some sort of diagram showing different ideas to organise your thoughts, and memory-learning is useful, but in a limited way. At the end of the day, you just have to read a huge amount until you feel you know the subject 100",
+     "rawAnswer": "When I’m studying intensively because I’m cramming for an exam, I don’t see any point in looking up past papers, nor is there any point in just learning things (off) by heart. I know some people develop very clever mnemonics to help them remember the material, but there’s no real substitute for revising the term’s work. It’s a good idea to have some sort of mind map to organise your thoughts, and rote-learning / memorising is useful, but in a limited way. At the end of the day, you just have to bury yourself in your books until you feel you know the subject inside out."
+    },
+    {
+     "number": "1.3",
+     "type": "items",
+     "instructions": "Answer these questions.",
+     "items": [
+      {
+       "n": 1,
+       "question": "What do we call the first attempt at writing something, e.g. an essay?",
+       "answer": "a first draft"
+      },
+      {
+       "n": 2,
+       "question": "What word means ‘the date by which you must do something’?",
+       "answer": "a deadline"
+      },
+      {
+       "n": 3,
+       "question": "What word means ‘using someone else’s ideas as if they were yours’?",
+       "answer": "plagiarism"
+      },
+      {
+       "n": 4,
+       "question": "What are more formal words for ‘to hand in’ and for ‘to mark’?",
+       "answer": "submit; assess"
+      },
+      {
+       "n": 5,
+       "question": "What phrasal verb do we use when someone doesn’t complete their course?",
+       "answer": "drop out"
+      },
+      {
+       "n": 6,
+       "question": "What is another word for an academic article? Where can you read them?",
+       "answer": "a paper; in (academic) journals"
+      },
+      {
+       "n": 7,
+       "question": "What is the name of the system for getting books from other libraries?",
+       "answer": "inter-library loan"
+      },
+      {
+       "n": 8,
+       "question": "What word means ‘the comments you get back from the teacher about your work’?",
+       "answer": "feedback"
+      },
+      {
+       "n": 9,
+       "question": "What word can you use for a person who is extraordinarily intelligent?",
+       "answer": "a genius"
+      },
+      {
+       "n": 10,
+       "question": "What is a more formal way of saying ‘do research’?",
+       "answer": "carry out research"
+      }
+     ]
+    },
+    {
+     "number": "1.4",
+     "type": "items",
+     "instructions": "Choose the best word from the opposite page to complete these sentences.",
+     "items": [
+      {
+       "n": 1,
+       "question": "If you quote an article in an essay, you must … your source, giving details of author and title.",
+       "answer": "acknowledge"
+      },
+      {
+       "n": 2,
+       "question": "Open educational … can be particularly useful for students who do not have easy access to a university library.",
+       "answer": "resources"
+      },
+      {
+       "n": 3,
+       "question": "How much … have you done for tomorrow’s maths exam?",
+       "answer": "revision"
+      },
+      {
+       "n": 4,
+       "question": "Don’t forget to sign the … form and hand it in with your dissertation.",
+       "answer": "plagiarism"
+      },
+      {
+       "n": 5,
+       "question": "Some people take a long time to find suitable work even though they are very …",
+       "answer": "well-qualified"
+      },
+      {
+       "n": 6,
+       "question": "Orla has had a … published in the British Medical Journal.",
+       "answer": "paper"
+      },
+      {
+       "n": 7,
+       "question": "All students need a username and password to be able to … journals online.",
+       "answer": "access"
+      },
+      {
+       "n": 8,
+       "question": "Caspar is bound to do well in his mechanics exam – he knows the subject … out.",
+       "answer": "inside"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "unit": 2,
+   "title": "Education: debates and issues",
+   "pdfExercisePage": 13,
+   "pdfIntroPage": 12,
+   "subExercises": [
+    {
+     "number": "2.2",
+     "type": "items",
+     "instructions": "Rewrite these sentences so they are more formal by using words and phrases from educational institutions into good and bad, success and failure, resulting in a two-tier system9, the opposite page instead of the underlined words. Make any other changes that or at least that is how the public perceives10 it. The ability of better-off11 parents and well- are necessary. endowed12 schools to push children towards the institutions at the top of the league may, in the depressing13 ___ well-off14 ___ 1 Inequality is built into the education system. long term, have the effect of ___ opportunity for the less ___ or for children from excel15. ___ 2 Giving access only to privileged groups is bad for the country in the long term. home environments that do not provide the push and motivation to",
+     "note": "layout warning: exercise uses a multi-column/table/dialogue layout that may have jumbled text - verify against PDF",
+     "items": [
+      {
+       "n": 3,
+       "question": "Education where everyone gets into the same type of school without exams is a basic political Financial support of different kinds can help to make educational opportunity more equal. There ideal in many countries. are, for example, scholarships16 or bursaries17 that make it possible for less privileged youngsters",
+       "answer": "Comprehensive education is a basic political ideal in many countries.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 4,
+       "question": "A system where there are two levels of schools reduces the opportunities for children from poorer to afford tertiary18 education. Student loans19 allow undergraduates20 to pay for their tuition families and favours those from richer families. fees21 and living expenses while they are studying. But few would claim that real equality of",
+       "answer": "A two-tier system of schools depresses the opportunities for children from less well-off families and favours those from better-off families.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 5,
+       "question": "Some private schools have lots of wealth and receive gifts of money, and this means they can have opportunity has been achieved. better resources.",
+       "answer": "Some private schools are well-endowed / have endowments, and this means they can have better resources.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 6,
+       "question": "All parents want their children to achieve the best possible results at school. 1 when everyone has the same chances ___ 11 richer",
+       "answer": "All parents want their children to excel at school."
+      },
+      {
+       "n": 7,
+       "question": "Emphasis on the three Rs is considered by parents to be the key to success. 2 pupils are chosen for entry, usually for academic reasons, ___ 12 receiving a lot of money in grants, gifts from",
+       "answer": "Emphasis on the three Rs is perceived by parents to be the key to success.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 8,
+       "question": "The government is increasing its provision for education that young people can enter after though, in the case of some private schools, parents’ ___ rich people, etc. [= endowments] ability to pay school fees may be a factor in selection ___ 13 ___ finishing secondary school. reducing 3 everyone enters without exams and education is free, ___ 14 poorer",
+       "answer": "The government is increasing its provision for tertiary education.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      }
+     ]
+    },
+    {
+     "number": "2.3",
+     "type": "items",
+     "instructions": "Correct these statements about words or expressions from the opposite page. Correct paid for by the government ___ 15 achieve an excellent standard",
+     "note": "answer key did not line up cleanly for item(s) [8, 9, 10] - verify against PDF",
+     "items": [
+      {
+       "n": 4,
+       "question": "education received at school ___ each of them twice – once by changing the definition and once by changing the word 16 money given to pay for studies, usually provided",
+       "answer": "Bullying is when a pupil uses frightening or threatening behaviour towards another child who is smaller or less powerful in some way. Excelling is when a student does exceptionally well.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 5,
+       "question": "when you favour a small, privileged group ___ on the basis of academic merit ___ being defined.",
+       "answer": "Secondary education is the stage that follows primary education. Tertiary education is the stage that follows secondary education.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 6,
+       "question": "existing as a basic part of something ___ 17 money given to pay for studies, usually provided 1 One-to-one education is another way of saying continuing education.",
+       "answer": "Selective schools choose the best students to study there. Comprehensive schools take all students regardless of their academic ability.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 7,
+       "question": "lists of schools or colleges, from the best down to ___ on the basis of need One-to-one education means a situation where there is one teacher and one student. the worst, based on exam results and, sometimes, ___ 18 education at university or college level Lifelong education is another way of saying continuing education. other criteria ___ 19 money that students can borrow from a bank while",
+       "answer": "League tables list schools from good to bad according to their exam results. Guidelines offer advice on how to do something.",
+       "selfCheck": true,
+       "selfWhy": "long"
+      },
+      {
+       "n": 8,
+       "question": "make something continue ___ studying and then pay back once they are in work ___ 2 Numeracy refers to the ability to read."
+      },
+      {
+       "n": 9,
+       "question": "a system with two separate levels, one of which is ___ 20 students doing a first degree [postgraduates ___ 3 A student who is doing a doctorate is an undergraduate. = better than the other ___ students doing a further degree] ___ 4 Excelling is when a pupil uses frightening or threatening behaviour towards another child who is"
+      },
+      {
+       "n": 10,
+       "question": "sees, considers ___ 21 money paid to receive teaching smaller or less powerful in some way. 5 Tertiary education is the stage that follows primary education. B ___ Other debates and issues 6 Comprehensive schools choose the best students to study there. Some people think we should return to an ___ 7 Guidelines list schools from good to bad according to their exam results. emphasis on the three Rs, the traditional,"
+      }
+     ]
+    },
+    {
+     "number": "2.4",
+     "type": "items",
+     "instructions": "Complete each sentence with a word from the opposite page. basic skills. [reading, writing and arithmetic] Literacy and numeracy are skills no one ___ 1 Matt won a ___ because of his excellent academic record. can afford to be without. [the ability to read] ___ 2 Zara’s parents said that starting a rock band with her friends would be too much of a [the ability to count / do basic maths] ___ from her studies. Curriculum reform is often done for ___ 3 The report contains some interesting ___ on how best to prepare for exams. political reasons rather than for good educational ones. ___ 4 There were two ___ students in my class at university, but most of us were just 19. [changes to what is covered in the national syllabus = plan of what is to be studied] ___ 5 Katia wouldn’t have been able to go to university if her grandparents hadn’t paid her tuition Nowadays, lifelong/continuing education is an issue, and creating opportunities for mature students ___ for her. is important. [education for all ages] [adult students older than the average student] ___ 6 Most undergraduates need to take out a student ___ to cover their costs while they Special needs education is expensive because class sizes need to be small or one-to-one. [education for ___ study for a degree. children who cannot learn in the normal way, because they have some disability] [one teacher and one pupil, not a group] ___ 7 Primary schools usually spend a lot of time on the ___ Rs. Children are unhappy at school if there is a lot of bullying. [threatening behaviour] ___ 8 At university I was lucky enough to have a lot of ___ tutorials, just me and the tutor! Some headteachers complain that getting to grips with constant new government guidelines on what schools should be doing is a distraction from what they ought to be focusing on. [advice (often official) on how something should be done] [takes attention away]",
+     "note": "layout warning: exercise uses a multi-column/table/dialogue layout that may have jumbled text - verify against PDF"
+    }
+   ]
+  }
+ ]
+}

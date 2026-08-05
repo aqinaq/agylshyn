@@ -67,18 +67,36 @@ async function run() {
   r.ok('a free book still opens for anybody', free.view === 'book' && free.units > 0,
     JSON.stringify(free));
 
-  const wall = await s.eval(`(async () => {
+  // A paid book opens onto its free sample rather than a bare lock — a couple
+  // of units, published as a static file on purpose, and a banner that says how
+  // little of the book that is.
+  const sample = await s.eval(`(async () => {
     location.hash = '#/b/${PAID_BOOK}';
+    await new Promise(r=>setTimeout(r,1600));
+    return { units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
+             banner: !!document.querySelector('.sample-bar'),
+             ofBook: (document.querySelector('.sample-bar')||{}).textContent || '',
+             locked: !!document.querySelector('.locked-link'),
+             rows: document.querySelectorAll('.answer-line input').length };
+  })()`);
+  r.ok('a paid book opens onto a sample', sample.banner && sample.units > 0,
+    JSON.stringify(sample));
+  r.ok('which is a couple of units, not the book', sample.units <= 2, String(sample.units));
+  r.ok('there is real work in it', sample.rows > 3, String(sample.rows));
+  r.ok('and the rest of the book is shown as locked', sample.locked);
+
+  const wall = await s.eval(`(async () => {
+    location.hash = '#/b/${PAID_BOOK}/unlock';
     await new Promise(r=>setTimeout(r,1200));
     const main = document.getElementById('main');
-    return { units: document.querySelectorAll('#unitList li').length,
+    return { units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
              lock: !!main.querySelector('.empty-state'),
              text: main.textContent,
              prices: [...main.querySelectorAll('.plan-price strong')].map(e => e.textContent.trim()),
              buttons: [...main.querySelectorAll('button, .btn')].map(b => b.textContent.trim()) };
   })()`);
-  r.eq('a paid book hands over no units', wall.units, 0);
-  r.ok('it shows the lock screen instead', wall.lock, wall.text.slice(0, 80));
+  r.ok('and the whole book is still withheld', wall.units <= 2, String(wall.units));
+  r.ok('the unlock page shows the lock screen', wall.lock, wall.text.slice(0, 80));
   r.ok('which says an account comes first',
     /кір|Sign in/i.test(wall.buttons.join(' ')), JSON.stringify(wall.buttons));
   r.ok('both prices are on it', wall.prices.length === 2, JSON.stringify(wall.prices));
@@ -103,17 +121,17 @@ async function run() {
   /* ============ signed in, nothing bought ============ */
   r.head('an account with no subscription');
   s = await signedIn(conn, { access: null });
-  await goto(s, BASE + '#/b/' + PAID_BOOK);
-  await sleep(1500);
+  await goto(s, BASE + '#/b/' + PAID_BOOK + '/unlock');
+  await sleep(1800);
   const nosub = await s.eval(`(() => {
     const main = document.getElementById('main');
-    return { units: document.querySelectorAll('#unitList li').length,
+    return { units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
              text: main.textContent,
              steps: [...main.querySelectorAll('.offer-steps li')].map(e => e.textContent.trim()),
              mail: (main.querySelector('.offer-mail strong') || {}).textContent,
              buttons: [...main.querySelectorAll('button, .btn')].map(b => b.textContent.trim()) };
   })()`);
-  r.eq('still no units', nosub.units, 0);
+  r.ok('still only the sample', nosub.units <= 2, String(nosub.units));
   r.ok('the way forward is paying, not signing in',
     /Қайта тексеру|Check again/i.test(nosub.buttons.join(' ')), JSON.stringify(nosub.buttons));
   r.ok('and the offer names a contact',
@@ -210,11 +228,14 @@ async function run() {
   r.head('a subscription that has lapsed');
   s = await signedIn(conn, { access: LAPSED });
   await goto(s, BASE + '#/b/' + PAID_BOOK);
-  await sleep(1500);
+  await sleep(1800);
   const lapsed = await s.eval(`(() => ({
-    units: document.querySelectorAll('#unitList li').length,
+    units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
+    sample: !!document.querySelector('.sample-bar'),
     text: document.getElementById('main').textContent }))()`);
-  r.eq('the book shuts again', lapsed.units, 0);
+  // Back to what a stranger gets: the sample, and the offer behind it.
+  r.ok('the book shuts back to its sample', lapsed.sample && lapsed.units <= 2,
+    JSON.stringify({ units: lapsed.units, sample: lapsed.sample }));
 
   const panel = await s.eval(`(async () => {
     location.hash = '#/';
@@ -231,8 +252,10 @@ async function run() {
   /* ============ having just paid ============ */
   r.head('the reader who has just paid');
   s = await signedIn(conn, { access: null });
-  await goto(s, BASE + '#/b/' + PAID_BOOK);
-  await sleep(1500);
+  // The unlock page is where a reader who has paid ends up: the sample banner's
+  // button, or the locked unit they tried to open.
+  await goto(s, BASE + '#/b/' + PAID_BOOK + '/unlock');
+  await sleep(1800);
   s.mock.setAccess(LIVE);                       // you press Grant, they press this
   const recheck = await s.eval(`(async () => {
     const b = [...document.querySelectorAll('#main button')]
@@ -241,10 +264,11 @@ async function run() {
     b.click();
     await new Promise(r=>setTimeout(r,1800));
     return { found: true, view: document.body.getAttribute('data-view'),
-             units: document.querySelectorAll('#unitList li').length };
+             units: document.querySelectorAll('#unitList .unit-link').length };
   })()`);
   r.ok('"check again" is on the lock screen', recheck.found);
-  r.ok('and it opens the book without a reload', recheck.units > 0, JSON.stringify(recheck));
+  r.ok('and it opens the whole book without a reload', recheck.units > 2,
+    JSON.stringify(recheck));
 
   /* ============ the flag flipped in devtools ============ */
   r.head('a forged answer in the console');
@@ -256,11 +280,17 @@ async function run() {
     // from somewhere, and the server is the somewhere.
     ENTITLE.access().active = true;
     location.hash = '#/b/${PAID_BOOK}';
-    await new Promise(r=>setTimeout(r,1600));
-    return { units: document.querySelectorAll('#unitList li').length,
+    await new Promise(r=>setTimeout(r,1800));
+    // The sample is published on purpose, so what a forged flag must not buy is
+    // the rest: the unit list stays the sample's, and a unit outside it locks.
+    const sample = document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length;
+    location.hash = '#/b/${PAID_BOOK}/unit/40';
+    await new Promise(r=>setTimeout(r,900));
+    return { units: sample,
              lock: !!document.querySelector('#main .empty-state') };
   })()`);
-  r.eq('a client that lies to itself still gets no book', forged.units, 0);
+  r.ok('a client that lies to itself still gets no more than the sample',
+    forged.units > 0 && forged.units <= 2, String(forged.units));
   r.ok('and lands back on the lock screen', forged.lock);
 
   return r.done();

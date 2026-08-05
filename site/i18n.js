@@ -411,6 +411,11 @@ window.I18N = {
     'exam.thRuns': 'Жүгіру',
     'stats.exams': 'Емтихан жүгірулері',
 
+    'sample.tag': 'ҮЛГІ',
+    'sample.body': 'Бұл кітаптың {of} юнитінің {n}-і ашық — қалғаны жазылымда.',
+    'sample.unlock': 'Ашу',
+    'sample.more': 'Тағы {n} юнит — ашу',
+
     'err.toDeck': '🗂 {n} қатені карталарға қосу',
     'err.toDeckHint': 'Әр қате — сұрағы бет жағында, жауабы артында тұрған карта. Қателер тізімі дұрыс жауап берген соң тазарады, ал карта бір аптадан кейін қайта келеді.',
     'err.toDeckDone': '✓ {n} карта қосылды',
@@ -1087,6 +1092,10 @@ window.I18N = {
     'exam.thRuns': 'Runs',
     'stats.exams': 'Mock exams',
 
+    'sample.tag': 'SAMPLE',
+    'sample.body': '{n} of this book\u2019s {of} units are open — the rest come with a subscription.',
+    'sample.unlock': 'Unlock',
+    'sample.more': '{n} more units — unlock',
     'err.toDeck': '🗂 Add {n} mistakes to the deck',
     'err.toDeckHint': 'Each becomes a card: the question on the front, the answer on the back. This list empties as soon as you get one right; a card comes back a week later.',
     'err.toDeckDone': '✓ {n} cards added',

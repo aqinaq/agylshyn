@@ -1,0 +1,279 @@
+{
+ "id": "ielts-20",
+ "sample": true,
+ "unitsOf": 8,
+ "units": [
+  {
+   "unit": 1,
+   "title": "Test 1 — Listening",
+   "skill": "listening",
+   "pdfExercisePage": 1,
+   "subExercises": [
+    {
+     "number": "1-10",
+     "type": "items",
+     "kind": "completion",
+     "instructions": "Complete the form below. Write ONE WORD AND/OR A NUMBER for each answer.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "fish"
+      },
+      {
+       "n": 2,
+       "answer": "roof"
+      },
+      {
+       "n": 3,
+       "answer": "Spanish"
+      },
+      {
+       "n": 4,
+       "answer": "vegetarian"
+      },
+      {
+       "n": 5,
+       "answer": "Audley"
+      },
+      {
+       "n": 6,
+       "answer": "hotel"
+      },
+      {
+       "n": 7,
+       "answer": "reviews"
+      },
+      {
+       "n": 8,
+       "answer": "local"
+      },
+      {
+       "n": 9,
+       "answer": "30 / thirty"
+      },
+      {
+       "n": 10,
+       "answer": "average"
+      }
+     ],
+     "audio": {
+      "part": 1,
+      "files": [
+       "audio/c20/t1p1.m4a"
+      ],
+      "from": 1,
+      "to": 10
+     }
+    },
+    {
+     "number": "11-16",
+     "type": "items",
+     "kind": "mcq",
+     "instructions": "Choose the correct letter, A, B, or C.",
+     "items": [
+      {
+       "n": 11,
+       "answer": "A"
+      },
+      {
+       "n": 12,
+       "answer": "B"
+      },
+      {
+       "n": 13,
+       "answer": "C"
+      },
+      {
+       "n": 14,
+       "answer": "A"
+      },
+      {
+       "n": 15,
+       "answer": "B"
+      },
+      {
+       "n": 16,
+       "answer": "C"
+      }
+     ],
+     "audio": {
+      "part": 2,
+      "files": [
+       "audio/c20/t1p2.m4a"
+      ],
+      "from": 11,
+      "to": 20
+     }
+    },
+    {
+     "number": "17-18",
+     "type": "items",
+     "kind": "mcq-multi",
+     "instructions": "Choose TWO letters, A–E.",
+     "items": [
+      {
+       "n": 17,
+       "answer": "A, E"
+      },
+      {
+       "n": 18,
+       "answer": "A, E"
+      }
+     ]
+    },
+    {
+     "number": "19-20",
+     "type": "items",
+     "kind": "mcq-multi",
+     "instructions": "Choose TWO letters, A–E.",
+     "items": [
+      {
+       "n": 19,
+       "answer": "C, E"
+      },
+      {
+       "n": 20,
+       "answer": "C, E"
+      }
+     ]
+    },
+    {
+     "number": "21-22",
+     "type": "items",
+     "kind": "mcq-multi",
+     "instructions": "Choose TWO letters, A–E.",
+     "items": [
+      {
+       "n": 21,
+       "answer": "C, E"
+      },
+      {
+       "n": 22,
+       "answer": "C, E"
+      }
+     ],
+     "audio": {
+      "part": 3,
+      "files": [
+       "audio/c20/t1p3.m4a"
+      ],
+      "from": 21,
+      "to": 30
+     }
+    },
+    {
+     "number": "23-24",
+     "type": "items",
+     "kind": "mcq-multi",
+     "instructions": "Choose TWO letters, A–E.",
+     "items": [
+      {
+       "n": 23,
+       "answer": "A, C"
+      },
+      {
+       "n": 24,
+       "answer": "A, C"
+      }
+     ]
+    },
+    {
+     "number": "25-26",
+     "type": "items",
+     "kind": "mcq-multi",
+     "instructions": "Choose TWO letters, A–E.",
+     "items": [
+      {
+       "n": 25,
+       "answer": "A, B"
+      },
+      {
+       "n": 26,
+       "answer": "A, B"
+      }
+     ]
+    },
+    {
+     "number": "27-30",
+     "type": "items",
+     "kind": "mcq",
+     "instructions": "Choose the correct letter, A, B, or C.",
+     "items": [
+      {
+       "n": 27,
+       "answer": "A"
+      },
+      {
+       "n": 28,
+       "answer": "B"
+      },
+      {
+       "n": 29,
+       "answer": "A"
+      },
+      {
+       "n": 30,
+       "answer": "C"
+      }
+     ]
+    },
+    {
+     "number": "31-40",
+     "type": "items",
+     "kind": "completion",
+     "instructions": "Complete the note below. Write ONE WORD ONLY for each answer.",
+     "items": [
+      {
+       "n": 31,
+       "answer": "factories"
+      },
+      {
+       "n": 32,
+       "answer": "dead"
+      },
+      {
+       "n": 33,
+       "answer": "whale"
+      },
+      {
+       "n": 34,
+       "answer": "apartments"
+      },
+      {
+       "n": 35,
+       "answer": "park"
+      },
+      {
+       "n": 36,
+       "answer": "art"
+      },
+      {
+       "n": 37,
+       "answer": "beaches"
+      },
+      {
+       "n": 38,
+       "answer": "ferry"
+      },
+      {
+       "n": 39,
+       "answer": "bikes"
+      },
+      {
+       "n": 40,
+       "answer": "drone"
+      }
+     ],
+     "audio": {
+      "part": 4,
+      "files": [
+       "audio/c20/t1p4.m4a"
+      ],
+      "from": 31,
+      "to": 40
+     }
+    }
+   ]
+  }
+ ]
+}

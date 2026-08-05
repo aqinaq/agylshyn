@@ -49,6 +49,13 @@ jobs:
       - name: No paid content in the artifact
         run: python3 site/tools/split_content.py --check
 
+      # The other half of the same question: the free samples ARE published, so
+      # they must match the books they were cut from. A stale sample is either
+      # a book advertising units it no longer has, or a giveaway of a book that
+      # stopped being paid.
+      - name: Samples match their books
+        run: python3 site/tools/build_samples.py --check
+
       - uses: actions/configure-pages@v5
 
       # ~800 MB of pdf/ and audio/. Uploading takes a few minutes.
