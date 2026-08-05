@@ -47,12 +47,16 @@
             theme: THEMES.indexOf(p.theme) > -1 ? p.theme : defaultTheme(),
             warnOk: p.warnOk || {},
             placement: p.placement || null,   // {track,band,score,ts} from the quiz
+            // 'book|unit' -> [{ts,raw,total,secs,skill}] — finished exam runs,
+            // newest last. `exam` is the one still being sat, if any.
+            exams: p.exams || {},
+            exam: p.exam || null,
             ui: p.ui || {}
           };
         }
       }
     } catch (e) { /* corrupt or unavailable storage — start fresh */ }
-    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, ui: {} };
+    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, exams: {}, exam: null, ui: {} };
   }
 
   // First visit (or a stored 'auto' from the old three-state toggle): resolve the
@@ -117,7 +121,26 @@
     if (disk.placement && (!cur.placement || (disk.placement.ts || 0) > (cur.placement.ts || 0))) {
       cur.placement = disk.placement;
     }
+    // Exam runs are append-only history: merge per section by timestamp so two
+    // devices that each sat a different test end up with both. The half-finished
+    // run (`exam`) is deliberately NOT merged — it belongs to the tab sitting
+    // the test, and a merge would restart somebody's clock.
+    var de = disk.exams || {};
+    cur.exams = cur.exams || {};
+    for (var ek in de) cur.exams[ek] = mergeRuns(cur.exams[ek], de[ek]);
     cur.books = disk.books || cur.books;
+  }
+
+  // Two lists of finished runs into one, oldest first, one entry per start time.
+  function mergeRuns(a, b) {
+    var seen = {}, out = [];
+    (a || []).concat(b || []).forEach(function (r) {
+      if (!r || seen[r.ts]) return;
+      seen[r.ts] = 1;
+      out.push(r);
+    });
+    out.sort(function (x, y) { return (x.ts || 0) - (y.ts || 0); });
+    return out;
   }
 
   function todayKey(ts) {
@@ -2562,6 +2585,10 @@
 
   function buildRow(unitNo, sub, it, opts) {
     var review = !!(opts && opts.review);        // rendered on the Mistakes page
+    // Under exam conditions a row is a box and nothing else: no Check, no hint,
+    // no verdict, and the typing goes into the run rather than into the store.
+    // Everything is graded in one pass when the clock stops (finishExam).
+    var exam = (opts && opts.exam) || null;
     // The reference page for the unit THIS row belongs to. It has to travel with
     // the row rather than sit in a module variable: the Mistakes page builds rows
     // from a dozen different units in one pass, and a shared variable meant every
@@ -2638,8 +2665,9 @@
     var r0 = rec(key);
     // On the Mistakes page start from a clean box; the old wrong answer is shown
     // separately as "last time: …" rather than left sitting in the field.
-    if (r0 && r0.val && !review) input.value = r0.val;
-    if (review && r0 && r0.val) {
+    if (exam) input.value = exam.answers[key] || '';
+    else if (r0 && r0.val && !review) input.value = r0.val;
+    if (review && !exam && r0 && r0.val) {
       var prev = el('div', 'prev-answer');
       prev.appendChild(el('span', 'pa-label', t('row.lastTime')));
       prev.appendChild(el('span', 'pa-val', r0.val));
@@ -2679,6 +2707,7 @@
       var r = rec(key);
       row.classList.remove('correct', 'wrong', 'mastered');
       clear(feedback);
+      if (exam) return;               // no verdict while the clock is running
       if (!r || !r.last) return;
       // Review mode: no verdict, no key, until the learner tries again here.
       if (review && !reveal) return;
@@ -2746,7 +2775,12 @@
     row._check = check;
 
     var hintBtn = null;
-    if (isManual(it)) {
+    if (exam) {
+      // Nothing beside the box. The one affordance kept is the number itself,
+      // which is what a candidate looks for when jumping back to a question
+      // they skipped.
+      row.classList.add('exam-row');
+    } else if (isManual(it)) {
       var okB = el('button', 'btn small ok', t('btn.correct'));
       var badB = el('button', 'btn small bad', t('btn.wrong'));
       okB.addEventListener('click', function () { if (input.value.trim()) mark(true, true); else input.focus(); });
@@ -2768,13 +2802,14 @@
     }
 
     input.addEventListener('input', function () {
+      if (exam) { exam.answers[key] = input.value; save(); return; }
       ensure(key).val = input.value;
       save();
     });
     input.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
       e.preventDefault();
-      check();
+      if (!exam) check();
       focusNext(input);
     });
 
@@ -2829,7 +2864,10 @@
     return b;
   }
 
-  function buildSub(unitNo, sub, introPage) {
+  // `exam` — a live run from startExam(). Passed down rather than read from a
+  // module variable because the result screen re-renders the same exercises
+  // with the run finished, and the two must not be able to disagree.
+  function buildSub(unitNo, sub, introPage, exam) {
     var box = el('div', 'sub');
 
     var head = el('div', 'sub-head');
@@ -2912,10 +2950,14 @@
       var why = isManual(it) ? (it.selfWhy || 'open') : null;
       var first = why != null && !notedWhy[why];
       if (why != null) notedWhy[why] = 1;
-      box.appendChild(buildRow(unitNo, sub, it, { introPage: introPage, selfNote: first }));
+      box.appendChild(buildRow(unitNo, sub, it, { introPage: introPage, selfNote: first, exam: exam }));
       if (isAuto(it)) hasCheckable = true;
       else if (isManual(it)) hasManual = true;
     });
+
+    // Under exam conditions there is nothing to press: no per-exercise check,
+    // no printed key one click away. The only button on the page is "finish".
+    if (exam) return box;
 
     var actions = el('div', 'sub-actions');
     if (hasCheckable) {
@@ -3093,12 +3135,354 @@
     return wrap;
   }
 
+  /* ================= IELTS: exam conditions ================= */
+
+  /* Everything above this line grades an answer the moment it is typed, which
+     is the right thing for practice and the wrong thing for a mock exam: a
+     candidate who learns after question 3 that they were wrong has not sat a
+     test. Exam mode is the same exercises with the feedback taken away and a
+     clock added — answers are collected, and all forty are graded in one pass
+     when the time is up or "finish" is pressed.
+
+     The run is kept in `state.exam` rather than in a module variable so that a
+     reload in the fortieth minute of a Reading test does not throw the paper
+     away. It is exactly one run: sitting two sections at once is not a thing
+     anybody does, and one slot means "is there an exam going on?" is a question
+     with a single answer everywhere in the app. */
+
+  var examTick = null;            // countdown interval, cleared on leaving
+  var examShowResult = null;      // 'book|unit' whose result screen to draw next
+
+  function examKey(bookId, unitNo) { return bookId + '|' + unitNo; }
+
+  // Every gradable row of a test section, printed order. The exam is scored
+  // over these and nothing else, so what counts here is what `tracked` means
+  // everywhere else in the app.
+  function examRows(u) {
+    var out = [];
+    (u.subExercises || []).forEach(function (sub) {
+      (sub.items || []).forEach(function (it) {
+        if (!isTracked(sub, it)) return;
+        out.push({ sub: sub, it: it, key: keyOf(book.id, u.unit, sub.number, itemKey(it)) });
+      });
+    });
+    return out;
+  }
+
+  // The live run for this unit, or null. A run left behind on another section
+  // is not this section's business — it stays in the store and its own page
+  // picks it up.
+  function liveExam(u) {
+    var e = state.exam;
+    if (!e || e.book !== book.id || e.unit !== u.unit) return null;
+    return e;
+  }
+
+  function examLeft(e) { return Math.max(0, Math.round((e.ends - Date.now()) / 1000)); }
+
+  function stopExamTick() {
+    if (examTick) { clearInterval(examTick); examTick = null; }
+  }
+
+  function startExam(u) {
+    stopExamTick();
+    state.exam = {
+      book: book.id,
+      unit: u.unit,
+      skill: u.skill,
+      start: Date.now(),
+      ends: Date.now() + EXAM.limitFor(u.skill) * 1000,
+      answers: {}
+    };
+    flush();                       // a clock that has started must survive a reload
+    examShowResult = null;
+    renderExam(u.unit);
+  }
+
+  // Grade the paper. Every answer given is put through the same matcher the
+  // practice rows use and recorded through applyAnswer, so an exam counts
+  // towards progress, mistakes, streaks and the review ladder exactly like any
+  // other answering — a mock test is not a separate universe. Blanks are
+  // recorded as wrong, because in the exam they are.
+  function finishExam(u, timedOut) {
+    var e = liveExam(u);
+    if (!e) return;
+    stopExamTick();
+    var rows = examRows(u);
+    var raw = 0, unanswered = 0;
+    rows.forEach(function (r) {
+      var val = e.answers[r.key] || '';
+      var given = !!val.trim();
+      if (!given) unanswered++;
+      var ok = given && isAuto(r.it) && isMatch(val, r.it);
+      if (ok) raw++;
+      // A self-check row cannot be graded by machine; it is left out of the raw
+      // score below and the reader is pointed at it on the result screen.
+      if (isAuto(r.it)) applyAnswer(r.key, ok, { val: val, exam: true });
+    });
+
+    var res = {
+      ts: e.start,
+      end: Date.now(),
+      raw: raw,
+      total: rows.length,
+      unanswered: unanswered,
+      secs: Math.round((Date.now() - e.start) / 1000),
+      skill: e.skill,
+      timedOut: !!timedOut
+    };
+    var k = examKey(book.id, u.unit);
+    state.exams[k] = (state.exams[k] || []).concat([res]);
+    state.exam = null;
+    flush();
+    if (window.SYNC) SYNC.touch(k);      // the meta row carries exam history
+    examShowResult = k;
+    cacheBookStats(book);
+    renderSidebar();
+    refreshBadge();
+    renderExam(u.unit);
+  }
+
+  function abandonExam(u) {
+    stopExamTick();
+    state.exam = null;
+    flush();
+    renderExam(u.unit);
+  }
+
+  // "32/40 · шамамен 7.0" — the line that is the whole point of the feature.
+  // The estimate is always labelled: see the note in exam.js about why this
+  // number is not a band Cambridge would recognise as official.
+  function bandLine(skill, raw) {
+    var b = EXAM.bandFor(skill, raw);
+    return b == null ? null : t('exam.bandApprox', { b: b.toFixed(1) });
+  }
+
+  function renderExam(no) {
+    var u = null;
+    for (var i = 0; i < book.units.length; i++) {
+      if (book.units[i].unit === no) { u = book.units[i]; break; }
+    }
+    if (!u || !EXAM.isExamUnit(book.meta, u)) { renderNotFound(no); return; }
+    currentUnit = no;
+    state.last = { book: book.id, unit: no };
+    save();
+    setTab('units');
+    stopExamTick();
+    clear(main);
+
+    var e = liveExam(u);
+    if (e) { renderExamPaper(u, e); return; }
+    var k = examKey(book.id, u.unit);
+    if (examShowResult === k) {
+      var runs = state.exams[k] || [];
+      examShowResult = null;
+      if (runs.length) { renderExamResult(u, runs[runs.length - 1]); return; }
+    }
+    renderExamDesk(u);
+  }
+
+  // The page before the paper: what is about to happen, and what it costs.
+  function renderExamDesk(u) {
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null, t('exam.h1', { t: unitTitle(u) })));
+    main.appendChild(head);
+
+    var card = el('div', 'exam-card');
+    card.appendChild(el('p', null, t('exam.intro')));
+    var ul = el('ul', 'exam-rules');
+    [
+      t('exam.rule.time', { m: Math.round(EXAM.limitFor(u.skill) / 60) }),
+      t('exam.rule.noCheck'),
+      t('exam.rule.count', { n: examRows(u).length }),
+      u.skill === 'listening' ? t('exam.rule.audio') : t('exam.rule.pdf')
+    ].forEach(function (s) { ul.appendChild(el('li', null, s)); });
+    card.appendChild(ul);
+
+    var go = el('button', 'btn primary big', t('exam.start'));
+    go.addEventListener('click', function () { startExam(u); });
+    card.appendChild(go);
+
+    var back = el('a', 'btn ghost', t('exam.backToPractice'));
+    back.href = '#/b/' + book.id + '/unit/' + u.unit;
+    card.appendChild(back);
+    main.appendChild(card);
+
+    var hist = examHistory(u);
+    if (hist) main.appendChild(hist);
+  }
+
+  // Past runs of this section, newest first. Two attempts at the same test say
+  // more about a candidate than one, so this is a table rather than a "best".
+  function examHistory(u) {
+    var runs = (state.exams[examKey(book.id, u.unit)] || []).slice().reverse();
+    if (!runs.length) return null;
+    var box = el('div', 'exam-hist');
+    box.appendChild(el('h2', null, t('exam.past')));
+    var tbl = el('table', 'exam-table');
+    var thead = el('thead');
+    var hr = el('tr');
+    [t('exam.th.when'), t('exam.th.score'), t('exam.th.band'), t('exam.th.time')].forEach(function (h) {
+      hr.appendChild(el('th', null, h));
+    });
+    thead.appendChild(hr);
+    tbl.appendChild(thead);
+    var tb = el('tbody');
+    runs.forEach(function (r) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, authDate(new Date(r.ts).toISOString())));
+      tr.appendChild(el('td', 'num', r.raw + '/' + r.total));
+      var b = EXAM.bandFor(r.skill, r.raw);
+      tr.appendChild(el('td', 'num band', b == null ? '—' : b.toFixed(1)));
+      tr.appendChild(el('td', 'num', EXAM.clock(r.secs)));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    box.appendChild(tbl);
+    return box;
+  }
+
+  // The paper itself: a clock, the exercises with nothing to press, and one
+  // button that ends it.
+  function renderExamPaper(u, e) {
+    var bar = el('div', 'exam-bar');
+    bar.appendChild(el('span', 'eb-title', unitTitle(u)));
+    var clockEl = el('b', 'eb-clock');
+    bar.appendChild(clockEl);
+    var doneBtn = el('button', 'btn small primary', t('exam.finish'));
+    doneBtn.addEventListener('click', function () {
+      if (window.confirm(t('exam.confirmFinish'))) finishExam(u, false);
+    });
+    bar.appendChild(doneBtn);
+    var quit = el('button', 'btn small ghost', t('exam.abandon'));
+    quit.addEventListener('click', function () {
+      if (window.confirm(t('exam.confirmAbandon'))) abandonExam(u);
+    });
+    bar.appendChild(quit);
+    main.appendChild(bar);
+
+    // The book stays available: an IELTS section here is an answer sheet, and
+    // the questions are in the PDF. Nothing about exam conditions changes that.
+    if (book.meta && book.meta.pdf && !isNarrow()) showPdf(u.pdfExercisePage);
+
+    (u.subExercises || []).forEach(function (sub) {
+      if (sub.audio) main.appendChild(buildAudio(sub.audio));
+      if (sub.reading) main.appendChild(buildPassage(sub.reading));
+      main.appendChild(buildSub(u.unit, sub, null, e));
+    });
+
+    var foot = el('div', 'unit-foot');
+    var endBtn = el('button', 'btn primary big', t('exam.finish'));
+    endBtn.addEventListener('click', function () {
+      if (window.confirm(t('exam.confirmFinish'))) finishExam(u, false);
+    });
+    foot.appendChild(endBtn);
+    main.appendChild(foot);
+
+    function paintClock() {
+      var left = examLeft(e);
+      clockEl.textContent = EXAM.clock(left);
+      bar.classList.toggle('low', left <= 300);       // last five minutes
+      if (left <= 0) finishExam(u, true);             // hand the paper in
+    }
+    paintClock();
+    examTick = setInterval(paintClock, 1000);
+    afterChange = function () {};
+  }
+
+  function renderExamResult(u, r) {
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null, t('exam.resultH', { t: unitTitle(u) })));
+    main.appendChild(head);
+
+    var card = el('div', 'exam-result');
+    var score = el('div', 'er-score');
+    score.appendChild(el('b', 'er-raw', r.raw + '/' + r.total));
+    var band = EXAM.bandFor(r.skill, r.raw);
+    if (band != null) {
+      score.appendChild(el('span', 'er-band', band.toFixed(1)));
+      score.appendChild(el('span', 'er-bandlab', t('exam.bandLabel')));
+    }
+    card.appendChild(score);
+    card.appendChild(el('div', 'muted er-note', t('exam.bandNote')));
+
+    var meta = el('div', 'er-meta');
+    meta.appendChild(el('span', null, t('exam.took', { time: EXAM.clock(r.secs) })));
+    if (r.unanswered) meta.appendChild(el('span', null, t('exam.blank', { n: r.unanswered })));
+    if (r.timedOut) meta.appendChild(el('span', 'bad', t('exam.timedOut')));
+    card.appendChild(meta);
+
+    // Cambridge's own verdict for this very test, where the book prints one.
+    var verdict = EXAM.chartFor(book.id, EXAM.testOf(u), r.skill, r.raw);
+    if (verdict) {
+      var v = el('div', 'er-chart ' + verdict);
+      v.appendChild(el('span', 'erc-label', t('exam.chartLabel')));
+      v.appendChild(document.createTextNode(t('exam.chart.' + verdict)));
+      card.appendChild(v);
+    }
+    main.appendChild(card);
+
+    // Where the marks went. A Listening part or a Reading passage is the unit a
+    // candidate can actually act on ("part 4 again"), so the breakdown is by
+    // the group the book prints, not by question type.
+    var parts = examBreakdown(u, r);
+    if (parts) main.appendChild(parts);
+
+    var acts = el('div', 'exam-actions');
+    var see = el('a', 'btn primary', t('exam.seeAnswers'));
+    see.href = '#/b/' + book.id + '/unit/' + u.unit;
+    acts.appendChild(see);
+    var again = el('button', 'btn', t('exam.again'));
+    again.addEventListener('click', function () { startExam(u); });
+    acts.appendChild(again);
+    main.appendChild(acts);
+
+    var hist = examHistory(u);
+    if (hist) main.appendChild(hist);
+  }
+
+  // Correct-per-group, read back out of the answer records the grading pass
+  // just wrote — the run stores a score, not forty verdicts, and re-deriving
+  // them here keeps the stored history small.
+  function examBreakdown(u, r) {
+    var rows = examRows(u);
+    if (!rows.length) return null;
+    var groups = [], byNum = {};
+    rows.forEach(function (row) {
+      var label = row.sub.instructions || (t('type.' + (row.sub.kind || row.sub.type)));
+      var g = byNum[row.sub.number];
+      if (!g) {
+        g = byNum[row.sub.number] = { label: label, num: row.sub.number, ok: 0, n: 0 };
+        groups.push(g);
+      }
+      g.n++;
+      var rec0 = rec(row.key);
+      if (rec0 && rec0.last === 'correct') g.ok++;
+    });
+    var box = el('div', 'exam-parts');
+    box.appendChild(el('h2', null, t('exam.byPart')));
+    groups.forEach(function (g) {
+      var line = el('div', 'ep-row');
+      line.appendChild(el('span', 'ep-num', g.num));
+      line.appendChild(el('span', 'ep-label', g.label));
+      var barBox = el('div', 'ep-bar');
+      var fill = el('i');
+      fill.style.width = (g.n ? Math.round(g.ok / g.n * 100) : 0) + '%';
+      barBox.appendChild(fill);
+      line.appendChild(barBox);
+      line.appendChild(el('span', 'ep-score', g.ok + '/' + g.n));
+      box.appendChild(line);
+    });
+    return box;
+  }
+
   function renderUnit(no) {
     var u = null;
     for (var i = 0; i < book.units.length; i++) {
       if (book.units[i].unit === no) { u = book.units[i]; break; }
     }
     if (!u) { renderNotFound(no); return; }
+    stopExamTick();
 
     currentUnit = no;
     // this unit's answer-key page, so each exercise's key button lands on the
@@ -3162,7 +3546,27 @@
       if (pdfOpen() || state.ui.pdfOpen) showPdf(startPage);
       syncToggle(); // the chip was built before that, so bring it back in step
     }
+
+    // A test section can be sat rather than practised. The chip is only on the
+    // books where that means something — a grammar unit is not a timed paper.
+    if (EXAM.isExamUnit(book.meta, u)) {
+      var ex = el('a', 'chip chip-btn exam-chip', '⏱ ' + t('exam.chip'));
+      ex.href = '#/b/' + book.id + '/unit/' + u.unit + '/exam';
+      ex.title = t('exam.chipHint', { m: Math.round(EXAM.limitFor(u.skill) / 60) });
+      chips.appendChild(ex);
+    }
     head.appendChild(chips);
+
+    // A run abandoned by navigating away rather than finishing: the clock is
+    // still going, and the reader is unlikely to guess that from this page.
+    if (liveExam(u)) {
+      var resume = el('div', 'exam-resume');
+      resume.appendChild(document.createTextNode(t('exam.resumeNote')));
+      var rlink = el('a', 'btn small primary', t('exam.resume'));
+      rlink.href = '#/b/' + book.id + '/unit/' + u.unit + '/exam';
+      resume.appendChild(rlink);
+      head.appendChild(resume);
+    }
 
     var prog = el('div', 'progress-row');
     var bar = el('div', 'bar');
@@ -3230,6 +3634,13 @@
         t('unit.score', { c: st.correct, t: st.total, p: st.pct })));
       score.appendChild(el('span', 'muted',
         t('unit.scoreMeta', { m: st.mastered, r: st.review })));
+      // On a test section the score out of forty has a band next to it. Shown
+      // from the practice page too, not only after a timed run: a candidate
+      // working through a Reading test wants to know where they landed.
+      if (EXAM.isExamUnit(book.meta, u)) {
+        var bl = bandLine(u.skill, st.correct);
+        if (bl) score.appendChild(el('span', 'band-chip', bl));
+      }
       renderSidebar();
       refreshBadge();
       cacheBookStats(book);
@@ -3402,6 +3813,13 @@
     main.appendChild(el('div', 'section-title', t('stats.activity')));
     main.appendChild(buildMonthCalendar());
 
+    /* ---- mock exams (IELTS books only) ---- */
+    var examBox = buildExamSummary();
+    if (examBox) {
+      main.appendChild(el('div', 'section-title', t('stats.exams')));
+      main.appendChild(examBox);
+    }
+
     /* ---- section breakdown (books whose Contents we parsed) ---- */
     var secBox = buildSectionBreakdown(rows);
     if (secBox) {
@@ -3449,6 +3867,50 @@
     renderSidebar();
     refreshBadge();
     window.scrollTo(0, 0);
+  }
+
+  /* Every section of this book that has been sat at least once: the newest
+     band, the best one, and how many runs it took. A candidate's real question
+     is "am I moving?", so latest and best sit side by side — a single "best"
+     would hide a bad week and a single "latest" would hide the progress. Null
+     for any book with no timed runs, which is every non-IELTS book. */
+  function buildExamSummary() {
+    var rows = [];
+    book.units.forEach(function (u) {
+      if (!EXAM.isExamUnit(book.meta, u)) return;
+      var runs = state.exams[examKey(book.id, u.unit)] || [];
+      if (!runs.length) return;
+      var last = runs[runs.length - 1];
+      var best = runs.reduce(function (a, r) { return r.raw > a.raw ? r : a; }, runs[0]);
+      rows.push({ u: u, runs: runs, last: last, best: best });
+    });
+    if (!rows.length) return null;
+
+    var tbl = el('table', 'exam-table');
+    var thead = el('thead');
+    var hr = el('tr');
+    [t('stats.th.unit'), t('exam.th.score'), t('exam.th.band'), t('exam.thBest'), t('exam.thRuns')]
+      .forEach(function (h) { hr.appendChild(el('th', null, h)); });
+    thead.appendChild(hr);
+    tbl.appendChild(thead);
+    var tb = el('tbody');
+    rows.forEach(function (r) {
+      var tr = el('tr');
+      var td = el('td');
+      var a = el('a', null, unitTitle(r.u));
+      a.href = '#/b/' + book.id + '/unit/' + r.u.unit + '/exam';
+      td.appendChild(a);
+      tr.appendChild(td);
+      tr.appendChild(el('td', 'num', r.last.raw + '/' + r.last.total));
+      var lb = EXAM.bandFor(r.last.skill, r.last.raw);
+      var bb = EXAM.bandFor(r.best.skill, r.best.raw);
+      tr.appendChild(el('td', 'num band', lb == null ? '—' : lb.toFixed(1)));
+      tr.appendChild(el('td', 'num', bb == null ? '—' : bb.toFixed(1)));
+      tr.appendChild(el('td', 'num', String(r.runs.length)));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    return tbl;
   }
 
   // Colour bucket for a day's answer count — a GitHub-style five-step scale.
@@ -5078,6 +5540,7 @@
     }
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
+    else if (sub === 'exam') renderExam(arg);
     else if (sub === 'unit') renderUnit(arg);
     else renderUnit(book.units.length ? book.units[0].unit : 1);
   }
@@ -5095,12 +5558,15 @@
       if (sub && (!window.SRS || SRS.subs.indexOf(sub) < 0)) sub = '';
       return { view: 'srs', sub: sub };
     }
-    var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)|\/(errors|stats))?/.exec(h);
+    // '#/b/<id>/unit/<n>/exam' is a page of its own rather than a flag on the
+    // unit, so a reload in the middle of a mock test comes back to the paper
+    // and the browser's back button means "leave the exam".
+    var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)(\/exam)?|\/(errors|stats))?/.exec(h);
     if (m) {
       return {
         view: 'book',
         id: m[1],
-        sub: m[2] ? 'unit' : (m[4] || null),
+        sub: m[4] ? 'exam' : (m[2] ? 'unit' : (m[5] || null)),
         arg: m[3] ? parseInt(m[3], 10) : null
       };
     }
@@ -5112,6 +5578,10 @@
 
   function route() {
     closeSidebar();
+    // Any navigation leaves the exam paper behind. The run itself survives in
+    // the store — only its clock display is torn down here, and the page that
+    // re-renders the paper starts a new one.
+    stopExamTick();
     if (window.WordLookup) window.WordLookup.hide();
     var r = parseHash(location.hash);
     // Where ◇ goes back to from a session. Every page that is not a session

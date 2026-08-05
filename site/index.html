@@ -265,6 +265,9 @@
 <!-- Defines window.PDFVIEW; the ~1.8 MB of pdf.js behind it is only imported
      the first time a reader on a phone opens a book. -->
 <script src="pdfview.js"></script>
+<!-- Band conversion, the books' own score charts and the exam clock. Pure
+     knowledge, no DOM: app.js draws the paper. -->
+<script src="exam.js"></script>
 <script src="app.js"></script>
 <script>
 /* Offline support. Registered after load so it never delays first paint, and

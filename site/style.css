@@ -3154,3 +3154,143 @@ body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
     transition: none;
   }
 }
+
+/* ===== IELTS: exam conditions ===== */
+
+/* The entry chip. It sits among the page-number chips and must not read as one
+   of them — this is the button that starts a timed test. */
+.exam-chip {
+  text-decoration: none;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.exam-chip:hover { background: var(--accent); color: #fff; }
+
+.exam-resume {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-bg);
+  color: var(--gold);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
+
+.exam-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  max-width: 640px;
+}
+.exam-rules { margin: 12px 0 16px; padding-left: 2px; list-style: none; }
+.exam-rules li { margin: 7px 0; color: var(--muted); font-size: 14px; }
+.btn.big { padding: 11px 20px; font-size: 15px; }
+.exam-card .btn.ghost { margin-left: 10px; text-decoration: none; }
+
+/* The clock. Sticky, because in a sixty-minute Reading test the reader is
+   somewhere in the middle of a long page when they want to know the time. */
+.exam-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.eb-title { font-weight: 600; }
+.eb-clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  letter-spacing: .5px;
+}
+.exam-bar.low .eb-clock { color: var(--cta); }
+
+/* A row under exam conditions is a number and a box: no verdict colouring can
+   leak in from a previous practice attempt. */
+.row.exam-row.correct, .row.exam-row.wrong, .row.exam-row.mastered {
+  background: transparent;
+  border-color: var(--line-soft);
+}
+
+.exam-result {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.er-score { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.er-raw { font-size: 34px; font-variant-numeric: tabular-nums; }
+.er-band {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.er-bandlab { color: var(--muted); font-size: 13px; }
+.er-note { font-size: 12.5px; margin-top: 6px; }
+.er-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+.er-meta .bad { color: var(--bad); }
+.er-chart {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.er-chart.low { background: var(--bad-bg); border-color: var(--bad-line); }
+.er-chart.mid { background: var(--gold-bg); border-color: var(--gold-line); }
+.er-chart.high { background: var(--ok-bg); border-color: var(--ok-line); }
+.erc-label { display: block; font-weight: 600; margin-bottom: 3px; }
+
+.exam-parts { margin-top: 18px; }
+.ep-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 13.5px; }
+.ep-num { min-width: 46px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ep-label { flex: 1 1 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-bar { width: 120px; height: 7px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
+.ep-bar i { display: block; height: 100%; background: var(--accent); }
+.ep-score { min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.exam-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.exam-actions .btn { text-decoration: none; }
+
+.exam-hist { margin-top: 24px; }
+.exam-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.exam-table th, .exam-table td { padding: 7px 10px; border-bottom: 1px solid var(--line-soft); text-align: left; }
+.exam-table th { color: var(--muted); font-weight: 600; }
+.exam-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.exam-table .band { color: var(--accent); font-weight: 600; }
+
+/* The band next to a unit's score line, in practice mode. */
+.band-chip {
+  margin-left: 10px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .eb-clock { font-size: 17px; }
+  .ep-bar { width: 70px; }
+  .er-raw, .er-band { font-size: 27px; }
+}

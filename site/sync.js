@@ -423,7 +423,12 @@ window.SYNC = (function () {
     out[META] = {
       daily: st.daily || {},
       last: st.last || null,
-      placement: st.placement || null
+      placement: st.placement || null,
+      // Finished mock exams. Small (one line per sitting) and worth keeping
+      // across devices — a band from last month is the thing a candidate
+      // measures the next one against. The run still in progress is not sent:
+      // it belongs to the tab holding the clock.
+      exams: st.exams || {}
     };
     return out;
   }
@@ -431,12 +436,13 @@ window.SYNC = (function () {
   // Rows -> an object shaped like `state`, so it can go straight into the
   // existing mergeInto() without that function learning anything about sync.
   function rowsToState(rows) {
-    var st = { items: {}, daily: {}, last: null, placement: null };
+    var st = { items: {}, daily: {}, last: null, placement: null, exams: {} };
     (rows || []).forEach(function (r) {
       var d = r.data || {};
       if (r.book_id === META) {
         st.daily = d.daily || {};
         st.placement = d.placement || null;
+        st.exams = d.exams || {};
         // `last` is only a "resume where you were" pointer and carries no ts, so
         // a remote one is accepted only when this device has none — otherwise a
         // sync would yank the reader back to another device's book.
