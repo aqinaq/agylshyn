@@ -51,12 +51,16 @@
             // newest last. `exam` is the one still being sat, if any.
             exams: p.exams || {},
             exam: p.exam || null,
+            // 'bookId|wTEST|wPART' -> {text, ts} — Writing drafts. Kept beside
+            // the answers rather than in a store of their own so one export,
+            // one import and one sync carry everything a learner has written.
+            writing: p.writing || {},
             ui: p.ui || {}
           };
         }
       }
     } catch (e) { /* corrupt or unavailable storage — start fresh */ }
-    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, exams: {}, exam: null, ui: {} };
+    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, exams: {}, exam: null, writing: {}, ui: {} };
   }
 
   // First visit (or a stored 'auto' from the old three-state toggle): resolve the
@@ -128,6 +132,14 @@
     var de = disk.exams || {};
     cur.exams = cur.exams || {};
     for (var ek in de) cur.exams[ek] = mergeRuns(cur.exams[ek], de[ek]);
+    // A draft is one text with one timestamp: newest wins, per task. A merge
+    // that concatenated two devices' essays would be worse than either.
+    var dw = disk.writing || {};
+    cur.writing = cur.writing || {};
+    for (var wk in dw) {
+      var mine = cur.writing[wk];
+      if (!mine || (dw[wk] && (dw[wk].ts || 0) > (mine.ts || 0))) cur.writing[wk] = dw[wk];
+    }
     cur.books = disk.books || cur.books;
   }
 
@@ -939,7 +951,10 @@
         });
       })
       .then(function (d) {
-        var bk = { id: id, meta: bookMeta(id), units: d.units || [] };
+        // `prompts` — the Writing and Speaking tasks of an IELTS book. They are
+        // not units and not gradable, so they hang off the book rather than
+        // being forced into the unit shape; only Cambridge 21 has them today.
+        var bk = { id: id, meta: bookMeta(id), units: d.units || [], prompts: d.prompts || [] };
         cache[id] = bk;
         delete pending[id];
         return bk;
@@ -2147,6 +2162,22 @@
       unitListEl.appendChild(li);
     });
     if (!shown) unitListEl.appendChild(el('div', 'empty-hint', t('sidebar.empty')));
+
+    // The Writing and Speaking tasks are not units — they are not numbered,
+    // not graded and not part of the progress bar — so they sit under the list
+    // rather than in it, one entry per test.
+    if (hasTasks() && !q) {
+      var li = el('li', 'unit-extra');
+      li.appendChild(el('span', 'ue-head', t('task.sidebar')));
+      promptTests().forEach(function (n) {
+        var a = el('a', 'unit-link ue-link');
+        a.href = '#/b/' + book.id + '/tasks/' + n;
+        a.appendChild(el('span', 'u-num', '✍'));
+        a.appendChild(el('span', 'u-title', t('task.test', { n: n })));
+        li.appendChild(a);
+      });
+      unitListEl.appendChild(li);
+    }
   }
 
   function refreshBadge() {
@@ -3476,6 +3507,362 @@
     return box;
   }
 
+  /* ================= IELTS: Writing and Speaking ================= */
+
+  /* The half of the exam nothing could grade, and which therefore sat in the
+     data file unread: `prompts` — two Writing tasks and three Speaking parts
+     per test. A machine cannot mark an essay, but almost everything else about
+     practising one can be provided: the task in front of the reader, the clock
+     the real exam runs, the word count that decides whether the answer is even
+     eligible, a draft that survives closing the tab, and — for Speaking — the
+     recording, so a candidate can hear what an examiner would hear.
+
+     What is deliberately NOT here is a score. Inventing a Writing band from a
+     word count would be worse than saying nothing; the page gives the criteria
+     the examiner uses and leaves the judgement where it belongs. */
+
+  // Minutes and minimum words, as the exam sets them.
+  var WRITE_SPEC = { 1: { min: 20, words: 150 }, 2: { min: 40, words: 250 } };
+  // Speaking: preparation and talking time. Only Part 2 (the long turn) is
+  // clocked in the real test; parts 1 and 3 are a conversation.
+  var SPEAK_SPEC = { 2: { prep: 60, talk: 120 } };
+
+  function writeKey(bookId, test, part) { return bookId + '|w' + test + '|' + part; }
+
+  function draft(key) {
+    state.writing = state.writing || {};
+    return state.writing[key] || null;
+  }
+
+  function saveDraft(key, text, secs) {
+    state.writing = state.writing || {};
+    var d = state.writing[key] || {};
+    d.text = text;
+    if (secs != null) d.secs = secs;
+    d.ts = Date.now();
+    state.writing[key] = d;
+    save();
+    if (window.SYNC) SYNC.touch(key);
+  }
+
+  function wordCount(s) {
+    var m = String(s || '').trim();
+    if (!m) return 0;
+    return m.split(/\s+/).length;
+  }
+
+  function bookPrompts(test) {
+    return (book.prompts || []).filter(function (p) { return Number(p.test) === Number(test); });
+  }
+
+  function promptTests() {
+    var seen = {}, out = [];
+    (book.prompts || []).forEach(function (p) {
+      var n = Number(p.test);
+      if (!seen[n]) { seen[n] = 1; out.push(n); }
+    });
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  function hasTasks() { return !!(book && book.prompts && book.prompts.length); }
+
+  function renderTasks(testNo) {
+    var tests = promptTests();
+    if (!tests.length) { renderNotFound(testNo || 1); return; }
+    var test = tests.indexOf(Number(testNo)) > -1 ? Number(testNo) : tests[0];
+    currentUnit = null;
+    setTab('units');
+    clear(main);
+    afterChange = function () {};
+
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null, t('task.h1', { n: test })));
+    var chips = el('div', 'chips');
+    tests.forEach(function (n) {
+      var c = el('a', 'chip' + (n === test ? ' chip-on' : ''), t('task.test', { n: n }));
+      c.href = '#/b/' + book.id + '/tasks/' + n;
+      chips.appendChild(c);
+    });
+    head.appendChild(chips);
+    head.appendChild(el('div', 'instructions', t('task.intro')));
+    main.appendChild(head);
+
+    var list = bookPrompts(test);
+    var writing = list.filter(function (p) { return p.skill === 'writing'; });
+    var speaking = list.filter(function (p) { return p.skill === 'speaking'; });
+    var byPart = function (a, b) { return Number(a.part) - Number(b.part); };
+    writing.sort(byPart);
+    speaking.sort(byPart);
+
+    if (writing.length) {
+      main.appendChild(el('div', 'section-title', t('task.writing')));
+      writing.forEach(function (p) { main.appendChild(buildWritingTask(test, p)); });
+    }
+    if (speaking.length) {
+      main.appendChild(el('div', 'section-title', t('task.speaking')));
+      speaking.forEach(function (p) { main.appendChild(buildSpeakingTask(test, p)); });
+    }
+    window.scrollTo(0, 0);
+  }
+
+  // The prompt as the book prints it. Task 1 always refers to a chart or a
+  // diagram, and no extraction can bring that across — so the page says where
+  // it is instead of pretending the words are the whole task.
+  function promptBody(p) {
+    var box = el('div', 'task-prompt');
+    String(p.prompt || '').split(/\n+/).forEach(function (line) {
+      if (line.trim()) box.appendChild(el('p', null, line.trim()));
+    });
+    return box;
+  }
+
+  function pdfChipFor(p) {
+    if (p.pdfPage == null || !(book.meta && book.meta.pdf)) return null;
+    return pageChip(t('task.inBook'), String(p.pdfPage), Number(p.pdfPage));
+  }
+
+  /* A countdown a reader starts themselves. Returns the element; the caller
+     decides what the end of it means — for Writing nothing happens, because an
+     essay two minutes over time is still worth finishing, and the exam's own
+     "you should spend about 20 minutes" is advice rather than a bell. */
+  function taskTimer(seconds, onEnd) {
+    var wrap = el('div', 'task-timer');
+    var left = seconds, timer = null, running = false;
+    var out = el('b', 'tt-clock', EXAM.clock(left));
+    var go = el('button', 'btn small', t('task.timerStart'));
+    var reset = el('button', 'btn small ghost', t('task.timerReset'));
+
+    function paint() {
+      out.textContent = EXAM.clock(Math.abs(left));
+      wrap.classList.toggle('over', left <= 0);
+      go.textContent = running ? t('task.timerPause') : t('task.timerStart');
+    }
+    function stop() {
+      running = false;
+      if (timer) { clearInterval(timer); timer = null; }
+      paint();
+    }
+    go.addEventListener('click', function () {
+      if (running) { stop(); return; }
+      running = true;
+      paint();
+      timer = setInterval(function () {
+        left--;
+        if (left <= 0) {
+          left = 0;
+          stop();
+          wrap.classList.add('over');
+          if (onEnd) onEnd();
+          return;
+        }
+        paint();
+      }, 1000);
+    });
+    reset.addEventListener('click', function () { stop(); left = seconds; paint(); });
+    // Leaving the page must not leave an interval ticking in a dead DOM.
+    taskTimers.push(stop);
+
+    wrap.appendChild(out);
+    wrap.appendChild(go);
+    wrap.appendChild(reset);
+    paint();
+    return wrap;
+  }
+
+  var taskTimers = [];
+  function stopTaskTimers() {
+    taskTimers.forEach(function (fn) { try { fn(); } catch (e) { /* already gone */ } });
+    taskTimers = [];
+  }
+
+  function buildWritingTask(test, p) {
+    var part = Number(p.part) || 1;
+    var spec = WRITE_SPEC[part] || WRITE_SPEC[1];
+    var key = writeKey(book.id, test, 'w' + part);
+    var box = el('div', 'task-card');
+
+    var head = el('div', 'task-head');
+    head.appendChild(el('b', null, t('task.writingPart', { n: part })));
+    head.appendChild(el('span', 'task-chip', t('task.minutes', { n: spec.min })));
+    head.appendChild(el('span', 'task-chip', t('task.minWords', { n: spec.words })));
+    var pdfc = pdfChipFor(p);
+    if (pdfc) head.appendChild(pdfc);
+    box.appendChild(head);
+
+    if (part === 1) box.appendChild(el('div', 'note', t('task.figureNote')));
+    box.appendChild(promptBody(p));
+    box.appendChild(taskTimer(spec.min * 60));
+
+    var d = draft(key);
+    var area = el('textarea', 'task-area');
+    area.value = (d && d.text) || '';
+    area.rows = 14;
+    area.spellcheck = true;
+    area.setAttribute('aria-label', t('task.writingPart', { n: part }));
+    box.appendChild(area);
+
+    var foot = el('div', 'task-foot');
+    var count = el('span', 'task-count');
+    foot.appendChild(count);
+    var saved = el('span', 'muted task-saved');
+    foot.appendChild(saved);
+
+    var copy = el('button', 'btn small ghost', t('task.copy'));
+    copy.addEventListener('click', function () {
+      copyText(area.value);
+      copy.textContent = t('task.copied');
+      setTimeout(function () { copy.textContent = t('task.copy'); }, 1500);
+    });
+    foot.appendChild(copy);
+
+    var wipe = el('button', 'btn small ghost', t('task.clear'));
+    wipe.addEventListener('click', function () {
+      if (!area.value || !confirm(t('task.clearConfirm'))) return;
+      area.value = '';
+      saveDraft(key, '');
+      paintCount();
+    });
+    foot.appendChild(wipe);
+    box.appendChild(foot);
+
+    // The four things an examiner is actually marking. Not a score — a reminder
+    // to read your own answer against the criteria before deciding it is done.
+    var crit = el('details', 'task-crit');
+    crit.appendChild(el('summary', null, t('task.criteria')));
+    var ul = el('ul');
+    ['task.crit1', 'task.crit2', 'task.crit3', 'task.crit4'].forEach(function (k) {
+      ul.appendChild(el('li', null, t(k)));
+    });
+    crit.appendChild(ul);
+    box.appendChild(crit);
+
+    function paintCount() {
+      var n = wordCount(area.value);
+      count.textContent = t('task.words', { n: n, min: spec.words });
+      count.classList.toggle('ok', n >= spec.words);
+      count.classList.toggle('low', n > 0 && n < spec.words);
+    }
+    var writeTimer = null;
+    area.addEventListener('input', function () {
+      paintCount();
+      clearTimeout(writeTimer);
+      writeTimer = setTimeout(function () {
+        saveDraft(key, area.value);
+        saved.textContent = t('task.saved');
+      }, 400);
+    });
+    paintCount();
+    if (d && d.ts) saved.textContent = t('task.savedAt', { d: authDate(new Date(d.ts).toISOString()) });
+    return box;
+  }
+
+  function buildSpeakingTask(test, p) {
+    var part = Number(p.part) || 1;
+    var box = el('div', 'task-card');
+
+    var head = el('div', 'task-head');
+    head.appendChild(el('b', null, t('task.speakingPart', { n: part })));
+    var spec = SPEAK_SPEC[part];
+    if (spec) {
+      head.appendChild(el('span', 'task-chip', t('task.prep', { n: spec.prep })));
+      head.appendChild(el('span', 'task-chip', t('task.talk', { n: Math.round(spec.talk / 60) })));
+    }
+    var pdfc = pdfChipFor(p);
+    if (pdfc) head.appendChild(pdfc);
+    box.appendChild(head);
+
+    box.appendChild(promptBody(p));
+
+    // Part 2 is the one with a clock in the real exam: a minute to prepare,
+    // then one to two minutes of uninterrupted speech.
+    if (spec) {
+      var row = el('div', 'task-two-timers');
+      var prep = el('div', 'tt-wrap');
+      prep.appendChild(el('span', 'tt-label', t('task.prepLabel')));
+      prep.appendChild(taskTimer(spec.prep));
+      row.appendChild(prep);
+      var talk = el('div', 'tt-wrap');
+      talk.appendChild(el('span', 'tt-label', t('task.talkLabel')));
+      talk.appendChild(taskTimer(spec.talk));
+      row.appendChild(talk);
+      box.appendChild(row);
+    }
+
+    box.appendChild(buildRecorder(test, part));
+    return box;
+  }
+
+  /* Record the answer and play it back. Everything happens in the page: the
+     blob never leaves the browser and is deliberately NOT stored — a couple of
+     minutes of audio is megabytes, localStorage is a few, and silently filling
+     it would break progress saving, which matters more. The download button is
+     the way to keep one. */
+  function buildRecorder(test, part) {
+    var box = el('div', 'task-rec');
+    var canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+      window.MediaRecorder);
+    if (!canRecord) {
+      box.appendChild(el('div', 'note', t('task.noRec')));
+      return box;
+    }
+
+    var btn = el('button', 'btn small rec-btn', '⏺ ' + t('task.record'));
+    var note = el('span', 'muted');
+    box.appendChild(btn);
+    box.appendChild(note);
+    var player = el('div', 'rec-player');
+    box.appendChild(player);
+    box.appendChild(el('div', 'note', t('task.recNote')));
+
+    var recorder = null, chunks = [], stream = null;
+
+    function stopStream() {
+      if (stream) { stream.getTracks().forEach(function (tr) { tr.stop(); }); stream = null; }
+    }
+
+    btn.addEventListener('click', function () {
+      if (recorder && recorder.state === 'recording') { recorder.stop(); return; }
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (st) {
+        stream = st;
+        chunks = [];
+        recorder = new MediaRecorder(st);
+        recorder.addEventListener('dataavailable', function (e) {
+          if (e.data && e.data.size) chunks.push(e.data);
+        });
+        recorder.addEventListener('stop', function () {
+          stopStream();
+          btn.classList.remove('on');
+          btn.textContent = '⏺ ' + t('task.record');
+          note.textContent = '';
+          var blob = new Blob(chunks, { type: chunks.length ? chunks[0].type : 'audio/webm' });
+          var url = URL.createObjectURL(blob);
+          clear(player);
+          var audio = document.createElement('audio');
+          audio.controls = true;
+          audio.src = url;
+          player.appendChild(audio);
+          var dl = el('a', 'btn small ghost', '⭳ ' + t('task.download'));
+          dl.href = url;
+          dl.download = book.id + '-test' + test + '-speaking-part' + part + '.webm';
+          player.appendChild(dl);
+        });
+        recorder.start();
+        btn.classList.add('on');
+        btn.textContent = '⏹ ' + t('task.stopRec');
+        note.textContent = t('task.recording');
+      }).catch(function () {
+        note.textContent = t('task.micDenied');
+      });
+    });
+    // Navigating away mid-recording must release the microphone.
+    taskTimers.push(function () {
+      if (recorder && recorder.state === 'recording') { try { recorder.stop(); } catch (e) { /* gone */ } }
+      stopStream();
+    });
+    return box;
+  }
+
   function renderUnit(no) {
     var u = null;
     for (var i = 0; i < book.units.length; i++) {
@@ -3554,6 +3941,14 @@
       ex.href = '#/b/' + book.id + '/unit/' + u.unit + '/exam';
       ex.title = t('exam.chipHint', { m: Math.round(EXAM.limitFor(u.skill) / 60) });
       chips.appendChild(ex);
+
+      // The other two skills of the same test, where the book carries them.
+      var testNo = EXAM.testOf(u);
+      if (hasTasks() && promptTests().indexOf(testNo) > -1) {
+        var tc = el('a', 'chip chip-btn', '✍ ' + t('task.chip'));
+        tc.href = '#/b/' + book.id + '/tasks/' + testNo;
+        chips.appendChild(tc);
+      }
     }
     head.appendChild(chips);
 
@@ -5541,6 +5936,7 @@
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
     else if (sub === 'exam') renderExam(arg);
+    else if (sub === 'tasks') renderTasks(arg);
     else if (sub === 'unit') renderUnit(arg);
     else renderUnit(book.units.length ? book.units[0].unit : 1);
   }
@@ -5561,6 +5957,9 @@
     // '#/b/<id>/unit/<n>/exam' is a page of its own rather than a flag on the
     // unit, so a reload in the middle of a mock test comes back to the paper
     // and the browser's back button means "leave the exam".
+    // '#/b/<id>/tasks/<test>' — the Writing and Speaking half of an IELTS test.
+    var tk = /^#\/b\/([a-z0-9-]+)\/tasks(?:\/(\d+))?/.exec(h);
+    if (tk) return { view: 'book', id: tk[1], sub: 'tasks', arg: tk[2] ? parseInt(tk[2], 10) : null };
     var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)(\/exam)?|\/(errors|stats))?/.exec(h);
     if (m) {
       return {
@@ -5582,6 +5981,7 @@
     // the store — only its clock display is torn down here, and the page that
     // re-renders the paper starts a new one.
     stopExamTick();
+    stopTaskTimers();
     if (window.WordLookup) window.WordLookup.hide();
     var r = parseHash(location.hash);
     // Where ◇ goes back to from a session. Every page that is not a session

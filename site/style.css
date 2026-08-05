@@ -3294,3 +3294,74 @@ body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
   .ep-bar { width: 70px; }
   .er-raw, .er-band { font-size: 27px; }
 }
+
+/* ===== IELTS: Writing and Speaking ===== */
+
+.chip-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.chips a.chip { text-decoration: none; }
+
+.task-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+.task-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 10px; }
+.task-head b { font-size: 15.5px; }
+.task-chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.task-prompt { font-size: 14.5px; line-height: 1.6; }
+.task-prompt p { margin: 6px 0; }
+
+.task-timer { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0; }
+.tt-clock { font-variant-numeric: tabular-nums; font-size: 18px; min-width: 62px; }
+.task-timer.over .tt-clock { color: var(--cta); }
+.task-two-timers { display: flex; gap: 22px; flex-wrap: wrap; }
+.tt-wrap { display: flex; align-items: center; gap: 8px; }
+.tt-label { color: var(--muted); font-size: 13px; }
+
+.task-area {
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.65;
+  resize: vertical;
+}
+.task-area:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.task-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 9px; }
+.task-count { font-variant-numeric: tabular-nums; font-size: 13.5px; color: var(--muted); }
+.task-count.ok { color: var(--ok); font-weight: 600; }
+.task-count.low { color: var(--gold); }
+.task-saved { font-size: 12.5px; margin-right: auto; }
+
+.task-crit { margin-top: 12px; font-size: 13.5px; }
+.task-crit summary { cursor: pointer; color: var(--accent); }
+.task-crit ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
+.task-crit li { margin: 5px 0; line-height: 1.5; }
+
+.task-rec { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rec-btn.on { background: var(--cta); border-color: var(--cta); color: #fff; }
+.rec-player { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; }
+.rec-player audio { max-width: 100%; }
+.rec-player .btn { text-decoration: none; }
+.task-rec .note { width: 100%; }
+
+/* The Writing/Speaking entries under the unit list. */
+.unit-extra { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.ue-head { display: block; padding: 0 10px 4px; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+body.side-min .ue-head { display: none; }
