@@ -737,6 +737,47 @@
     };
   }
 
+  /* Wrong answers as flash cards.
+
+     Not every mistake makes one. A card needs a front somebody can be shown
+     and a back they can be marked against, so a book that prints its questions
+     only in the PDF (the IELTS answer sheets) has nothing to give here, and
+     neither has a self-check row whose answer the app never knew. `min` is how
+     many times the question must have been missed — the automatic sweep asks
+     for two, the button on the Mistakes page takes everything on the page. */
+  function mistakeRows(bk, min) {
+    var out = [];
+    bk.units.forEach(function (u) {
+      (u.subExercises || []).forEach(function (sub) {
+        (sub.items || []).forEach(function (it) {
+          if (isExample(it) || isManual(it)) return;
+          if (!it.question || !it.answer) return;
+          var key = keyOf(bk.id, u.unit, sub.number, itemKey(it));
+          var r = rec(key);
+          if (!r || !r.wrong || r.mastered) return;
+          if (min && r.wrong < min) return;
+          if (window.SRS && SRS.hasSrc(key)) return;
+          out.push({
+            srcKey: key,
+            wrong: r.wrong,
+            front: it.question,
+            back: it.answer,
+            source: ((bk.meta && bk.meta.title) || bk.id) + ' · Unit ' + u.unit,
+            src: { book: bk.id, unit: u.unit }
+          });
+        });
+      });
+    });
+    return out;
+  }
+
+  // The automatic half: a question missed twice becomes a card without anybody
+  // asking. Off if the reader turned it off in the deck's settings.
+  function sweepMistakes(bk) {
+    if (!bk || !window.SRS || !SRS.autoMistakes()) return 0;
+    return SRS.addMistakes(mistakeRows(bk, 2), { auto: true });
+  }
+
   function allErrors(bk) {
     var groups = [];
     bk.units.forEach(function (u) {
@@ -759,6 +800,16 @@
 
   // Exact per-book roll-up, cached so the library page can show a real
   // percentage without loading all six data files.
+  /* Everything that has to happen after answers in a book changed: its
+     counters, and the deck picking up whatever has now been missed twice.
+     Both are cheap passes over data already in memory, and keeping them in one
+     function is what stops the two drifting apart — every answer path in the
+     app goes through here. */
+  function bookChanged(bk) {
+    cacheBookStats(bk);
+    sweepMistakes(bk);
+  }
+
   function cacheBookStats(bk) {
     var tot = { total: 0, done: 0, correct: 0, mastered: 0, review: 0 };
     bk.units.forEach(function (u) {
@@ -3508,7 +3559,7 @@
     flush();
     if (window.SYNC) SYNC.touch(k);      // the meta row carries exam history
     examShowResult = k;
-    cacheBookStats(book);
+    bookChanged(book);
     renderSidebar();
     refreshBadge();
     renderExam(u.unit);
@@ -4278,7 +4329,7 @@
       }
       renderSidebar();
       refreshBadge();
-      cacheBookStats(book);
+      bookChanged(book);
     }
     afterChange = refresh;
     refresh();
@@ -4297,7 +4348,7 @@
     currentUnit = null;
     setTab('errors');
     clear(main);
-    afterChange = function () { renderSidebar(); refreshBadge(); cacheBookStats(book); };
+    afterChange = function () { renderSidebar(); refreshBadge(); bookChanged(book); };
 
     var head = el('div', 'page-head');
     head.appendChild(el('h1', null, t('err.h1')));
@@ -4322,6 +4373,24 @@
     var run = el('a', 'btn primary', t('drill.startHere'));
     run.href = '#/drill/' + book.id;
     runBar.appendChild(run);
+
+    // The other thing to do with a list of mistakes: keep them. A card outlives
+    // the mistakes page — this list empties itself as soon as the question is
+    // answered right, and the deck is what brings it back a week later.
+    if (window.SRS) {
+      var pending = mistakeRows(book, 1);
+      if (pending.length) {
+        var toDeck = el('button', 'btn', t('err.toDeck', { n: pending.length }));
+        toDeck.title = t('err.toDeckHint');
+        toDeck.addEventListener('click', function () {
+          var n = SRS.addMistakes(pending);
+          toDeck.disabled = true;
+          toDeck.textContent = t('err.toDeckDone', { n: n });
+          refreshSrsBadge();
+        });
+        runBar.appendChild(toDeck);
+      }
+    }
     main.appendChild(runBar);
 
     groups.forEach(function (g) {
@@ -5347,7 +5416,7 @@
   function finishDrill() {
     drill.done = true;
     // The library page reads cached per-book totals; a session just changed them.
-    drill.books.forEach(function (bk) { cacheBookStats(bk); });
+    drill.books.forEach(function (bk) { bookChanged(bk); });
     renderDrillEnd();
   }
 
@@ -6158,7 +6227,7 @@
       if (m.view !== 'book' || m.id !== id) return;
       book = bk;
       paintChrome(id);
-      cacheBookStats(bk);
+      bookChanged(bk);
       renderBookView(sub, arg);
     }, function (e) { showError(id, e); });
   }

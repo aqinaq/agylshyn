@@ -36,12 +36,22 @@ window.SRS = (function () {
 
   var DEFAULT_GOAL = 10;
 
+  // A question answered wrong this many times becomes a card by itself. One
+  // slip is a typo; the second time is a gap in what the reader knows, and that
+  // is the thing worth carrying into the deck. Anything lower floods a deck
+  // nobody then reviews.
+  var MISTAKE_AFTER = 2;
+
   /* ================= storage ================= */
 
   var data = load();
 
   function blank() {
-    return { v: 1, cards: [], settings: { dailyGoal: DEFAULT_GOAL }, history: {} };
+    return {
+      v: 1, cards: [],
+      settings: { dailyGoal: DEFAULT_GOAL, autoMistakes: true },
+      history: {}
+    };
   }
 
   function load() {
@@ -55,7 +65,10 @@ window.SRS = (function () {
             cards: p.cards,
             settings: {
               dailyGoal: p.settings && p.settings.dailyGoal > 0
-                ? p.settings.dailyGoal : DEFAULT_GOAL
+                ? p.settings.dailyGoal : DEFAULT_GOAL,
+              // A deck that existed before this setting did opts in: the whole
+              // point is that it happens without being asked for.
+              autoMistakes: !(p.settings && p.settings.autoMistakes === false)
             },
             history: p.history || {}
           };
@@ -208,6 +221,15 @@ window.SRS = (function () {
       word: (fields.word || '').trim(),
       translation: (fields.translation || '').trim(),
       example: (fields.example || '').trim(),
+      // 'word' (the default: front is a word, back is its Kazakh) or 'gap'
+      // (front is the sentence, back is the answer that goes in it). A mistake
+      // card is a 'gap' — the sentence is the question, and translating it
+      // would be answering something nobody asked.
+      kind: fields.kind === 'gap' ? 'gap' : 'word',
+      // The answer record this card came from ('book|unit|sub|n'), so the same
+      // mistake cannot be added twice — by the automatic path and the button on
+      // the Mistakes page both.
+      srcKey: fields.srcKey || null,
       collocations: fields.collocations || [],
       synonyms: fields.synonyms || [],
       antonyms: fields.antonyms || [],
@@ -238,6 +260,13 @@ window.SRS = (function () {
   }
 
   function norm(w) { return String(w || '').trim().toLowerCase(); }
+
+  function findSrc(key) {
+    if (!key) return null;
+    var list = live();
+    for (var i = 0; i < list.length; i++) if (list[i].srcKey === key) return list[i];
+    return null;
+  }
 
   function findWord(word) {
     var w = norm(word);
@@ -718,7 +747,8 @@ window.SRS = (function () {
 
   function flipCard(card) {
     var stage = el('div', 'srs-stage');
-    var box = el('div', 'srs-card' + (session.flipped ? ' flipped' : ''));
+    var box = el('div', 'srs-card' + (session.flipped ? ' flipped' : '') +
+      (card.kind === 'gap' ? ' srs-gap' : ''));
     var inner = el('div', 'srs-card-inner');
 
     var front = el('div', 'srs-face srs-front');
@@ -1240,6 +1270,17 @@ window.SRS = (function () {
     goal.wrap.appendChild(el('span', 'srs-field-hint', t('srs.set.goalHint')));
     form.appendChild(goal.wrap);
 
+    // Wrong answers becoming cards by themselves is the deck's other source,
+    // and it is on unless it is turned off here.
+    var autoWrap = el('label', 'srs-check');
+    var auto = document.createElement('input');
+    auto.type = 'checkbox';
+    auto.checked = data.settings.autoMistakes !== false;
+    autoWrap.appendChild(auto);
+    autoWrap.appendChild(el('span', null, t('srs.set.auto')));
+    form.appendChild(autoWrap);
+    form.appendChild(el('div', 'srs-field-hint', t('srs.set.autoHint', { n: MISTAKE_AFTER })));
+
     var msg = el('div', 'srs-msg');
     var acts = el('div', 'sub-actions');
     acts.appendChild(btn('btn primary', t('srs.set.save'), function () {
@@ -1247,6 +1288,7 @@ window.SRS = (function () {
       clear(msg);
       if (!v || v < 1) { msg.appendChild(el('span', 'bad', t('srs.set.goalBad'))); return; }
       data.settings.dailyGoal = Math.min(100, v);
+      data.settings.autoMistakes = !!auto.checked;
       save();
       msg.appendChild(el('span', 'ok', t('srs.set.saved')));
     }));
@@ -1338,6 +1380,46 @@ window.SRS = (function () {
       if (c) toast(t('srs.savedToast', { w: c.word }));
       return c;
     },
+
+    /* ================= mistakes ================= */
+
+    /* The deck's second source, and the one that costs the reader nothing.
+       Looking a word up is a deliberate act; getting a question wrong is not,
+       and a wrong answer is better evidence of what somebody does not know
+       than a word they were curious about.
+
+       app.js hands over `{srcKey, front, back, source}` rows and this decides
+       what becomes a card: never twice for the same question, never without
+       both sides, and (on the automatic path) only once a question has been
+       missed MISTAKE_AFTER times. Returns how many were added. */
+    addMistakes: function (rows, opts) {
+      opts = opts || {};
+      var added = 0;
+      (rows || []).forEach(function (row) {
+        if (!row || !row.front || !row.back) return;
+        if (opts.auto && (row.wrong || 0) < MISTAKE_AFTER) return;
+        if (findSrc(row.srcKey)) return;
+        var card = newCard({
+          kind: 'gap',
+          word: row.front,
+          translation: row.back,
+          example: row.source || '',
+          srcKey: row.srcKey,
+          src: row.src || 'mistake'
+        });
+        if (!card.word || !card.translation) return;
+        data.cards.push(card);
+        added++;
+      });
+      if (added) save();
+      return added;
+    },
+
+    // Whether wrong answers should turn into cards on their own. app.js asks
+    // before offering to do it, and the deck's settings page is where it is
+    // turned off.
+    autoMistakes: function () { return data.settings.autoMistakes !== false; },
+    hasSrc: function (key) { return !!findSrc(key); },
 
     onChange: function (fn) { if (typeof fn === 'function') listeners.push(fn); },
 

@@ -3419,3 +3419,16 @@ body.side-min .ue-head { display: none; }
 .dict-score { font-variant-numeric: tabular-nums; font-weight: 600; }
 .dict-script { max-height: 420px; overflow-y: auto; font-size: 14.5px; line-height: 1.7; }
 .dict-script p { margin: 8px 0; }
+
+/* A card made out of a mistake: the front is a sentence, not a word, so it
+   cannot be set in the 34px face the vocabulary cards use. */
+.srs-card.srs-gap .srs-word {
+  font-size: 19px;
+  line-height: 1.5;
+  font-weight: 500;
+  max-width: 34ch;
+}
+.srs-card.srs-gap .srs-translation { font-size: 26px; }
+
+.srs-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; cursor: pointer; }
+.srs-check input { width: 16px; height: 16px; accent-color: var(--accent); }

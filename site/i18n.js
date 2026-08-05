@@ -316,6 +316,8 @@ window.I18N = {
 
     'srs.set.h': 'Баптау',
     'srs.set.goal': 'Күніне жаңа сөз',
+    'srs.set.auto': 'Қателер өздігінен картаға айналсын',
+    'srs.set.autoHint': '{n} рет қате жауап берілген сұрақ автоматты түрде картаға түседі. Сөзді іздеп қосу — қалауың, ал қате — өзің білмейтініңнің нақты дәлелі.',
     'srs.set.goalHint': 'Күніне қанша жаңа сөз көрсетілсін. 5–15 — ұзаққа шыдайтын қарқын.',
     'srs.set.goalBad': '1-ден кем емес сан жаз.',
     'srs.set.save': 'Сақтау',
@@ -408,6 +410,10 @@ window.I18N = {
     'exam.thBest': 'Ең жақсысы',
     'exam.thRuns': 'Жүгіру',
     'stats.exams': 'Емтихан жүгірулері',
+
+    'err.toDeck': '🗂 {n} қатені карталарға қосу',
+    'err.toDeckHint': 'Әр қате — сұрағы бет жағында, жауабы артында тұрған карта. Қателер тізімі дұрыс жауап берген соң тазарады, ал карта бір аптадан кейін қайта келеді.',
+    'err.toDeckDone': '✓ {n} карта қосылды',
 
     // Writing / Speaking. Бағаланбайды — эссені машина тексере алмайды, ал
     // сөз санынан «band» ойлап шығару — жоқтан да жаман. Сондықтан бұл жерде
@@ -988,6 +994,8 @@ window.I18N = {
 
     'srs.set.h': 'Settings',
     'srs.set.goal': 'New words per day',
+    'srs.set.auto': 'Turn mistakes into cards automatically',
+    'srs.set.autoHint': 'A question answered wrong {n} times becomes a card by itself. Looking a word up is a choice; a wrong answer is evidence.',
     'srs.set.goalHint': 'How many unseen words a day to introduce. 5–15 is a pace that lasts.',
     'srs.set.goalBad': 'Enter a number of 1 or more.',
     'srs.set.save': 'Save',
@@ -1078,6 +1086,10 @@ window.I18N = {
     'exam.thBest': 'Best',
     'exam.thRuns': 'Runs',
     'stats.exams': 'Mock exams',
+
+    'err.toDeck': '🗂 Add {n} mistakes to the deck',
+    'err.toDeckHint': 'Each becomes a card: the question on the front, the answer on the back. This list empties as soon as you get one right; a card comes back a week later.',
+    'err.toDeckDone': '✓ {n} cards added',
 
     'task.chip': 'Writing / Speaking',
     'task.sidebar': 'Writing / Speaking',
