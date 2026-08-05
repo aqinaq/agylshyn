@@ -712,6 +712,7 @@ def build_full_book(book_id, title, audio_folder, tidy=lambda t: t):
     doc = fitz.open(os.path.join(ROOT, 'site', 'pdf', book_id + '.pdf'))
     pages = book_sections(doc, tidy)
     keys = book_key_pages(doc, pages, tidy)
+    scripts = parse_audioscripts(doc, pages)
 
     def section(test, kind):
         return [(i, lines) for t, k, i, lines in pages if t == test and k == kind]
@@ -725,8 +726,15 @@ def build_full_book(book_id, title, audio_folder, tidy=lambda t: t):
             page = next((i + 1 for i, lines in listening
                          if any(re.match(rf'PART\s+{part}\b', l) for l in lines)),
                         listening[0][0] + 1 if listening else 0)
-            parts.append({'part': part, 'audio': audio_files(audio_folder, n, part),
-                          'pdfPage': page, 'groups': parse_groups(flat, lo, hi)})
+            entry = {'part': part, 'audio': audio_files(audio_folder, n, part),
+                     'pdfPage': page, 'groups': parse_groups(flat, lo, hi)}
+            # The transcript, where the book prints one. It is what makes a
+            # dictation possible: the recording is already here, and this is
+            # the text to check what was heard against.
+            said = scripts.get(n, {}).get(part)
+            if said:
+                entry['script'] = script_sentences(said)
+            parts.append(entry)
 
         reading = section(n, 'reading')
         rflat = [l for _, lines in reading for l in lines]
@@ -808,6 +816,85 @@ def parse_speaking(section_pages):
     return parts
 
 
+SPEAKER = re.compile(r"^[A-Z][A-Z0-9 .&'’-]{0,24}:$")
+
+
+def audioscript_lines(page):
+    """Reading order for an audioscript page.
+
+    These pages print the speaker in a narrow left column and the speech in a
+    wide right one, and the flat text stream hands back every label first and
+    then every line of speech — run them together and the transcript is
+    nonsense.  The page is rotated 90 degrees, so what is visually a line is a
+    band of the first bbox coordinate: sorting the spans by it puts the speech
+    back in the order it is spoken.  The labels are dropped rather than kept —
+    who says a sentence does not change the dictation, and pairing a label with
+    its line is guesswork on a rotated page."""
+    spans = []
+    for block in page.get_text('dict')['blocks']:
+        for line in block.get('lines', []):
+            for span in line['spans']:
+                text = span['text'].strip()
+                if text:
+                    spans.append((round(span['bbox'][0], 1), round(span['bbox'][1], 1), text))
+    spans.sort()
+    return [t for _, _, t in spans]
+
+
+def parse_audioscripts(doc, pages):
+    """The transcript of every Listening part: {test: {part: text}}.
+
+    Only Cambridge 21 has these — 20 does not print them and 19's pages are a
+    scan with no text layer — so a book without them simply gets none, and the
+    dictation exercise is not offered there."""
+    out = {}
+    test = part = None
+    for t, kind, i, _lines in pages:
+        if kind != 'audioscript':
+            continue
+        for line in audioscript_lines(doc[i]):
+            if line == 'Audioscripts':
+                continue
+            # Bare numbers are the page number and the margin markers that show
+            # where each answer occurs; neither is spoken.
+            if re.fullmatch(r'\d{1,3}(?:/\d{1,3})?', line):
+                continue
+            m = re.fullmatch(r'TEST\s*(\d)', line)
+            if m:
+                test, part = int(m.group(1)), None
+                continue
+            m = re.fullmatch(r'PART\s*(\d)', line)
+            if m:
+                part = int(m.group(1))
+                continue
+            if SPEAKER.match(line) or len(line) <= 2:
+                continue
+            if test and part:
+                out.setdefault(test, {}).setdefault(part, []).append(line)
+    return {t: {p: ' '.join(lines) for p, lines in parts.items()}
+            for t, parts in out.items()}
+
+
+def script_sentences(text):
+    """A transcript as sentences — the unit the dictation exercise works in.
+
+    Split on end punctuation followed by a capital, which keeps "Mr. Smith" and
+    "£120." together far more often than a bare full-stop split does.  Anything
+    under four words is glued onto the previous sentence: a transcript is full
+    of "Yes." and "OK." and a one-word gap-fill teaches nothing."""
+    parts = re.split(r'(?<=[.!?])\s+(?=[A-Z"‘“])', text.strip())
+    out = []
+    for s in parts:
+        s = s.strip()
+        if not s:
+            continue
+        if out and len(s.split()) < 4:
+            out[-1] += ' ' + s
+        else:
+            out.append(s)
+    return out
+
+
 def validate(data):
     """Report how much of a book came out of the PDF intact.
 
@@ -879,6 +966,8 @@ def to_units(book):
                     sub['audio'] = {'part': part['part'], 'files': part['audio'],
                                     'from': LISTENING_PARTS[part['part']][0],
                                     'to': LISTENING_PARTS[part['part']][1]}
+                    if part.get('script'):
+                        sub['audio']['script'] = part['script']
                 subs.append(sub)
         units.append({
             'unit': len(units) + 1,

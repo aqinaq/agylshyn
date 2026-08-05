@@ -350,6 +350,21 @@ window.I18N = {
     'ielts.passage': '{n}-мәтін',
     'ielts.passageHide': 'Мәтінді жасыру',
     'ielts.passageShow': 'Мәтінді оқу',
+    'ielts.back5': '5 секунд артқа',
+
+    // Диктант. Аудио да, мәтіні де бар — жетпейтіні тек уақыт белгілері,
+    // сондықтан жазбаны оқушының өзі басқарады да, естігенін теріп отырады.
+    'dict.open': 'Мәтін / диктант',
+    'dict.close': 'Жабу',
+    'dict.intro': 'Аудионы өзің қосып, естігеніңді бос орындарға тере бер. Баяулатқың келсе — 0.75×.',
+    'dict.read': 'Толық мәтінді оқу',
+    'dict.hideRead': 'Диктантқа қайту',
+    'dict.check': 'Тексеру',
+    'dict.reset': 'Тазалау',
+    'dict.play': 'Ойнату / тоқтату',
+    'dict.score': '{a} / {b}',
+    'dict.tabScore': 'ең жақсысы: {a} / {b}',
+    'dict.gapAria': 'Естіген сөзіңді жаз',
 
     // Емтихан режимі. «Шамамен» деген сөз әр жерде тұр әрі тұруы керек:
     // Cambridge бұл кітаптарда балл кестесін бастырмайды, төмендегі баға —
@@ -1010,6 +1025,19 @@ window.I18N = {
     'ielts.passage': 'Passage {n}',
     'ielts.passageHide': 'Hide the passage',
     'ielts.passageShow': 'Read the passage',
+    'ielts.back5': 'Back five seconds',
+
+    'dict.open': 'Transcript / dictation',
+    'dict.close': 'Close',
+    'dict.intro': 'Start the recording yourself and type what you hear into the gaps. 0.75× if it is too fast.',
+    'dict.read': 'Read the whole transcript',
+    'dict.hideRead': 'Back to the dictation',
+    'dict.check': 'Check',
+    'dict.reset': 'Clear',
+    'dict.play': 'Play / pause',
+    'dict.score': '{a} / {b}',
+    'dict.tabScore': 'best: {a} / {b}',
+    'dict.gapAria': 'Type the word you hear',
 
     'exam.chip': 'Exam conditions',
     'exam.chipHint': 'Timed, {m} minutes. Everything is marked at the end, in one go.',

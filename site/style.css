@@ -3365,3 +3365,57 @@ body[data-view="users"] .main { margin: 0 auto; max-width: 980px; }
 .unit-extra { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 .ue-head { display: block; padding: 0 10px 4px; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
 body.side-min .ue-head { display: none; }
+
+/* ===== dictation ===== */
+
+.ia-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.ia-tools .speed.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.dict-panel {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.dict-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; }
+.dict-head .muted { flex: 1 1 240px; }
+
+.dict-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.dict-tab {
+  min-width: 28px;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.dict-tab.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.dict-tab.done { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
+.dict-tab.part { background: var(--gold-bg); border-color: var(--gold-line); color: var(--gold); }
+
+.dict-line { margin: 10px 0; line-height: 2.2; font-size: 15px; }
+.dict-gap {
+  display: inline-block;
+  width: auto;
+  min-width: 70px;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-bottom: 2px solid var(--accent);
+  border-radius: 6px 6px 0 0;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14.5px;
+}
+.dict-gap.ok { border-color: var(--ok-line); border-bottom-color: var(--ok); background: var(--ok-bg); }
+.dict-gap.bad { border-color: var(--bad-line); border-bottom-color: var(--bad); background: var(--bad-bg); }
+.dict-was { margin-left: 5px; color: var(--ok); font-weight: 600; font-size: 13.5px; }
+
+.dict-foot { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 12px; }
+.dict-score { font-variant-numeric: tabular-nums; font-weight: 600; }
+.dict-script { max-height: 420px; overflow-y: auto; font-size: 14.5px; line-height: 1.7; }
+.dict-script p { margin: 8px 0; }

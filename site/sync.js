@@ -432,7 +432,10 @@ window.SYNC = (function () {
       // Writing drafts. A few kilobytes per test and the only copy of work the
       // learner did by hand — losing one to a cleared browser is exactly what
       // an account is for.
-      writing: st.writing || {}
+      writing: st.writing || {},
+      // Best dictation score per block. Tiny, and it is what makes the block
+      // tabs show a tick on a second device.
+      dictation: st.dictation || {}
     };
     return out;
   }
@@ -440,7 +443,7 @@ window.SYNC = (function () {
   // Rows -> an object shaped like `state`, so it can go straight into the
   // existing mergeInto() without that function learning anything about sync.
   function rowsToState(rows) {
-    var st = { items: {}, daily: {}, last: null, placement: null, exams: {}, writing: {} };
+    var st = { items: {}, daily: {}, last: null, placement: null, exams: {}, writing: {}, dictation: {} };
     (rows || []).forEach(function (r) {
       var d = r.data || {};
       if (r.book_id === META) {
@@ -448,6 +451,7 @@ window.SYNC = (function () {
         st.placement = d.placement || null;
         st.exams = d.exams || {};
         st.writing = d.writing || {};
+        st.dictation = d.dictation || {};
         // `last` is only a "resume where you were" pointer and carries no ts, so
         // a remote one is accepted only when this device has none — otherwise a
         // sync would yank the reader back to another device's book.

@@ -55,12 +55,15 @@
             // the answers rather than in a store of their own so one export,
             // one import and one sync carry everything a learner has written.
             writing: p.writing || {},
+            // 'bookId|dUNIT|PART|BLOCK' -> {ok, total, ts} — best dictation
+            // score per block of a transcript.
+            dictation: p.dictation || {},
             ui: p.ui || {}
           };
         }
       }
     } catch (e) { /* corrupt or unavailable storage — start fresh */ }
-    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, exams: {}, exam: null, writing: {}, ui: {} };
+    return { v: 1, items: {}, books: {}, daily: {}, last: null, lang: defaultLang(), theme: defaultTheme(), warnOk: {}, placement: null, exams: {}, exam: null, writing: {}, dictation: {}, ui: {} };
   }
 
   // First visit (or a stored 'auto' from the old three-state toggle): resolve the
@@ -139,6 +142,14 @@
     for (var wk in dw) {
       var mine = cur.writing[wk];
       if (!mine || (dw[wk] && (dw[wk].ts || 0) > (mine.ts || 0))) cur.writing[wk] = dw[wk];
+    }
+    // A dictation block keeps its best attempt, so the better of the two wins
+    // rather than the newer one.
+    var dd2 = disk.dictation || {};
+    cur.dictation = cur.dictation || {};
+    for (var dk in dd2) {
+      var had = cur.dictation[dk];
+      if (!had || (dd2[dk] && (dd2[dk].ok || 0) > (had.ok || 0))) cur.dictation[dk] = dd2[dk];
     }
     cur.books = disk.books || cur.books;
   }
@@ -3119,7 +3130,7 @@
      questions. A part is sometimes cut into two files, so the player takes a
      list and moves to the next when one ends — otherwise the reader would have
      to press play again mid-question. */
-  function buildAudio(p) {
+  function buildAudio(p, exam) {
     var box = el('div', 'ielts-audio');
     var head = el('div', 'ia-head');
     head.appendChild(el('span', 'ia-label', t('ielts.audio')));
@@ -3145,6 +3156,235 @@
     });
     box.appendChild(audio);
     audioFallback(audio, box, 'audio-missing');
+
+    // Under exam conditions the player is bare. Slowing the recording down,
+    // rewinding it and — above all — reading the transcript are practice
+    // tools; in a test they would be cheating, and the real exam plays each
+    // recording once at one speed.
+    if (exam) return box;
+
+    // The two controls a listener actually reaches for and <audio> does not
+    // offer: go back five seconds, and slow the speaker down. Both matter more
+    // than anything else on this page for somebody working at B1.
+    var tools = el('div', 'ia-tools');
+    var back = el('button', 'btn small ghost', '↺ 5s');
+    back.title = t('ielts.back5');
+    back.addEventListener('click', function () {
+      audio.currentTime = Math.max(0, audio.currentTime - 5);
+    });
+    tools.appendChild(back);
+    [0.75, 1, 1.25].forEach(function (rate) {
+      var b = el('button', 'btn small ghost speed' + (rate === 1 ? ' on' : ''), rate + '×');
+      b.addEventListener('click', function () {
+        audio.playbackRate = rate;
+        [].forEach.call(tools.querySelectorAll('.speed'), function (o) {
+          o.classList.toggle('on', o === b);
+        });
+      });
+      tools.appendChild(b);
+    });
+
+    // The transcript, where the book prints one. Two things live behind this
+    // button: reading along while listening, and a dictation over the same
+    // text — the exercise the recording was always capable of and the site
+    // never offered.
+    if (p.script && p.script.length) {
+      var panel = el('div', 'dict-panel');
+      panel.hidden = true;
+      var open = el('button', 'btn small', '✍ ' + t('dict.open'));
+      open.addEventListener('click', function () {
+        panel.hidden = !panel.hidden;
+        open.textContent = (panel.hidden ? '✍ ' : '✕ ') +
+          t(panel.hidden ? 'dict.open' : 'dict.close');
+        if (!panel.hidden && !panel.firstChild) buildDictation(panel, p, audio);
+      });
+      tools.appendChild(open);
+      box.appendChild(tools);
+      box.appendChild(panel);
+      return box;
+    }
+    box.appendChild(tools);
+    return box;
+  }
+
+  /* ================= dictation ================= */
+
+  /* An IELTS recording plus its transcript is a dictation exercise waiting to
+     happen, and the site was sitting on both. The one thing it does not have is
+     an alignment between them — no timestamps, so no way to play sentence four
+     on its own. The exercise is therefore built the way a classroom does it
+     without editing software: the reader runs the recording themselves (with
+     the ↺5s and 0.75× controls above), and fills the gaps in the running
+     transcript as they hear them.
+
+     The transcript is cut into blocks of a few sentences so that a fifty-
+     sentence part is a series of finishable pieces rather than a wall, and
+     every block remembers its best score. */
+
+  var DICT_BLOCK = 6;           // sentences per block
+  var DICT_EVERY = 3;           // one gap per this many content words
+
+  // Words never blanked: gapping "the" teaches nothing and reads as noise.
+  var DICT_STOP = ('a an and are as at be been but by can could did do does for from '
+    + 'had has have he her him his i if in is it its me my no not of on or our out she '
+    + 'so than that the their them then there they this to too up was we were what when '
+    + 'which who will with would you your').split(' ');
+
+  function dictStop(w) { return DICT_STOP.indexOf(w.toLowerCase()) > -1; }
+
+  // A word as typed against a word as printed: case, punctuation and the
+  // curly/straight apostrophe are not what is being tested here.
+  function dictNorm(s) {
+    return String(s || '').toLowerCase().replace(/[’']/g, "'")
+      .replace(/[^a-z0-9'£$%]/g, '');
+  }
+
+  function dictKey(p, block) {
+    return book.id + '|d' + currentUnit + '|' + p.part + '|' + block;
+  }
+
+  function buildDictation(panel, p, audio) {
+    var script = p.script || [];
+    var blocks = [];
+    for (var i = 0; i < script.length; i += DICT_BLOCK) {
+      blocks.push(script.slice(i, i + DICT_BLOCK));
+    }
+
+    var head = el('div', 'dict-head');
+    head.appendChild(el('span', 'muted', t('dict.intro')));
+    var readBtn = el('button', 'btn small ghost', t('dict.read'));
+    var reading = false;
+    head.appendChild(readBtn);
+    panel.appendChild(head);
+
+    var body = el('div', 'dict-body');
+    panel.appendChild(body);
+
+    // "Read" is the same text with nothing hidden: following a transcript while
+    // the recording plays is its own exercise, and the one a reader wants
+    // straight after answering the questions.
+    readBtn.addEventListener('click', function () {
+      reading = !reading;
+      readBtn.textContent = t(reading ? 'dict.hideRead' : 'dict.read');
+      draw();
+    });
+
+    var at = 0;                                   // which block is open
+    function draw() {
+      clear(body);
+      if (reading) {
+        var full = el('div', 'dict-script');
+        script.forEach(function (s) { full.appendChild(el('p', null, s)); });
+        body.appendChild(full);
+        return;
+      }
+      body.appendChild(blockNav());
+      body.appendChild(buildDictBlock(p, blocks[at], at, audio));
+    }
+
+    function blockNav() {
+      var nav = el('div', 'dict-nav');
+      blocks.forEach(function (_, i) {
+        var r = state.dictation && state.dictation[dictKey(p, i)];
+        var b = el('button', 'dict-tab' + (i === at ? ' on' : '') +
+          (r && r.ok === r.total ? ' done' : (r ? ' part' : '')), String(i + 1));
+        b.title = r ? t('dict.tabScore', { a: r.ok, b: r.total }) : '';
+        b.addEventListener('click', function () { at = i; draw(); });
+        nav.appendChild(b);
+      });
+      return nav;
+    }
+
+    draw();
+  }
+
+  function buildDictBlock(p, sentences, index, audio) {
+    var box = el('div', 'dict-block');
+    var inputs = [];
+    var eligible = 0;
+
+    sentences.forEach(function (sentence) {
+      var line = el('p', 'dict-line');
+      // Split keeping the separators, so punctuation and spacing come back
+      // exactly as printed once the gaps are filled in.
+      var bits = String(sentence).split(/(\s+)/);
+      bits.forEach(function (bit) {
+        if (!bit.trim()) { line.appendChild(document.createTextNode(bit)); return; }
+        var core = bit.replace(/^[^A-Za-z0-9£$]+|[^A-Za-z0-9%']+$/g, '');
+        var gapworthy = core.length > 2 && !dictStop(core) && /[a-z]/i.test(core);
+        if (gapworthy) eligible++;
+        if (!gapworthy || eligible % DICT_EVERY !== 0) {
+          line.appendChild(document.createTextNode(bit));
+          return;
+        }
+        var lead = bit.slice(0, bit.indexOf(core));
+        var tail = bit.slice(bit.indexOf(core) + core.length);
+        if (lead) line.appendChild(document.createTextNode(lead));
+        var input = answerInput(t('dict.gapAria'));
+        input.className = 'dict-gap';
+        input.size = Math.max(4, core.length);
+        input.setAttribute('data-word', core);
+        input.addEventListener('keydown', function (e) {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          var i = inputs.indexOf(input);
+          if (i > -1 && i + 1 < inputs.length) inputs[i + 1].focus();
+        });
+        inputs.push(input);
+        line.appendChild(input);
+        if (tail) line.appendChild(document.createTextNode(tail));
+      });
+      box.appendChild(line);
+    });
+
+    var foot = el('div', 'dict-foot');
+    var score = el('span', 'dict-score');
+    var check = el('button', 'btn small primary', t('dict.check'));
+    check.addEventListener('click', function () {
+      var ok = 0;
+      inputs.forEach(function (input) {
+        var right = dictNorm(input.value) === dictNorm(input.getAttribute('data-word'));
+        input.classList.toggle('ok', right);
+        input.classList.toggle('bad', !right);
+        if (right) { ok++; return; }
+        // Show what was said rather than only that it was wrong: a dictation
+        // the reader cannot correct themselves teaches nothing.
+        if (!input.nextSibling || !input.nextSibling.classList ||
+            !input.nextSibling.classList.contains('dict-was')) {
+          var was = el('span', 'dict-was', input.getAttribute('data-word'));
+          input.parentNode.insertBefore(was, input.nextSibling);
+        }
+      });
+      score.textContent = t('dict.score', { a: ok, b: inputs.length });
+      state.dictation = state.dictation || {};
+      var key = dictKey(p, index);
+      var prev = state.dictation[key];
+      if (!prev || prev.ok < ok) state.dictation[key] = { ok: ok, total: inputs.length, ts: Date.now() };
+      save();
+      if (window.SYNC) SYNC.touch(key);
+    });
+    var again = el('button', 'btn small ghost', t('dict.reset'));
+    again.addEventListener('click', function () {
+      inputs.forEach(function (input) {
+        input.value = '';
+        input.classList.remove('ok', 'bad');
+        var next = input.nextSibling;
+        if (next && next.classList && next.classList.contains('dict-was')) {
+          input.parentNode.removeChild(next);
+        }
+      });
+      score.textContent = '';
+    });
+    var play = el('button', 'btn small ghost', '▶ ' + t('dict.play'));
+    play.addEventListener('click', function () {
+      if (audio.paused) audio.play().catch(function () { /* blocked */ });
+      else audio.pause();
+    });
+    foot.appendChild(play);
+    foot.appendChild(check);
+    foot.appendChild(again);
+    foot.appendChild(score);
+    box.appendChild(foot);
     return box;
   }
 
@@ -3397,7 +3637,7 @@
     if (book.meta && book.meta.pdf && !isNarrow()) showPdf(u.pdfExercisePage);
 
     (u.subExercises || []).forEach(function (sub) {
-      if (sub.audio) main.appendChild(buildAudio(sub.audio));
+      if (sub.audio) main.appendChild(buildAudio(sub.audio, true));
       if (sub.reading) main.appendChild(buildPassage(sub.reading));
       main.appendChild(buildSub(u.unit, sub, null, e));
     });
