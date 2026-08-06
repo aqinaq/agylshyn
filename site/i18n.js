@@ -411,6 +411,8 @@ window.I18N = {
     'exam.thRuns': 'Жүгіру',
     'stats.exams': 'Емтихан жүгірулері',
 
+    'cls.home.title': 'Сынып',
+    'cls.home.sub': 'Мұғалімге: сынып аш, оқушыларыңның прогресін көр',
     'cls.title': 'Сыныптар',
     'cls.sub': 'Мұғалім мен оқушы',
     'cls.h1': 'Сыныптар',
@@ -453,9 +455,6 @@ window.I18N = {
     'cls.th.books': 'Кітап',
     'cls.th.seen': 'Соңғы рет',
     'cls.msgOk': '',
-    'auth.secClasses': 'Сынып',
-    'auth.classesOpen': '👩‍🏫 Сыныптар',
-    'auth.classesSub': 'Мұғалім болсаң — сынып ашып, оқушыларыңның прогресін көр.',
 
     'note.tag': 'ҚАЗАҚША',
     'note.watch': 'Жиі қате:',
@@ -1142,6 +1141,8 @@ window.I18N = {
     'exam.thRuns': 'Runs',
     'stats.exams': 'Mock exams',
 
+    'cls.home.title': 'Classes',
+    'cls.home.sub': 'For teachers: open a class and watch your students',
     'cls.title': 'Classes',
     'cls.sub': 'Teacher and student',
     'cls.h1': 'Classes',
@@ -1184,9 +1185,6 @@ window.I18N = {
     'cls.th.books': 'Books',
     'cls.th.seen': 'Last seen',
     'cls.msgOk': '',
-    'auth.secClasses': 'Classes',
-    'auth.classesOpen': '👩‍🏫 Classes',
-    'auth.classesSub': 'Teaching? Open a class and watch your students’ progress.',
 
     'note.tag': 'IN KAZAKH',
     'note.watch': 'Common mistakes:',

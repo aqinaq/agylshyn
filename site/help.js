@@ -80,6 +80,48 @@ window.HELP = {
       ]
     },
     {
+      icon: '⏱',
+      title: 'IELTS: емтихан режимі',
+      body: [
+        'Тест бөлімін нағыз емтихандағыдай тапсырасың: уақыт жүреді, жауап бірден тексерілмейді, соңында бәрі бір-ақ рет тексеріліп, балл мен шамамен band шығады.'
+      ],
+      list: [
+        'Кез келген IELTS юнитінің басындағы «⏱ Емтихан режимі» түймесі. Listening — 40 минут, Reading — 60.',
+        'Жартылай қалдырып кетсең, уақыты жүріп тұрады да, бетке қайта кірсең сол жерінен жалғайсың.',
+        'Соңында: бөлім-бөлім талдау, қате жауаптар және бұрынғы жүгірулердің тізімі. Статистика бетінде «соңғысы / ең жақсысы» болып тұрады.',
+        'Band — шамамен есеп: Cambridge бұл кітаптарда ресми кесте бермейді.'
+      ]
+    },
+    {
+      icon: '🎧',
+      title: 'IELTS: Writing, Speaking және диктант',
+      list: [
+        'Юниттің басындағы «✍ Writing / Speaking» — тапсырманың өзі, емтихандағы уақыт, сөз санағышы, өзі сақталатын жоба; Speaking-те таймер мен дауыс жазу.',
+        'Аудионың астындағы «Мәтін / диктант» — жазбаның мәтінін оқисың немесе әр үшінші сөзі жасырылған диктант істейсің.',
+        'Ойнатқышта ↺5 секунд пен 0.75× бар. Емтихан режимінде екеуі де жабық — бұл жаттығу құралы.'
+      ]
+    },
+    {
+      icon: '🇰🇿',
+      title: 'Қазақша түсіндірме',
+      body: [
+        'Кітап ағылшынша түсіндіреді. Артикль, present perfect, phrasal verb сияқты тұстар қазақ тілді оқушыға тілдің айырмашылығынан қиын — сондай юниттерде жаттығулардың үстінде қазақша қысқа түсіндірме тұрады.'
+      ],
+      list: [
+        'Бірінші рет кірген юнитте ашық тұрады, кейін жиналып қалады — тақырыбын бассаң қайта ашылады.',
+        'Қате жауап бергенде де жанынан «Қазақша түсіндірме» түймесі шығады.'
+      ]
+    },
+    {
+      icon: '👩‍🏫',
+      title: 'Сынып (мұғалімге)',
+      list: [
+        'Аккаунттағы «Сыныптар» → сынып ашасың, 6 таңбалы кодты оқушыларға бересің.',
+        'Олар сол кодты жазып қосылады, сен кестеден кім қанша істегенін көресің.',
+        'Мұғалім тек санақты көреді: қанша жауап, қаншасы дұрыс, соңғы рет қашан кірген. Жазған жауаптарын ешкім көрмейді.'
+      ]
+    },
+    {
       icon: '💾',
       title: 'Прогресс',
       list: [
@@ -162,6 +204,48 @@ window.HELP = {
         'Three correct answers in a row, on different days — ★ mastered.',
         'Mistakes collect on the Mistakes page and leave it after three correct answers.',
         'Everything else comes back on a schedule: 1 → 3 → 7 → 21 → 60 days.'
+      ]
+    },
+    {
+      icon: '⏱',
+      title: 'IELTS under exam conditions',
+      body: [
+        'Sit a test section the way the real thing works: the clock runs, nothing is marked as you go, and at the end everything is marked at once — a score and an estimated band.'
+      ],
+      list: [
+        'The "⏱ Exam conditions" button at the top of any IELTS unit. Listening is 40 minutes, Reading 60.',
+        'Walk away and the clock keeps running; come back to the page and you are on the same paper.',
+        'At the end: a breakdown part by part, the answers, and every previous run. Statistics keeps latest and best.',
+        'The band is an estimate — Cambridge prints no conversion table in these books.'
+      ]
+    },
+    {
+      icon: '🎧',
+      title: 'IELTS: Writing, Speaking and dictation',
+      list: [
+        '"✍ Writing / Speaking" on a unit: the task itself, the exam timing, a word counter, a draft that saves itself, and for Speaking a cue-card clock and a recording.',
+        '"Transcript / dictation" under a recording: read along, or fill in every third word as you hear it.',
+        'The player has back-five-seconds and 0.75×. Both, and the transcript, are gone under exam conditions.'
+      ]
+    },
+    {
+      icon: '🇰🇿',
+      title: 'Explanations in Kazakh',
+      body: [
+        'The book explains English in English. Where the two languages pull apart — articles, present perfect, phrasal verbs — a short Kazakh explanation sits above the exercises.'
+      ],
+      list: [
+        'Open the first time you visit a unit, folded away afterwards; press the title to open it again.',
+        'A wrong answer offers it too, next to the book’s own reference page.'
+      ]
+    },
+    {
+      icon: '👩‍🏫',
+      title: 'Classes (for teachers)',
+      list: [
+        'Account panel → Classes: open one and read the six-character code out to your students.',
+        'They type the code to join, and you get a table of how much each of them has done.',
+        'You see counters only: answers, how many were right, when they were last here. Never what they typed.'
       ]
     },
     {

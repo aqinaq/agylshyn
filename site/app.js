@@ -1157,6 +1157,21 @@
         wcta.appendChild(el('span', 'dc-go', '→'));
         drillBox.appendChild(wcta);
       }
+
+      // The class page. A teacher who never opens the account panel would
+      // otherwise never learn it exists — and a teacher is the reader least
+      // likely to go hunting through a settings dialog.
+      if (window.CLASSES && CLASSES.configured && !CLASSES.unavailable()) {
+        var ccta = el('a', 'drill-cta');
+        ccta.href = '#/class';
+        ccta.appendChild(el('span', 'dc-ico', '👩‍🏫'));
+        var ctxt = el('span', 'dc-txt');
+        ctxt.appendChild(el('b', null, t('cls.home.title')));
+        ctxt.appendChild(el('span', null, t('cls.home.sub')));
+        ccta.appendChild(ctxt);
+        ccta.appendChild(el('span', 'dc-go', '→'));
+        drillBox.appendChild(ccta);
+      }
     }
 
     // Right-hand sidebar: the cross-book snapshot, then the month calendar.
@@ -1896,23 +1911,6 @@
       });
       subRow.appendChild(recheck);
       authBody.appendChild(subRow);
-    }
-
-    /* ---- classes ---- */
-    // Not admin-only: anybody may teach. The panel is about one account, so
-    // this is a door to the page rather than the page itself.
-    if (window.CLASSES && CLASSES.configured && !CLASSES.unavailable()) {
-      authSection(t('auth.secClasses'));
-      var cRow = el('div', 'auth-row');
-      var goCls = el('button', 'auth-primary', t('auth.classesOpen'));
-      goCls.type = 'button';
-      goCls.addEventListener('click', function () {
-        closeAuthModal();
-        location.hash = '#/class';
-      });
-      cRow.appendChild(goCls);
-      authBody.appendChild(cRow);
-      authBody.appendChild(el('div', 'auth-sub', t('auth.classesSub')));
     }
 
     /* ---- users (admins only) ---- */

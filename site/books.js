@@ -64,8 +64,8 @@ window.BOOKS = [
     kind: 'grammar',
     units: 145,
     blurb: {
-      kk: 'Ең танымал орта деңгей курсы. Шақтар, модальдар, шартты сөйлемдер.',
-      en: 'The best-known intermediate course. Tenses, modals, conditionals.'
+      kk: 'Ең танымал орта деңгей курсы. Қиын юниттерінде қазақша түсіндірме бар.',
+      en: 'The best-known intermediate course. The hard units carry a Kazakh explanation.'
     },
     pdf: 'pdf/grammar.pdf',
     hue: 214
@@ -190,8 +190,8 @@ window.BOOKS = [
     kind: 'ielts',
     units: 8,
     blurb: {
-      kk: '4 тест, Listening аудиосымен. Сұрақтарын PDF-тен оқисың.',
-      en: 'Four tests with the Listening audio. Read the questions in the PDF.'
+      kk: '4 тест, Listening аудиосымен. Уақытпен тапсырып, шамамен band ал.',
+      en: 'Four tests with the Listening audio. Sit one against the clock and get a band.'
     },
     pdf: 'pdf/ielts-19.pdf',
     hue: 175,
@@ -210,8 +210,8 @@ window.BOOKS = [
     // Eight units: Listening and Reading for each of the four tests.
     units: 8,
     blurb: {
-      kk: '4 нағыз тест. Аудио мен Reading мәтіні осында, сұрақтарды PDF-тен оқисың.',
-      en: 'Four authentic tests. The audio and the passages are here; read the questions in the PDF.'
+      kk: '4 нағыз тест. Аудио, Reading мәтіні, емтихан режимі мен band.',
+      en: 'Four authentic tests: audio, the passages, exam conditions and a band.'
     },
     pdf: 'pdf/ielts-20.pdf',
     hue: 12,
@@ -229,8 +229,8 @@ window.BOOKS = [
     kind: 'ielts',
     units: 8,
     blurb: {
-      kk: 'Ең соңғы жинақ. 4 тест, аудио мен мәтіндер осында, сұрақтар PDF-те.',
-      en: 'The newest collection. Four tests; audio and passages here, questions in the PDF.'
+      kk: 'Ең соңғы жинақ: 4 тест, Writing/Speaking тапсырмалары, аудио мәтіні мен диктант.',
+      en: 'The newest collection: four tests, the Writing/Speaking tasks, transcripts and dictation.'
     },
     pdf: 'pdf/ielts-21.pdf',
     hue: 240,
