@@ -3576,3 +3576,18 @@ body.side-min .ue-head { display: none; }
 .kn-watch-h { font-weight: 600; color: var(--bad); font-size: 13px; }
 .kn-watch ul { margin: 6px 0 0; padding-left: 20px; }
 .kn-watch li { margin: 4px 0; font-size: 13.5px; }
+
+/* Where the task is, on a Writing/Speaking page: the words are in the book,
+   so this line is the way to them rather than a paragraph of its own. */
+.task-inbook {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 4px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+/* The Writing/Speaking entries in the unit list: same row as a unit, but the
+   tag is letters rather than a number and nothing in them is scored. */
+.task-link .u-num { color: var(--accent); font-weight: 600; }

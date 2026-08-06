@@ -2237,6 +2237,17 @@
     return base;
   }
 
+  /* What a unit is called in the list. A grammar book numbers its units and
+     that number is what the reader looks for. An IELTS book does not: its
+     "unit 5" is Test 3's Listening, and the four skills of one test belong
+     together — so the rail reads L1 R1 W1 S1, L2 R2 W2 S2, which is how a
+     candidate thinks about a book of four tests. */
+  function unitTag(u) {
+    if (!(book.meta && book.meta.kind === 'ielts' && u.skill)) return String(u.unit);
+    var test = EXAM.testOf(u);
+    return (u.skill === 'listening' ? 'L' : 'R') + (test == null ? '' : test);
+  }
+
   function renderSidebar() {
     if (!book) return;
     var q = (searchEl.value || '').trim().toLowerCase();
@@ -2258,16 +2269,39 @@
       if (currentUnit === u.unit) a.setAttribute('aria-current', 'page');
       // Collapsed the title is not on screen, so it moves into the hover tip
       // and the accessible name — a rail of numbers must still be readable.
+      var tag = unitTag(u);
       if (min) {
-        a.setAttribute('aria-label', String(u.unit) + '. ' + unitTitle(u));
-        a.setAttribute('data-tip-text', String(u.unit) + '. ' + unitTitle(u) +
+        a.setAttribute('aria-label', tag + '. ' + unitTitle(u));
+        a.setAttribute('data-tip-text', tag + '. ' + unitTitle(u) +
           (st.done ? '\n' + st.pct + '%' : ''));
       }
-      a.appendChild(el('span', 'u-num', String(u.unit)));
+      a.appendChild(el('span', 'u-num', tag));
       a.appendChild(el('span', 'u-title', unitTitle(u)));
       a.appendChild(el('span', 'u-pct' + (full ? ' done' : ''), full ? '✓' : (st.done ? st.pct + '%' : '')));
       li.appendChild(a);
       unitListEl.appendChild(li);
+
+      // Writing and Speaking are not units — nothing in them is marked — but
+      // they are two of the four skills of this test, and hiding them under
+      // the list made them look like an appendix to the book rather than half
+      // of the exam. They follow the Reading of the test they belong to.
+      if (!q && u.skill === 'reading' && hasTasks()) {
+        var testNo = EXAM.testOf(u);
+        [['writing', 'W'], ['speaking', 'S']].forEach(function (pair) {
+          if (!bookPrompts(testNo).some(function (p) { return p.skill === pair[0]; })) return;
+          var tli = el('li');
+          var ta = el('a', 'unit-link task-link');
+          ta.href = '#/b/' + book.id + '/tasks/' + testNo + '/' + pair[1].toLowerCase();
+          var label = pair[1] + testNo;
+          var name = t('task.' + pair[0] + 'Unit', { n: testNo });
+          ta.appendChild(el('span', 'u-num', label));
+          ta.appendChild(el('span', 'u-title', name));
+          ta.setAttribute('aria-label', name);
+          if (min) ta.setAttribute('data-tip-text', label + '. ' + name);
+          tli.appendChild(ta);
+          unitListEl.appendChild(tli);
+        });
+      }
     });
     if (!shown) unitListEl.appendChild(el('div', 'empty-hint', t('sidebar.empty')));
 
@@ -2284,25 +2318,6 @@
       unitListEl.appendChild(li0);
     }
 
-    // The Writing and Speaking tasks are not units — they are not numbered,
-    // not graded and not part of the progress bar — so they sit under the list
-    // rather than in it, one entry per test.
-    if (hasTasks() && !q) {
-      var li = el('li', 'unit-extra');
-      li.appendChild(el('span', 'ue-head', t('task.sidebar')));
-      promptTests().forEach(function (n) {
-        var a = el('a', 'unit-link ue-link');
-        a.href = '#/b/' + book.id + '/tasks/' + n;
-        // Collapsed, the rail shows only this cell, so the test number has to
-        // be in it: four rows reading '✍' are four rows nobody can tell apart.
-        a.appendChild(el('span', 'u-num', '✍' + n));
-        a.appendChild(el('span', 'u-title', t('task.test', { n: n })));
-        a.setAttribute('aria-label', t('task.sidebar') + ' — ' + t('task.test', { n: n }));
-        a.setAttribute('data-tip-text', t('task.sidebar') + '\n' + t('task.test', { n: n }));
-        li.appendChild(a);
-      });
-      unitListEl.appendChild(li);
-    }
   }
 
   function refreshBadge() {
@@ -4012,7 +4027,7 @@
 
   function hasTasks() { return !!(book && book.prompts && book.prompts.length); }
 
-  function renderTasks(testNo) {
+  function renderTasks(testNo, only) {
     var tests = promptTests();
     if (!tests.length) { renderNotFound(testNo || 1); return; }
     var test = tests.indexOf(Number(testNo)) > -1 ? Number(testNo) : tests[0];
@@ -4022,11 +4037,12 @@
     afterChange = function () {};
 
     var head = el('div', 'page-head');
-    head.appendChild(el('h1', null, t('task.h1', { n: test })));
+    head.appendChild(el('h1', null, t(
+      only === 'w' ? 'task.h1w' : (only === 's' ? 'task.h1s' : 'task.h1'), { n: test })));
     var chips = el('div', 'chips');
     tests.forEach(function (n) {
       var c = el('a', 'chip' + (n === test ? ' chip-on' : ''), t('task.test', { n: n }));
-      c.href = '#/b/' + book.id + '/tasks/' + n;
+      c.href = '#/b/' + book.id + '/tasks/' + n + (only ? '/' + only : '');
       chips.appendChild(c);
     });
     head.appendChild(chips);
@@ -4053,25 +4069,28 @@
     writing.sort(byPart);
     speaking.sort(byPart);
 
-    if (writing.length) {
+    if (writing.length && only !== 's') {
       main.appendChild(el('div', 'section-title', t('task.writing')));
       writing.forEach(function (p) { main.appendChild(buildWritingTask(test, p)); });
     }
-    if (speaking.length) {
+    if (speaking.length && only !== 'w') {
       main.appendChild(el('div', 'section-title', t('task.speaking')));
       speaking.forEach(function (p) { main.appendChild(buildSpeakingTask(test, p)); });
     }
     window.scrollTo(0, 0);
   }
 
-  // The prompt as the book prints it. Task 1 always refers to a chart or a
-  // diagram, and no extraction can bring that across — so the page says where
-  // it is instead of pretending the words are the whole task.
+  /* Where the task is. Deliberately not the task itself: a Writing Task 1 is a
+     chart, and words without the chart are a task nobody can answer; the
+     Speaking cards come off the scan with the margin note spliced into them.
+     The book has both, printed properly, one click away — and this page is
+     for what the book cannot do: the clock, the word count, the draft that
+     saves itself, the recording. Same rule the rest of these books follow. */
   function promptBody(p) {
-    var box = el('div', 'task-prompt');
-    String(p.prompt || '').split(/\n+/).forEach(function (line) {
-      if (line.trim()) box.appendChild(el('p', null, line.trim()));
-    });
+    var box = el('div', 'task-inbook');
+    box.appendChild(document.createTextNode(t('task.inBookNote')));
+    var open = pdfChipFor(p);
+    if (open) box.appendChild(open);
     return box;
   }
 
@@ -4144,11 +4163,7 @@
     head.appendChild(el('b', null, t('task.writingPart', { n: part })));
     head.appendChild(el('span', 'task-chip', t('task.minutes', { n: spec.min })));
     head.appendChild(el('span', 'task-chip', t('task.minWords', { n: spec.words })));
-    var pdfc = pdfChipFor(p);
-    if (pdfc) head.appendChild(pdfc);
     box.appendChild(head);
-
-    if (part === 1) box.appendChild(el('div', 'note', t('task.figureNote')));
     box.appendChild(promptBody(p));
     box.appendChild(taskTimer(spec.min * 60));
 
@@ -4226,10 +4241,7 @@
       head.appendChild(el('span', 'task-chip', t('task.prep', { n: spec.prep })));
       head.appendChild(el('span', 'task-chip', t('task.talk', { n: Math.round(spec.talk / 60) })));
     }
-    var pdfc = pdfChipFor(p);
-    if (pdfc) head.appendChild(pdfc);
     box.appendChild(head);
-
     box.appendChild(promptBody(p));
 
     // Part 2 is the one with a clock in the real exam: a minute to prepare,
@@ -6782,6 +6794,8 @@
     }, function (e) { showError(id, e); });
   }
 
+  var taskSkill = null;        // 'w' | 's' | null — set by route() before rendering
+
   function renderBookView(sub, arg) {
     setView('book');
     // The book sheet is pinned to a unit's pages, and on a phone it costs half
@@ -6796,7 +6810,7 @@
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
     else if (sub === 'exam') renderExam(arg);
-    else if (sub === 'tasks') renderTasks(arg);
+    else if (sub === 'tasks') renderTasks(arg, taskSkill);
     else if (sub === 'unit') renderUnit(arg);
     else renderUnit(book.units.length ? book.units[0].unit : 1);
   }
@@ -6818,8 +6832,13 @@
     // unit, so a reload in the middle of a mock test comes back to the paper
     // and the browser's back button means "leave the exam".
     // '#/b/<id>/tasks/<test>' — the Writing and Speaking half of an IELTS test.
-    var tk = /^#\/b\/([a-z0-9-]+)\/tasks(?:\/(\d+))?/.exec(h);
-    if (tk) return { view: 'book', id: tk[1], sub: 'tasks', arg: tk[2] ? parseInt(tk[2], 10) : null };
+    // '#/b/<id>/tasks/<test>' — both skills; '/w' or '/s' — one of them, which
+    // is what the W1 and S1 entries in the unit list point at.
+    var tk = /^#\/b\/([a-z0-9-]+)\/tasks(?:\/(\d+)(?:\/(w|s))?)?/.exec(h);
+    if (tk) {
+      return { view: 'book', id: tk[1], sub: 'tasks',
+               arg: tk[2] ? parseInt(tk[2], 10) : null, skill: tk[3] || null };
+    }
     var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)(\/exam)?|\/(errors|stats|unlock))?/.exec(h);
     if (m) {
       return {
@@ -6863,7 +6882,7 @@
     if (r.view === 'srs') { if (pdfOpen()) hidePdf(false); openSrs(r.sub); return; }
     if (r.view === 'users') { if (pdfOpen()) hidePdf(false); openUsers(); return; }
     if (r.view === 'class') { if (pdfOpen()) hidePdf(false); openClasses(); return; }
-    if (r.view === 'book') { openBook(r.id, r.sub, r.arg); return; }
+    if (r.view === 'book') { taskSkill = r.skill || null; openBook(r.id, r.sub, r.arg); return; }
     if (pdfOpen()) hidePdf(false);
     renderHome();
     if (r.help) openHelpModal();

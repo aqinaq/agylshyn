@@ -34,22 +34,32 @@ async function run() {
     tests: document.querySelectorAll('.page-head .chip').length,
     areas: document.querySelectorAll('.task-area').length,
     timers: document.querySelectorAll('.task-timer').length,
-    prompts: [...document.querySelectorAll('.task-prompt')].map(e => e.textContent.length)
+    inBook: document.querySelectorAll('.task-inbook').length,
+    pages: [...document.querySelectorAll('.task-inbook .chip strong')].map(e => e.textContent)
   })`);
   r.eq('five tasks: two written, three spoken', page.cards, 5);
   r.eq('Writing Task 1 is the first of them', page.heads[0], 'Writing Task 1');
   r.eq('and Speaking Part 3 the last', page.heads[4], 'Speaking Part 3');
   r.eq('all four tests are reachable from here', page.tests, 4);
   r.eq('only the written tasks get a box to write in', page.areas, 2);
-  r.ok('every prompt actually carries text', page.prompts.every(n => n > 40),
-    JSON.stringify(page.prompts));
+  // The task text is deliberately not on the site: a Writing task is a chart
+  // and a Speaking card comes off the scan mangled. Every card says where the
+  // real one is instead.
+  r.eq('every task points into the book', page.inBook, 5);
+  r.ok('with a page number', page.pages.length === 5 && page.pages.every(p => /\d/.test(p)),
+    JSON.stringify(page.pages));
+  const noText = await s.eval(`(() => {
+    const bad = [...document.querySelectorAll('.task-card')]
+      .filter(c => /You should spend|Describe a|Discussion topics/i.test(c.textContent));
+    return bad.length;
+  })()`);
+  r.eq('and none of them reprints the task', noText, 0);
   // Part 2 has a preparation clock and a talking clock; the two Writing tasks
   // have one each. Parts 1 and 3 are a conversation and are not timed.
   r.eq('four clocks in all', page.timers, 4);
 
   const specs = await s.eval(`({
-    chips: [...document.querySelectorAll('.task-chip')].map(e => e.textContent),
-    figure: !!document.querySelector('.task-card .note')
+    chips: [...document.querySelectorAll('.task-chip')].map(e => e.textContent)
   })`);
   r.ok('Task 1 is twenty minutes and 150 words',
     specs.chips[0].indexOf('20') > -1 && specs.chips[1].indexOf('150') > -1,
@@ -57,7 +67,6 @@ async function run() {
   r.ok('Task 2 is forty minutes and 250 words',
     specs.chips[2].indexOf('40') > -1 && specs.chips[3].indexOf('250') > -1,
     JSON.stringify(specs.chips.slice(2, 4)));
-  r.ok('and Task 1 says where the chart is', specs.figure);
 
   /* ================= writing ================= */
   r.head('writing');
@@ -158,17 +167,23 @@ async function run() {
   await sleep(1200);
   const entry = await s.eval(`({
     chip: [...document.querySelectorAll('.chips a')].map(e => e.getAttribute('href')),
-    side: [...document.querySelectorAll('.ue-link')].map(e => e.getAttribute('href'))
+    tags: [...document.querySelectorAll('#unitList .u-num')].map(e => e.textContent),
+    tasks: [...document.querySelectorAll('.task-link')].map(e => e.getAttribute('href'))
   })`);
   r.ok('the Listening page points at the tasks of the same test',
     entry.chip.indexOf('#/b/ielts-21/tasks/1') > -1, JSON.stringify(entry.chip));
-  r.eq('and the unit list offers all four tests', entry.side.length, 4);
+  // The four skills of a test, in the order a candidate sits them.
+  r.eq('the unit list reads L1 R1 W1 S1', entry.tags.slice(0, 4).join(' '), 'L1 R1 W1 S1');
+  r.eq('with a Writing and a Speaking entry per test', entry.tasks.length, 8);
+  r.eq('and each goes to its own half of the page',
+    entry.tasks[0] + ' ' + entry.tasks[1],
+    '#/b/ielts-21/tasks/1/w #/b/ielts-21/tasks/1/s');
 
   // Cambridge 19 has no Writing or Speaking in its data, and must not claim to.
   await goto(s, BASE + '#/b/ielts-19/unit/1');
   await sleep(900);
   const bare = await s.eval(`({
-    side: document.querySelectorAll('.ue-link').length,
+    side: document.querySelectorAll('.task-link').length,
     chip: [...document.querySelectorAll('.chips a')].map(e => e.getAttribute('href'))
        .filter(h => h && h.indexOf('/tasks') > -1).length
   })`);
