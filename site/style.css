@@ -3525,3 +3525,45 @@ body.side-min .ue-head { display: none; }
   .cls-code { font-size: 18px; }
   .cls-form .btn { flex: 1 1 auto; }
 }
+
+/* ===== the Kazakh explanation of a unit ===== */
+
+.kk-note {
+  margin-bottom: 16px;
+  border: 1px solid var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--panel);
+  overflow: hidden;
+}
+.kn-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.kn-head::-webkit-details-marker { display: none; }
+.kn-tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.kn-body { padding: 0 14px 14px; font-size: 14.5px; line-height: 1.65; }
+.kn-body p { margin: 8px 0; }
+.kn-why { color: var(--muted); font-style: italic; }
+
+.kn-ex { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); }
+.kn-ex-line { margin: 7px 0; }
+.kn-ex-line b { color: var(--text); }
+.kn-kk { display: block; color: var(--muted); font-size: 13.5px; }
+
+.kn-watch { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--bad-bg); }
+.kn-watch-h { font-weight: 600; color: var(--bad); font-size: 13px; }
+.kn-watch ul { margin: 6px 0 0; padding-left: 20px; }
+.kn-watch li { margin: 4px 0; font-size: 13.5px; }

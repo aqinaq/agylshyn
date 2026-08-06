@@ -2896,6 +2896,20 @@
           why.addEventListener('click', function () { showPdf(pg); });
           feedback.appendChild(why);
         }
+        // The book's page explains the rule in English; this explains it in
+        // Kazakh, and for a reader at A2 that is the difference between a
+        // reference and an answer.
+        var kn = document.querySelector('.kn-slot .kk-note');
+        if (kn) {
+          var toNote = el('button', 'btn small why-btn', t('note.open'));
+          toNote.type = 'button';
+          toNote.addEventListener('click', function () {
+            kn.open = true;
+            kn.scrollIntoView({ block: 'nearest' });
+          });
+          feedback.appendChild(toNote);
+        }
+
         var ov = el('button', 'btn small ok', t('row.override'));
         ov.addEventListener('click', function () { mark(true, true); });
         feedback.appendChild(ov);
@@ -3509,6 +3523,83 @@
     (p.text || []).forEach(function (para) { body.appendChild(el('p', null, para)); });
     wrap.appendChild(body);
     return wrap;
+  }
+
+  /* ================= Kazakh explanations ================= */
+
+  /* The one thing the books cannot give a Kazakh learner: the rule explained in
+     their own language, and against their own language. English Grammar in Use
+     explains English in English, which is exactly the wall somebody at A2 hits.
+
+     These notes are not a translation of the book — translating it would be
+     both illegal and useless. They are short, written here, and only for the
+     units where Kazakh and English actually pull apart: there is no article in
+     Kazakh, no perfect/past split, and no phrasal verb. A unit where nothing
+     interferes gets no note and the page looks exactly as it did.
+
+     One file per book, loaded once, and a book with no file simply has none —
+     which is every book but `grammar` today. */
+
+  var notes = {};                // bookId -> {unit -> note} | false when absent
+  var notesPending = {};
+
+  function loadNotes(bookId, done) {
+    if (notes[bookId] !== undefined) { done(); return; }
+    if (notesPending[bookId]) return;
+    notesPending[bookId] = true;
+    fetch('data/notes/' + bookId + '.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (d) {
+        notes[bookId] = (d && d.notes) || false;
+        delete notesPending[bookId];
+        done();
+      });
+  }
+
+  function noteFor(bookId, unitNo) {
+    var byUnit = notes[bookId];
+    return byUnit ? (byUnit[String(unitNo)] || null) : null;
+  }
+
+  // Open the first time and folded away afterwards: a reader who has already
+  // worked this unit wants the exercises, not the lecture again.
+  function buildNote(note, startOpen) {
+    var box = el('details', 'kk-note');
+    box.open = !!startOpen;
+    var sum = el('summary', 'kn-head');
+    sum.appendChild(el('span', 'kn-tag', t('note.tag')));
+    sum.appendChild(el('b', null, note.title || ''));
+    box.appendChild(sum);
+
+    var body = el('div', 'kn-body');
+    if (note.why) body.appendChild(el('p', 'kn-why', note.why));
+    (note.body || []).forEach(function (p) { body.appendChild(el('p', null, p)); });
+
+    if (note.examples && note.examples.length) {
+      var ex = el('div', 'kn-ex');
+      note.examples.forEach(function (pair) {
+        var line = el('div', 'kn-ex-line');
+        var en = el('b', null, pair[0] || '');
+        line.appendChild(en);
+        var say = speakBtn(function () { return pair[0] || ''; });
+        if (say) line.appendChild(say);
+        line.appendChild(el('span', 'kn-kk', pair[1] || ''));
+        ex.appendChild(line);
+      });
+      body.appendChild(ex);
+    }
+
+    if (note.watch && note.watch.length) {
+      var w = el('div', 'kn-watch');
+      w.appendChild(el('span', 'kn-watch-h', t('note.watch')));
+      var ul = el('ul');
+      note.watch.forEach(function (x) { ul.appendChild(el('li', null, x)); });
+      w.appendChild(ul);
+      body.appendChild(w);
+    }
+    box.appendChild(body);
+    return box;
   }
 
   /* ================= IELTS: exam conditions ================= */
@@ -4342,6 +4433,25 @@
 
     var warn = buildWarning();
     if (warn) main.appendChild(warn);
+
+    // The Kazakh explanation of this unit, if one has been written. The slot is
+    // put in place now and filled when the file lands, so a slow fetch cannot
+    // reorder the page under a reader who has started answering.
+    var noteSlot = el('div', 'kn-slot');
+    main.appendChild(noteSlot);
+    loadNotes(book.id, function () {
+      // The slot is looked up again rather than closed over: the first render
+      // of a book can be replaced by a second (the index landing, a sync merge)
+      // while the notes file is still in flight, and the captured element would
+      // by then be an orphan — which is precisely how this feature managed to
+      // work on every unit except the first one opened.
+      if (currentUnit !== no) return;
+      var slot = main.querySelector('.kn-slot');
+      if (!slot || slot.firstChild) return;
+      var note = noteFor(book.id, no);
+      if (!note) return;
+      slot.appendChild(buildNote(note, unitStats(book.id, u).done === 0));
+    });
 
     if (!(u.subExercises && u.subExercises.length)) {
       // A few Essential Grammar units had no answers in the scan at all; keep
@@ -5958,6 +6068,20 @@
 
       // Matching is good but not perfect; the learner keeps the last word.
       if (!correct && !self) {
+        // The book's page explains the rule in English; this explains it in
+        // Kazakh, and for a reader at A2 that is the difference between a
+        // reference and an answer.
+        var kn = document.querySelector('.kn-slot .kk-note');
+        if (kn) {
+          var toNote = el('button', 'btn small why-btn', t('note.open'));
+          toNote.type = 'button';
+          toNote.addEventListener('click', function () {
+            kn.open = true;
+            kn.scrollIntoView({ block: 'nearest' });
+          });
+          feedback.appendChild(toNote);
+        }
+
         var ov = el('button', 'btn small ok', t('row.override'));
         ov.addEventListener('click', override);
         feedback.appendChild(ov);

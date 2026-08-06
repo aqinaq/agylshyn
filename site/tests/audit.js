@@ -454,6 +454,37 @@ r.head('placement quiz');
   }
 }
 
+/* ===================== 6b. the Kazakh notes ===================== */
+// A note is written by hand against a unit number, which is exactly the kind of
+// reference that rots: a rebuilt book can renumber, and a note pinned to a unit
+// that no longer exists is invisible with no error anywhere.
+r.head('Kazakh notes');
+{
+  const dir = path.join(SITE, 'data/notes');
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json')) : [];
+  r.ok('there are notes to check', files.length > 0, String(files.length));
+  for (const file of files) {
+    const bookId = file.slice(0, -5);
+    const data = json('data/notes/' + file);
+    const bookPath = 'data/' + bookId + '.json';
+    r.ok(bookId + ': the book it belongs to is on the site', exists(bookPath));
+    if (!exists(bookPath)) continue;
+    const units = new Set(json(bookPath).units.map(u => u.unit));
+    const entries = Object.entries(data.notes || {});
+    r.ok(bookId + ': has notes in it', entries.length > 0, String(entries.length));
+    for (const [unit, note] of entries) {
+      r.ok(bookId + ' unit ' + unit + ': the unit exists', units.has(Number(unit)));
+      r.ok(bookId + ' unit ' + unit + ': has a title and a body',
+        !!note.title && Array.isArray(note.body) && note.body.length > 0);
+      // Every example is a pair — English, then the Kazakh for it. A one-sided
+      // pair renders as a blank line rather than as an error.
+      const bad = (note.examples || []).filter(e => !Array.isArray(e) || !e[0] || !e[1]);
+      r.ok(bookId + ' unit ' + unit + ': every example has both languages',
+        bad.length === 0, JSON.stringify(bad.slice(0, 2)));
+    }
+  }
+}
+
 /* ===================== 7. the guide ===================== */
 r.head('help');
 r.ok('help.js exports its sections', !!HELP);

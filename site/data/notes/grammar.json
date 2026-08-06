@@ -1,0 +1,313 @@
+{
+ "book": "grammar",
+ "lang": "kk",
+ "_comment": [
+  "Қазақша түсіндірмелер. Кітаптың өз түсіндірмесі ағылшынша — бұл файл оны",
+  "алмастырмайды, қазақ тілді оқушыға ағылшын мен қазақтың арасындағы дәл сол",
+  "айырманы айтады: артикль жоқ, шақтар басқаша бөлінеді, предлог септеуге дәл",
+  "келмейді. Сондықтан бәрі емес, тек тіл айырмашылығынан туатын юниттер бар.",
+  "",
+  "Пішімі: notes[<юнит нөмірі>] = {title, why?, body[], examples[[en, kk]], watch[]}",
+  "Жаңа юнит қосу — осы файлға бір жазба қосу, кодқа тиіспейсің.",
+  "site/tests/audit.js әр жазбаның юниті шын бар екенін тексереді."
+ ],
+ "notes": {
+  "3": {
+   "title": "I do және I am doing — қайсысы қашан?",
+   "why": "Қазақшада «жұмыс істеймін» мен «жұмыс істеп жатырмын» екеуі де бар, бірақ ағылшынша шекара басқа жерден өтеді.",
+   "body": [
+    "Present simple (I work) — әрқашан, әдетте, жалпы шындық. Present continuous (I am working) — дәл қазір немесе осы кезеңде, уақытша.",
+    "Ең маңызды ереже: сезім мен ойды білдіретін етістіктер continuous-қа түспейді — know, want, like, love, hate, need, believe, understand, remember, belong, mean, prefer. «Мен білемін» — I know, ешқашан I am knowing емес.",
+    "have етістігі екі жақты: иелік мағынасында (I have a car) continuous болмайды, ал әрекет мағынасында болады (I'm having lunch — түскі ас ішіп отырмын)."
+   ],
+   "examples": [
+    ["I work in a bank.", "Банкте жұмыс істеймін (менің жұмысым сол)."],
+    ["I'm working at home today.", "Бүгін үйден істеп жатырмын (тек бүгін)."],
+    ["Water boils at 100°C.", "Су 100 градуста қайнайды (жалпы шындық)."],
+    ["Look, the water is boiling!", "Қара, су қайнап жатыр! (дәл қазір)"]
+   ],
+   "watch": [
+    "always, usually, often, every day, never → simple.",
+    "now, at the moment, today, this week → continuous.",
+    "I am agree ❌ → I agree ✅. Agree — етістік, «мен келісемін» деген сөзге be керек емес."
+   ]
+  },
+  "13": {
+   "title": "Present perfect пе, past simple ба?",
+   "why": "Қазақшада екеуі де «-ды/-ді»: «кілтімді жоғалттым» да, «кеше жоғалттым» да бір формада. Ағылшыншада бұл екеуі — екі бөлек шақ, әрі осы жерде қазақ тілді оқушы ең көп қателеседі.",
+   "body": [
+    "Past simple (I lost) — өткендегі БІТКЕН оқиға, қашан болғаны маңызды немесе белгілі.",
+    "Present perfect (I have lost) — өткенде болған, бірақ нәтижесі ҚАЗІР маңызды. Қашан болғанын айтпайсың; айтсаң — бірден past simple-ге ауысады.",
+    "Сондықтан оңай тексеру бар: сөйлемде нақты өткен уақыт тұрса (yesterday, last year, in 2019, two days ago, when I was a child), present perfect мүмкін емес."
+   ],
+   "examples": [
+    ["I've lost my key.", "Кілтімді жоғалтып алдым — қазір кіре алмай тұрмын."],
+    ["I lost my key yesterday.", "Кілтімді кеше жоғалттым (қашан екені айтылды)."],
+    ["Have you seen this film?", "Бұл фильмді көрдің бе? (өмірде, қашан екені маңызды емес)"],
+    ["Did you see the film last night?", "Кеше кешке фильмді көрдің бе?"]
+   ],
+   "watch": [
+    "yesterday / last week / ago / in 2020 → past simple, әрқашан.",
+    "just, already, yet, ever, never, so far, recently → present perfect.",
+    "I have seen him yesterday ❌ → I saw him yesterday ✅."
+   ]
+  },
+  "12": {
+   "title": "for мен since",
+   "why": "Қазақшада екеуі де «-дан бері» немесе «бойы» деп аударылады, сондықтан шатасады.",
+   "body": [
+    "for — ҰЗАҚТЫҒЫ: қанша уақыт. for two years, for ten minutes, for a long time.",
+    "since — БАСТАЛҒАН НҮКТЕСІ: қашаннан бері. since 2019, since Monday, since I was a child.",
+    "Екеуі де көбіне present perfect-пен жүреді: How long have you lived here? — I've lived here for five years / since 2020."
+   ],
+   "examples": [
+    ["I've been waiting for two hours.", "Екі сағаттан бері күтіп тұрмын (ұзақтығы)."],
+    ["I've been waiting since 10 o'clock.", "Сағат 10-нан бері күтіп тұрмын (басталған сәт)."]
+   ],
+   "watch": [
+    "since two hours ❌ → for two hours ✅.",
+    "«How long?» сұрағына жауап беріп тұрсаң, әдетте present perfect керек: I am here since Monday ❌ → I have been here since Monday ✅."
+   ]
+  },
+  "18": {
+   "title": "used to — бұрын істейтін, енді істемейтін",
+   "why": "Қазақшада «бұрын … -атын/-етін едім» деген форма бар, ал ағылшыншада used to сол мағынаны береді — тек осы шақта қолданылмайды.",
+   "body": [
+    "used to + етістіктің бастапқы формасы: бұрын әдет болған, қазір жоқ. I used to smoke — бұрын шегетінмін (қазір шекпеймін).",
+    "Present-і жоқ: «қазір істеймін» деу үшін жай present simple: I smoke.",
+    "Сұрақ пен болымсызда did use to: Did you use to play football? / I didn't use to like coffee."
+   ],
+   "examples": [
+    ["I used to live in Almaty.", "Бұрын Алматыда тұратынмын (қазір тұрмаймын)."],
+    ["She used to have long hair.", "Бұрын шашы ұзын болатын."]
+   ],
+   "watch": [
+    "used to ≠ be used to. I'm used to getting up early — «ерте тұруға үйреніп қалғанмын» (61-юнитті қара).",
+    "I use to go ❌ (осы шақ жоқ) → I usually go ✅."
+   ]
+  },
+  "31": {
+   "title": "must па, have to ма?",
+   "why": "Екеуі де «керек» деп аударылады, бірақ кім талап етіп тұрғаны бөлек.",
+   "body": [
+    "must — сөйлеп тұрған адамның өз шешімі, ішкі қажеттілік: I must call my mother (өзім солай ойлаймын).",
+    "have to — сырттан келген талап: ереже, заң, жағдай. I have to wear a uniform at work (жұмыс солай талап етеді).",
+    "Болымсызда мағына мүлдем екі бөлек: mustn't — тыйым («болмайды»), don't have to — қажет емес («міндетті емес»)."
+   ],
+   "examples": [
+    ["You mustn't tell anyone.", "Ешкімге айтуға болмайды (тыйым)."],
+    ["You don't have to tell anyone.", "Ешкімге айтудың қажеті жоқ (қаласаң, айт)."],
+    ["I had to work late.", "Кеш дейін жұмыс істеуге тура келді (must-тың өткен шағы жоқ, have to кіреді)."]
+   ],
+   "watch": [
+    "must-тың өткен шағы жоқ: I musted ❌ → I had to ✅.",
+    "mustn't пен don't have to — қарама-қарсы нәрсе. Шатастырсаң, мағына керісінше шығады."
+   ]
+  },
+  "38": {
+   "title": "if I do … және if I did … (1 және 2-шартты сөйлем)",
+   "why": "Қазақшада «барсам» деген бір форма екеуін де жабады, ағылшыншада шақ өзгереді.",
+   "body": [
+    "If + present simple, will + етістік — болуы мүмкін нәрсе. If it rains, I'll stay at home.",
+    "If + past simple, would + етістік — қиял, шындыққа жанаспайтын немесе екіталай нәрсе. If I had a million dollars, I would buy a house.",
+    "If-тен кейін will қойылмайды — қазақ тілді оқушы да, орыс тілді оқушы да осы жерде жиі сүрінеді."
+   ],
+   "examples": [
+    ["If I see him, I'll tell him.", "Оны көрсем, айтамын (көруім мүмкін)."],
+    ["If I saw him, I would tell him.", "Оны көрсем ғой, айтар едім (бірақ көрмеймін)."],
+    ["If I were you, I'd wait.", "Сенің орныңда болсам, күтер едім (тұрақты тіркес: were)."]
+   ],
+   "watch": [
+    "If it will rain ❌ → If it rains ✅.",
+    "2-шартты сөйлемде was орнына were жиі қолданылады: if I were you."
+   ]
+  },
+  "42": {
+   "title": "Passive: is done / was done",
+   "why": "Қазақшада ырықсыз етіс жұрнақпен жасалады (салынды, айтылады), ағылшыншада be + V3 керек — сол be жиі түсіп қалады.",
+   "body": [
+    "Формуласы: be (am/is/are/was/were) + етістіктің үшінші формасы. This house was built in 1990.",
+    "Кім істегені белгісіз, маңызды емес немесе айтқың келмегенде қолданылады. Айтқың келсе — by: The house was built by my grandfather.",
+    "be-ні ұмытпа: етістіктің V3 формасы жалғыз тұрса, сөйлем сынады."
+   ],
+   "examples": [
+    ["English is spoken here.", "Мұнда ағылшынша сөйлейді."],
+    ["My car was stolen last night.", "Кеше түнде көлігім ұрланды."]
+   ],
+   "watch": [
+    "This house built in 1990 ❌ → was built ✅.",
+    "Өтпелі емес етістіктер (happen, arrive, come, die) passive-ке түспейді: it was happened ❌ → it happened ✅."
+   ]
+  },
+  "47": {
+   "title": "Reported speech — біреудің сөзін жеткізу",
+   "why": "Қазақшада «барамын деді» — сөз сол күйі қалады. Ағылшыншада баяндауыш өткен шаққа ауысса, ішіндегі шақ та бір саты артқа жылжиды.",
+   "body": [
+    "said (өткен) → ішіндегі шақ артқа: am/is → was, do → did, will → would, can → could, have done → had done.",
+    "Уақыт пен орын сөздері де ауысады: today → that day, tomorrow → the next day, here → there, this → that.",
+    "Айтылған нәрсе әлі де шындық болса, шақты өзгертпей қалдыруға болады: He said the Earth goes round the Sun."
+   ],
+   "examples": [
+    ["\"I'm tired.\" → He said he was tired.", "«Шаршадым» деді → Шаршағанын айтты."],
+    ["\"I'll call you.\" → She said she would call me.", "«Хабарласамын» деді."]
+   ],
+   "watch": [
+    "say + мазмұн (He said that …), tell + кім (He told me that …). He said me ❌ → He told me ✅.",
+    "Сұрақты жеткізгенде сөз тәртібі тура болады: He asked where I was ✅, He asked where was I ❌ (50-юнит)."
+   ]
+  },
+  "69": {
+   "title": "Саналатын және саналмайтын зат есімдер",
+   "why": "Қазақшада «ақпарат», «кеңес», «жиһаз» деп көпше айта береміз. Ағылшыншада бұл сөздердің көпшесі жоқ, сондықтан -s жалғанбайды.",
+   "body": [
+    "Саналмайтындар: information, advice, furniture, luggage, news, work, money, bread, water, weather, traffic, research.",
+    "Оларға a/an қойылмайды және -s жалғанбайды: an advice ❌, advices ❌.",
+    "Санау керек болса, өлшем сөз керек: a piece of advice, two pieces of furniture, a bottle of water."
+   ],
+   "examples": [
+    ["I need some advice.", "Кеңес керек."],
+    ["He gave me two pieces of advice.", "Ол маған екі кеңес берді."],
+    ["The news is bad.", "Жаңалық жаман (news — жекеше!)."]
+   ],
+   "watch": [
+    "informations ❌, advices ❌, furnitures ❌, moneys ❌.",
+    "much/little — саналмайтынға, many/few — саналатынға (87-юнит)."
+   ]
+  },
+  "72": {
+   "title": "a/an және the — артикль",
+   "why": "Қазақ тілінде артикль мүлдем жоқ, сондықтан бұл — қазақ тілді оқушының ең көп қатесі. Тастап кету де, артық қою да қате.",
+   "body": [
+    "a/an — «біреу, әйтеуір бірі», тыңдаушы қайсы екенін білмейді. Жаңа нәрсені бірінші рет атағанда.",
+    "the — «дәл сол», екеуің де қайсы екенін білесіңдер: бұрын аталған, жалғыз ғана, немесе жағдайдан белгілі.",
+    "Артикльсіз: жалпы мағынадағы көпше және саналмайтын сөздер — I like music, Cats are independent."
+   ],
+   "examples": [
+    ["I saw a dog. The dog was barking.", "Бір ит көрдім. Сол ит үріп тұр еді."],
+    ["Can you close the door?", "Есікті жабасың ба? (қай есік екені белгілі)"],
+    ["She's a doctor.", "Ол — дәрігер (мамандық алдында a қажет)."],
+    ["I like coffee.", "Кофе ұнайды (жалпы, артикльсіз)."]
+   ],
+   "watch": [
+    "She is doctor ❌ → She is a doctor ✅.",
+    "I go to the school ❌ (оқу үшін барсаң) → I go to school ✅ (74-юнит).",
+    "The life is short ❌ → Life is short ✅."
+   ]
+  },
+  "85": {
+   "title": "some және any",
+   "body": [
+    "some — болымдыда, сондай-ақ ұсыныс пен сұрауда: Would you like some tea? Can I have some water?",
+    "any — болымсызда және сұрақта: I don't have any money. Do you have any questions?",
+    "any болымдыда «қандай да болсын» дегенді білдіреді: You can take any bus — қай автобус болса да жарайды."
+   ],
+   "examples": [
+    ["I bought some bread.", "Нан алдым."],
+    ["I didn't buy any bread.", "Нан алмадым."],
+    ["Come any time.", "Қалаған уақытта кел."]
+   ],
+   "watch": [
+    "I don't have some money ❌ → any ✅."
+   ]
+  },
+  "92": {
+   "title": "Relative clauses: who / that / which",
+   "why": "Қазақшада анықтауыш сөйлем етістіктің алдында тұрады («маған қоңырау шалған адам»), ағылшыншада — зат есімнен кейін.",
+   "body": [
+    "who — адам, which — зат, that — екеуі де.",
+    "Ағылшынша тәртіп: зат есім + who/which/that + сөйлем. The man who called me is my boss.",
+    "Есімдік екі рет қайталанбайды: The man who he called me ❌ — who әрі байланыстырушы, әрі бастауыш."
+   ],
+   "examples": [
+    ["The woman who lives next door is a doctor.", "Көршіде тұратын әйел — дәрігер."],
+    ["The book that I read was boring.", "Оқыған кітабым қызықсыз еді."]
+   ],
+   "watch": [
+    "Толықтауыш болғанда who/that түсіп қалуы мүмкін: The book I read was boring ✅ (93-юнит).",
+    "The man which called ❌ → who ✅."
+   ]
+  },
+  "98": {
+   "title": "boring ба, bored ба?",
+   "why": "Қазақшада «қызықсыз» бір сөз, ағылшыншада -ing сыртқа, -ed ішке қарайды.",
+   "body": [
+    "-ing — нәрсенің қасиеті, ол не істейді: The film was boring — фильм зеріктіреді.",
+    "-ed — адамның күйі, ол қалай сезінеді: I was bored — мен зеріктім.",
+    "Сол қалып: interesting/interested, tiring/tired, surprising/surprised, exciting/excited, confusing/confused."
+   ],
+   "examples": [
+    ["I'm interested in history.", "Тарихқа қызығамын."],
+    ["History is interesting.", "Тарих қызық."]
+   ],
+   "watch": [
+    "I am boring — «мен зерікпеймін», «мен зерікті адаммын» деген сөз. Сақ бол."
+   ]
+  },
+  "107": {
+   "title": "as … as және than",
+   "body": [
+    "Теңдік: as + сын есім + as. She's as tall as her brother — ағасымен бірдей бойлы.",
+    "Теңсіздік: comparative + than. She's taller than her brother.",
+    "Болымсызда not as … as: I'm not as fast as you — сендей жылдам емеспін."
+   ],
+   "examples": [
+    ["This book is more interesting than that one.", "Бұл кітап анаудан қызықтырақ."],
+    ["It's not as cold as yesterday.", "Кешегідей суық емес."]
+   ],
+   "watch": [
+    "more taller ❌ → taller ✅. Бір сөзге екі рет салыстырма жалғанбайды.",
+    "than орнына that жазып жіберу — жиі кездесетін механикалық қате."
+   ]
+  },
+  "121": {
+   "title": "at / on / in — уақыт",
+   "why": "Қазақшада бәрі бір «-да/-де» жалғауы, ағылшыншада үшеуі үш түрлі көлемге қарайды.",
+   "body": [
+    "at — нақты сәт: at 5 o'clock, at midnight, at the weekend, at night.",
+    "on — күн мен күндегі уақыт: on Monday, on 12 May, on Friday morning.",
+    "in — ұзақ кезең: in July, in 2026, in the morning, in summer.",
+    "Кішіден үлкенге: at (сағат) → on (күн) → in (ай, жыл)."
+   ],
+   "examples": [
+    ["The meeting is at 3 on Monday in March.", "Кездесу — наурызда, дүйсенбіде, сағат үште."]
+   ],
+   "watch": [
+    "in Monday ❌ → on Monday ✅.",
+    "next, last, this, every алдында предлог қойылмайды: I'll see you on next week ❌ → next week ✅."
+   ]
+  },
+  "123": {
+   "title": "in / at / on — орын",
+   "body": [
+    "in — іші бар кеңістік: in a room, in Almaty, in a car, in the water.",
+    "at — нүкте немесе іс-шара: at the bus stop, at the door, at a concert, at work, at home.",
+    "on — бет үсті немесе сызық: on the table, on the wall, on the second floor, on the bus."
+   ],
+   "examples": [
+    ["He's in the kitchen.", "Ол ас үйде (ішінде)."],
+    ["I'll meet you at the station.", "Вокзалда кездесейік (нүкте ретінде)."],
+    ["There's a picture on the wall.", "Қабырғада сурет ілулі."]
+   ],
+   "watch": [
+    "in the bus ❌ → on the bus ✅ (автобус, пойыз, ұшақ — on; көлік — in a car).",
+    "at home / at work — the жоқ."
+   ]
+  },
+  "137": {
+   "title": "Phrasal verbs — етістік + шылау",
+   "why": "Қазақшада мұндай құрылым жоқ: give up сөзбе-сөз «жоғары беру» емес, «тастау». Сондықтан оларды бөлек-бөлек емес, тұтас жаттаған дұрыс.",
+   "body": [
+    "Мағынасы бөліктерінен шықпайды: look after — қарау (күту), look for — іздеу, look up — сөздіктен қарау.",
+    "Кейбірі ажырайды: turn the light on = turn on the light. Бірақ есімдік болса, тек ортасында: turn it on ✅, turn on it ❌.",
+    "Кейбірі ажырамайды: look after the baby ✅, look the baby after ❌."
+   ],
+   "examples": [
+    ["I gave up smoking.", "Шылым шегуді тастадым."],
+    ["Can you turn it off?", "Оны өшіре аласың ба?"]
+   ],
+   "watch": [
+    "Есімдік әрқашан ортада: pick up it ❌ → pick it up ✅."
+   ]
+  }
+ }
+}

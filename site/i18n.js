@@ -457,6 +457,10 @@ window.I18N = {
     'auth.classesOpen': '👩‍🏫 Сыныптар',
     'auth.classesSub': 'Мұғалім болсаң — сынып ашып, оқушыларыңның прогресін көр.',
 
+    'note.tag': 'ҚАЗАҚША',
+    'note.watch': 'Жиі қате:',
+    'note.open': 'Қазақша түсіндірме',
+
     'sample.tag': 'ҮЛГІ',
     'sample.body': 'Бұл кітаптың {of} юнитінің {n}-і ашық — қалғаны жазылымда.',
     'sample.unlock': 'Ашу',
@@ -1183,6 +1187,10 @@ window.I18N = {
     'auth.secClasses': 'Classes',
     'auth.classesOpen': '👩‍🏫 Classes',
     'auth.classesSub': 'Teaching? Open a class and watch your students’ progress.',
+
+    'note.tag': 'IN KAZAKH',
+    'note.watch': 'Common mistakes:',
+    'note.open': 'Explanation in Kazakh',
 
     'sample.tag': 'SAMPLE',
     'sample.body': '{n} of this book\u2019s {of} units are open — the rest come with a subscription.',
