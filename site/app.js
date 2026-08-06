@@ -1657,6 +1657,13 @@
     // the project offers, or the profile as the server currently has it (a name
     // or email changed on another device would otherwise show stale here).
     if (SYNC.signedIn()) SYNC.refreshUser(); else SYNC.loadSettings();
+    // The panel is where somebody looks after paying, and the subscription line
+    // in it is drawn from a cached answer. Re-ask: the reader who was granted a
+    // minute ago should not have to reload to see it — nor should the shelf
+    // behind the panel keep its locks.
+    if (SYNC.signedIn() && window.ENTITLE && ENTITLE.configured) {
+      ENTITLE.refresh().catch(function () { /* offline — the cached answer stands */ });
+    }
     renderAuth();
     authModal.hidden = false;
     var c = authModal.querySelector('.modal-close');
@@ -2286,8 +2293,12 @@
       promptTests().forEach(function (n) {
         var a = el('a', 'unit-link ue-link');
         a.href = '#/b/' + book.id + '/tasks/' + n;
-        a.appendChild(el('span', 'u-num', '✍'));
+        // Collapsed, the rail shows only this cell, so the test number has to
+        // be in it: four rows reading '✍' are four rows nobody can tell apart.
+        a.appendChild(el('span', 'u-num', '✍' + n));
         a.appendChild(el('span', 'u-title', t('task.test', { n: n })));
+        a.setAttribute('aria-label', t('task.sidebar') + ' — ' + t('task.test', { n: n }));
+        a.setAttribute('data-tip-text', t('task.sidebar') + '\n' + t('task.test', { n: n }));
         li.appendChild(a);
       });
       unitListEl.appendChild(li);
@@ -4023,6 +4034,19 @@
     main.appendChild(head);
 
     var list = bookPrompts(test);
+    // The Writing task IS a chart in the book — the words alone are half the
+    // task — so the pane goes to its page rather than staying wherever the last
+    // unit left it. Same rule as a unit page: only when the pane is already the
+    // reader's choice, and never on a phone, where it covers everything.
+    var firstPage = null;
+    for (var pi = 0; pi < list.length; pi++) {
+      if (list[pi].pdfPage != null) { firstPage = Number(list[pi].pdfPage); break; }
+    }
+    if (firstPage != null && book.meta && book.meta.pdf && !isNarrow() &&
+        (pdfOpen() || state.ui.pdfOpen)) {
+      showPdf(firstPage);
+    }
+
     var writing = list.filter(function (p) { return p.skill === 'writing'; });
     var speaking = list.filter(function (p) { return p.skill === 'speaking'; });
     var byPart = function (a, b) { return Number(a.part) - Number(b.part); };
@@ -5413,6 +5437,15 @@
           r.subscribed = !!(got && (got.plan === 'lifetime' ||
             (Date.parse(got.expires_at) || 0) > Date.now()));
           repaint();
+          // Granting to yourself is the most common grant there is — the owner
+          // testing, or unlocking their own account. ENTITLE caches the "no
+          // subscription" answer, so without this the shelf keeps its locks and
+          // the books stay shut until a reload, which reads as the grant not
+          // having worked.
+          var me = window.SYNC && SYNC.user();
+          if (me && r.id === me.id && window.ENTITLE) {
+            ENTITLE.refresh().catch(function () { /* the next page load re-asks */ });
+          }
         }).catch(function (e) {
           for (var j = 0; j < all.length; j++) all[j].disabled = false;
           alert(String((e && e.message) || e));

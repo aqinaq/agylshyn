@@ -794,9 +794,41 @@ def parse_writing(section_pages):
             if current is not None and line not in ('WRITING',):
                 current['prompt'].append(line)
     for t in tasks:
-        t['prompt'] = ' '.join(t['prompt']).strip()
+        t['prompt'] = trim_writing(' '.join(t['prompt']).strip())
         t['needsPdf'] = t['task'] == 1        # the chart or diagram is a picture
     return tasks
+
+
+# Every IELTS Writing rubric ends the same way, and everything after it on the
+# page is the picture: axis labels, table cells, the running footer.  Extracted
+# as text that is "Library opening hours 65 35 0 Helpfulness of staff 95 5 0",
+# which is unreadable and, worse, looks like part of the task.
+# The digits and the full stop are both spelled loosely on purpose: the OCR
+# breaks "150" into "1 50" in Test 1 and puts a space before the stop in Test 2,
+# and a rubric that fails to match here drags a whole chart in behind it.
+WRITING_END = re.compile(r'^(.*?\bWrite at least\s+\d[\d\s]*words\s*\.)', re.S)
+
+
+def trim_writing(text):
+    m = WRITING_END.match(text)
+    return (m.group(1) if m else text).strip()
+
+
+# The cue-card margin note. It is printed beside Part 2 and belongs to it, but
+# the text layer drops it wherever it likes — in Test 4 it lands in the middle
+# of Part 3's question list. The app puts a real clock on Part 2, so the note
+# is removed rather than moved.
+CUE_NOTE = re.compile(
+    r'You will have to talk\s+about the topic for 1 to\s*\n?\s*2 minutes\.'
+    r'.*?you wish\.', re.S)
+
+
+def trim_speaking(text, part):
+    if part != 2:
+        text = CUE_NOTE.sub('', text)
+    # The same note, line-wrapped differently, and the page footers.
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
 
 
 def parse_speaking(section_pages):
@@ -812,7 +844,7 @@ def parse_speaking(section_pages):
             if current is not None and line != 'SPEAKING':
                 current['prompt'].append(line)
     for p in parts:
-        p['prompt'] = '\n'.join(p['prompt']).strip()
+        p['prompt'] = trim_speaking('\n'.join(p['prompt']).strip(), p['part'])
     return parts
 
 

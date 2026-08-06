@@ -186,6 +186,33 @@ async function run() {
   r.eq('and the revoke button goes with it', revoked.buttons, 2);
   r.eq('the revoke named the right account', (s.mock.calls.revoke[0] || {}).target, 'u-3');
 
+  /* ============ granting yourself ============ */
+  // The commonest grant of all: the owner unlocking their own account. ENTITLE
+  // caches "no subscription", so without a re-ask the shelf keeps its locks and
+  // the books stay shut until a reload — which reads as the grant not working.
+  r.head('granting yourself');
+  const mine = await s.eval(`(async () => {
+    location.hash = '#/';
+    await new Promise(r=>setTimeout(r,900));
+    const before = document.querySelectorAll('.bc-lock').length;
+    location.hash = '#/users';
+    await new Promise(r=>setTimeout(r,900));
+    const row = [...document.querySelectorAll('tbody tr')]
+      .find(tr => tr.textContent.indexOf('owner@example.com') > -1);
+    const life = [...row.querySelectorAll('.sub-acts button')]
+      .find(b => /Мәңгілік|Lifetime/i.test(b.textContent));
+    window.confirm = () => true;
+    life.click();
+    await new Promise(r=>setTimeout(r,1400));
+    location.hash = '#/';
+    await new Promise(r=>setTimeout(r,900));
+    return { before: before, after: document.querySelectorAll('.bc-lock').length,
+             active: window.ENTITLE.active() };
+  })()`);
+  r.ok('the shelf was locked before the grant', mine.before > 0, String(mine.before));
+  r.ok('the app re-asks and the answer is yes', mine.active);
+  r.eq('and every lock is off the shelf, with no reload', mine.after, 0);
+
   const revisit = await s.eval(`(async () => {
     let calls = 0;
     const real = window.fetch;

@@ -137,11 +137,19 @@ function mock(s, opts) {
           user_id: body.target, plan: body.p_plan,
           expires_at: body.p_plan === 'lifetime' ? null : '2099-01-01T00:00:00Z'
         };
+        // Granting to yourself changes what my_access() answers — on the real
+        // server that is automatic, and a mock where it is not lets the app get
+        // away with never re-asking.
+        if (body.target === USER.id) {
+          access = { plan: row.plan, expires_at: row.expires_at, active: true };
+        }
         return reply(200, row);
       }
       if (url.includes('/rest/v1/rpc/admin_revoke')) {
-        calls.revoke.push(posted());
+        const body = posted();
+        calls.revoke.push(body);
         if (!opts.admin) return reply(403, { message: 'not an admin' });
+        if (body.target === USER.id) access = null;
         return reply(200, null);
       }
       if (url.includes('/rest/v1/book_content')) {
