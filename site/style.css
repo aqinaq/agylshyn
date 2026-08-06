@@ -2407,7 +2407,16 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
 .de-go { display: inline-block; margin-top: 6px; font-size: 12.5px; }
 
 /* ===== The library's one big button ===== */
-.hero-drill { margin-top: 10px; }
+.hero-drill {
+  margin-top: 18px;
+  display: grid;
+  /* Three across where there is room, wrapping to two and then one. The cap
+     keeps them from stretching to the full width of the banner text, which is
+     62ch of prose and far wider than a button wants to be. */
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 10px;
+  max-width: 700px;
+}
 .drill-cta {
   display: flex;
   align-items: center;

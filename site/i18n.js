@@ -412,7 +412,7 @@ window.I18N = {
     'stats.exams': 'Емтихан жүгірулері',
 
     'cls.home.title': 'Сынып',
-    'cls.home.sub': 'Мұғалімге: сынып аш, оқушыларыңның прогресін көр',
+    'cls.home.sub': 'Мұғалімге: сыныбыңның прогресін көр',
     'cls.title': 'Сыныптар',
     'cls.sub': 'Мұғалім мен оқушы',
     'cls.h1': 'Сыныптар',
@@ -1142,7 +1142,7 @@ window.I18N = {
     'stats.exams': 'Mock exams',
 
     'cls.home.title': 'Classes',
-    'cls.home.sub': 'For teachers: open a class and watch your students',
+    'cls.home.sub': 'For teachers: watch your class',
     'cls.title': 'Classes',
     'cls.sub': 'Teacher and student',
     'cls.h1': 'Classes',
