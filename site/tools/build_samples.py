@@ -65,13 +65,37 @@ def sample_of(book, take):
             'units': units}
 
 
+def sample_problem(path, take):
+    """What is wrong with a sample file judged on its own, or None.
+
+    Used where the paid book itself is not available to rebuild from: the file
+    still has to exist, say that it is a sample, hold the agreed number of
+    units, and know how many the whole book has — a sample that claims to be
+    the whole book is the one mistake that would matter."""
+    if not os.path.exists(path):
+        return 'missing'
+    try:
+        with open(path, encoding='utf-8') as f:
+            data = json.load(f)
+    except (IOError, ValueError):
+        return 'unreadable'
+    units = data.get('units')
+    if not data.get('sample') or not isinstance(units, list):
+        return 'not a sample file'
+    if len(units) != take:
+        return 'has %d units, tiers.json says %d' % (len(units), take)
+    if not data.get('unitsOf') or data['unitsOf'] <= len(units):
+        return 'does not say what it is a sample of'
+    return None
+
+
 def build(check=False):
     paid = sorted(tiers_mod.load())
     cfg = config()
     if not check and not os.path.isdir(SAMPLE_DIR):
         os.makedirs(SAMPLE_DIR)
 
-    stale, written = [], []
+    stale, written, unbuilt = [], [], []
     keep = set()
     for book_id in paid:
         take = units_for(book_id, cfg)
@@ -86,7 +110,19 @@ def build(check=False):
         keep.add(book_id + '.json')
         source = tiers_mod.source_of(book_id, paid)
         if not source:
-            stale.append(book_id + ' (never built)')
+            # No copy of the paid book on this machine. That is not a fault —
+            # it is every fresh checkout, including the deploy runner, because
+            # content/ is gitignored precisely so a paid book cannot travel with
+            # the repository. So --check verifies what the sample file can
+            # answer for on its own and leaves the comparison to a machine that
+            # has the book. (Failing here instead is what blocked three
+            # deploys: the check demanded a file the runner is designed not to
+            # have.)
+            problem = sample_problem(out, take)
+            if problem:
+                stale.append(book_id + ' (' + problem + ')')
+            elif not check:
+                unbuilt.append(book_id)
             continue
         with open(source, encoding='utf-8') as f:
             book = json.load(f)
@@ -124,6 +160,10 @@ def build(check=False):
 
     for book_id, take, got, size in written:
         print('%-18s %d unit(s), %5.1f KB' % (book_id, got, size / 1024.0))
+    if unbuilt:
+        # Rebuilding is the whole job of this mode, so being unable to is worth
+        # a line — but not an error: the existing sample was checked and is fine.
+        print('not rebuilt (the book is not on this machine): ' + ', '.join(unbuilt))
     if not written:
         print('samples already up to date')
     return 0

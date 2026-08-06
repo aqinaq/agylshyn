@@ -21,7 +21,11 @@ TIERS = os.path.join(HERE, 'tiers.json')
 # site/data/. Outside site/, so the Pages workflow (which uploads site/ whole)
 # cannot publish it by accident, and gitignored, so the repository cannot
 # either.
-CONTENT = os.path.join(ROOT, 'content')
+# Overridable so the deploy's own shape can be tested: the Pages runner checks
+# out a repository with no content/ at all (it is gitignored on purpose), and a
+# tool that quietly assumes the paid books are on disk fails there and nowhere
+# else — which is exactly how the sample check blocked three deploys.
+CONTENT = os.environ.get('AGYLSHYN_CONTENT') or os.path.join(ROOT, 'content')
 DATA = os.path.join(ROOT, 'site', 'data')
 
 

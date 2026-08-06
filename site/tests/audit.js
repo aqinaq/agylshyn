@@ -485,6 +485,23 @@ r.head('Kazakh notes');
   }
 }
 
+/* ============ 6c. the checks the deploy runs ============ */
+// Run exactly as the Pages workflow runs them, and in the shape the workflow
+// has: a checkout with no content/ directory, because the paid books are
+// gitignored. Both of these failing there and nowhere else is what stopped
+// three deploys after the samples landed.
+r.head('deploy checks');
+{
+  const { spawnSync } = require('child_process');
+  const env = Object.assign({}, process.env, { AGYLSHYN_CONTENT: '/nonexistent-on-purpose' });
+  for (const tool of ['split_content.py', 'build_samples.py']) {
+    const run = spawnSync('python3', [path.join(SITE, 'tools', tool), '--check'],
+      { env, encoding: 'utf8' });
+    r.ok(tool + ' --check passes without the paid books on disk',
+      run.status === 0, (run.stdout || '') + (run.stderr || ''));
+  }
+}
+
 /* ===================== 7. the guide ===================== */
 r.head('help');
 r.ok('help.js exports its sections', !!HELP);
