@@ -31,7 +31,7 @@ async function run() {
   const page = await s.eval(`({
     cards: document.querySelectorAll('.task-card').length,
     heads: [...document.querySelectorAll('.task-head b')].map(e => e.textContent),
-    tests: document.querySelectorAll('.page-head .chip').length,
+    chips: [...document.querySelectorAll('.page-head .chips .chip')].map(e => e.textContent),
     areas: document.querySelectorAll('.task-area').length,
     timers: document.querySelectorAll('.task-timer').length,
     inBook: document.querySelectorAll('.task-inbook').length,
@@ -40,7 +40,12 @@ async function run() {
   r.eq('five tasks: two written, three spoken', page.cards, 5);
   r.eq('Writing Task 1 is the first of them', page.heads[0], 'Writing Task 1');
   r.eq('and Speaking Part 3 the last', page.heads[4], 'Speaking Part 3');
-  r.eq('all four tests are reachable from here', page.tests, 4);
+  // The head a unit page has: the page in the book, and the button that opens
+  // it. A reader must not be able to tell L1 and W1 apart by their furniture.
+  r.ok('the head says which page of the book this is',
+    /30/.test(page.chips[0] || ''), JSON.stringify(page.chips));
+  r.ok('and carries the open-the-book button',
+    (page.chips[1] || '').indexOf('PDF') > -1, JSON.stringify(page.chips));
   r.eq('only the written tasks get a box to write in', page.areas, 2);
   // The task text is deliberately not on the site: a Writing task is a chart
   // and a Speaking card comes off the scan mangled. Every card says where the
@@ -160,6 +165,42 @@ async function run() {
   r.eq('and two to talk', speak.talk, '2:00');
   r.ok('the answer can be recorded', speak.rec);
   r.ok('and the page says the recording is not kept', speak.note);
+
+  /* ================= one skill to a page ================= */
+  // S1 is its own page in the rail, and it must behave like one: its own title,
+  // its own page of the book — the Speaking card on page 32, not the Writing
+  // chart on 30, which is where it used to send the reader.
+  r.head('one skill to a page');
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/s');
+  await until(s, `document.querySelectorAll('.task-card').length >= 3`);
+  const sOnly = await s.eval(`({
+    cards: document.querySelectorAll('.task-card').length,
+    h1: document.querySelector('.page-head h1').textContent,
+    page: (document.querySelector('.page-head .chip strong') || {}).textContent,
+    bands: document.querySelectorAll('.section-title').length,
+    cross: [...document.querySelectorAll('.page-head .chips a')].map(e => e.getAttribute('href')),
+    current: [...document.querySelectorAll('#unitList .current .u-num')].map(e => e.textContent)
+  })`);
+  r.eq('the Speaking page carries only the three spoken parts', sOnly.cards, 3);
+  r.eq('titled the way the rail names it', sOnly.h1, 'Test 1 — Speaking');
+  r.eq('and it opens the book at the Speaking card', sOnly.page, '32');
+  r.eq('the h1 already names the skill, so no band repeats it', sOnly.bands, 0);
+  r.eq('the other half of the test is one chip away',
+    sOnly.cross.join(' '), '#/b/ielts-21/tasks/1/w');
+  r.eq('and the rail marks where the reader is', sOnly.current.join(' '), 'S1');
+
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/w');
+  await until(s, `document.querySelectorAll('.task-card').length >= 2`);
+  const wOnly = await s.eval(`({
+    cards: document.querySelectorAll('.task-card').length,
+    h1: document.querySelector('.page-head h1').textContent,
+    page: (document.querySelector('.page-head .chip strong') || {}).textContent,
+    cross: [...document.querySelectorAll('.page-head .chips a')].map(e => e.getAttribute('href'))
+  })`);
+  r.eq('the Writing page carries only the two written tasks', wOnly.cards, 2);
+  r.eq('titled to match', wOnly.h1, 'Test 1 — Writing');
+  r.eq('and opens the book at Task 1', wOnly.page, '30');
+  r.eq('with Speaking one chip away', wOnly.cross.join(' '), '#/b/ielts-21/tasks/1/s');
 
   /* ================= the way in ================= */
   r.head('the way in');

@@ -2236,6 +2236,9 @@
 
   var book = null;         // currently open book
   var currentUnit = null;
+  // The Writing/Speaking page open right now, as 'w1' or 's1' — the rail marks
+  // it the way it marks the unit a reader is on. Every other page clears it.
+  var currentTask = null;
 
   // Advanced Grammar's revision sets carry `additional`; their visible label
   // is localised rather than baked into the data.
@@ -2301,8 +2304,11 @@
         [['writing', 'W'], ['speaking', 'S']].forEach(function (pair) {
           if (!bookPrompts(testNo).some(function (p) { return p.skill === pair[0]; })) return;
           var tli = el('li');
-          var ta = el('a', 'unit-link task-link');
+          var key = pair[1].toLowerCase() + testNo;
+          var here = currentTask === key;
+          var ta = el('a', 'unit-link task-link' + (here ? ' current' : ''));
           ta.href = '#/b/' + book.id + '/tasks/' + testNo + '/' + pair[1].toLowerCase();
+          if (here) ta.setAttribute('aria-current', 'page');
           var label = pair[1] + testNo;
           var name = t('task.' + pair[0] + 'Unit', { n: testNo });
           ta.appendChild(el('span', 'u-num', label));
@@ -3221,6 +3227,30 @@
     return chip;
   }
 
+  /* The open/close-the-book chip. Shut, it is the one thing the page wants the
+     reader to press, so it wears the loud red CTA; open, it only means "close"
+     and goes quiet. The unit page and the Writing/Speaking page share it —
+     those are the same kind of page to a reader and must not look like two
+     different products. Returns null when the book ships no PDF; the caller
+     can re-run `chip.sync()` after it has decided the pane's opening state. */
+  function pdfToggleChip(startPage) {
+    if (!(book && book.meta && book.meta.pdf)) return null;
+    var toggle = el('button', 'chip chip-btn');
+    toggle.title = t('unit.openPdfHint');
+    function sync() {
+      var open = pdfOpen();
+      toggle.textContent = open ? t('unit.closePdf') : t('unit.openPdf');
+      toggle.classList.toggle('chip-cta', !open);
+    }
+    sync();
+    toggle.addEventListener('click', function () {
+      if (pdfOpen()) hidePdf(true); else showPdf(startPage);
+      sync();
+    });
+    toggle.sync = sync;
+    return toggle;
+  }
+
   // Opens the PDF in its own window on the right half of the screen. The window
   // is named, so a second click moves that same window to the new page instead
   // of piling up windows.
@@ -4043,52 +4073,76 @@
     if (!tests.length) { renderNotFound(testNo || 1); return; }
     var test = tests.indexOf(Number(testNo)) > -1 ? Number(testNo) : tests[0];
     currentUnit = null;
+    currentTask = only ? only + test : null;
     setTab('units');
     clear(main);
     afterChange = function () {};
 
+    var list = bookPrompts(test);
+    var byPart = function (a, b) { return Number(a.part) - Number(b.part); };
+    var writing = list.filter(function (p) { return p.skill === 'writing'; }).sort(byPart);
+    var speaking = list.filter(function (p) { return p.skill === 'speaking'; }).sort(byPart);
+    // What this page is showing. W1 and S1 are separate entries in the rail and
+    // separate pages; everything below reads from `shown`, so nothing on a
+    // Speaking page can be decided by a Writing task that is not on it.
+    var shown = only === 'w' ? writing : (only === 's' ? speaking : writing.concat(speaking));
+
+    /* The head a unit page has: the title of the section, the page it is on in
+       the book, the button that opens the book, and the way across to the rest
+       of the test. L1 and S1 are the same kind of page to a reader and now look
+       it — what differs is only what a Speaking page can honestly offer (no
+       score, so no progress bar, and no exam-mode: nothing here is marked). */
     var head = el('div', 'page-head');
     head.appendChild(el('h1', null, t(
-      only === 'w' ? 'task.h1w' : (only === 's' ? 'task.h1s' : 'task.h1'), { n: test })));
+      only === 'w' ? 'task.writingUnit' : (only === 's' ? 'task.speakingUnit' : 'task.h1'),
+      { n: test })));
+
+    // The page the shown half of the test starts on — a Speaking page must open
+    // the book at the Speaking card, not at whatever Writing came before it.
+    var firstPage = null;
+    for (var pi = 0; pi < shown.length; pi++) {
+      if (shown[pi].pdfPage != null) { firstPage = Number(shown[pi].pdfPage); break; }
+    }
+
     var chips = el('div', 'chips');
-    tests.forEach(function (n) {
-      var c = el('a', 'chip' + (n === test ? ' chip-on' : ''), t('task.test', { n: n }));
-      c.href = '#/b/' + book.id + '/tasks/' + n + (only ? '/' + only : '');
-      chips.appendChild(c);
-    });
+    if (firstPage != null) {
+      chips.appendChild(pageChip('📄 ' + t('task.inBook'), String(firstPage), firstPage));
+    }
+    var toggle = pdfToggleChip(firstPage);
+    if (toggle) chips.appendChild(toggle);
+    // The other half of the same test, the way a unit page points here.
+    if (only === 's' && writing.length) {
+      var wc = el('a', 'chip chip-btn', '✍ ' + t('task.writing'));
+      wc.href = '#/b/' + book.id + '/tasks/' + test + '/w';
+      chips.appendChild(wc);
+    }
+    if (only === 'w' && speaking.length) {
+      var sc = el('a', 'chip chip-btn', '🎙 ' + t('task.speaking'));
+      sc.href = '#/b/' + book.id + '/tasks/' + test + '/s';
+      chips.appendChild(sc);
+    }
     head.appendChild(chips);
     head.appendChild(el('div', 'instructions', t('task.intro')));
     main.appendChild(head);
 
-    var list = bookPrompts(test);
     // The Writing task IS a chart in the book — the words alone are half the
     // task — so the pane goes to its page rather than staying wherever the last
-    // unit left it. Same rule as a unit page: only when the pane is already the
-    // reader's choice, and never on a phone, where it covers everything.
-    var firstPage = null;
-    for (var pi = 0; pi < list.length; pi++) {
-      if (list[pi].pdfPage != null) { firstPage = Number(list[pi].pdfPage); break; }
-    }
-    // The whole page now says "the task is in the book", so the book had
-    // better be open: same first-visit rule a unit page uses, and after that
-    // whatever the reader last chose.
+    // unit left it, on the same first-visit rule a unit page uses: never on a
+    // phone, where the pane covers everything.
     if (firstPage != null && book.meta && book.meta.pdf && !isNarrow()) {
       if (state.ui.pdfOpen == null && window.innerWidth >= 1000) state.ui.pdfOpen = true;
       if (pdfOpen() || state.ui.pdfOpen) showPdf(firstPage);
+      if (toggle) toggle.sync();
     }
 
-    var writing = list.filter(function (p) { return p.skill === 'writing'; });
-    var speaking = list.filter(function (p) { return p.skill === 'speaking'; });
-    var byPart = function (a, b) { return Number(a.part) - Number(b.part); };
-    writing.sort(byPart);
-    speaking.sort(byPart);
-
+    // With one skill on the page the h1 already names it; the band would only
+    // repeat itself. It earns its place on the page that carries both.
     if (writing.length && only !== 's') {
-      main.appendChild(el('div', 'section-title', t('task.writing')));
+      if (!only) main.appendChild(el('div', 'section-title', t('task.writing')));
       writing.forEach(function (p) { main.appendChild(buildWritingTask(test, p)); });
     }
     if (speaking.length && only !== 'w') {
-      main.appendChild(el('div', 'section-title', t('task.speaking')));
+      if (!only) main.appendChild(el('div', 'section-title', t('task.speaking')));
       speaking.forEach(function (p) { main.appendChild(buildSpeakingTask(test, p)); });
     }
     // Opened straight from a link, this page is the first thing rendered for
@@ -4413,20 +4467,7 @@
       // Start on the explanation page: that is where a unit begins. The two
       // page chips jump to either half of the spread.
       var startPage = u.pdfIntroPage != null ? u.pdfIntroPage : u.pdfExercisePage;
-      var toggle = el('button', 'chip chip-btn');
-      toggle.title = t('unit.openPdfHint');
-      // Shut, this is the one thing the page wants the reader to press, so it
-      // wears the loud red CTA; open, it only means "close" and goes quiet.
-      function syncToggle() {
-        var open = pdfOpen();
-        toggle.textContent = open ? t('unit.closePdf') : t('unit.openPdf');
-        toggle.classList.toggle('chip-cta', !open);
-      }
-      syncToggle();
-      toggle.addEventListener('click', function () {
-        if (pdfOpen()) hidePdf(true); else showPdf(startPage);
-        syncToggle();
-      });
+      var toggle = pdfToggleChip(startPage);
       chips.appendChild(toggle);
 
       // First visit, before the reader has ever expressed a preference: open the
@@ -4442,7 +4483,7 @@
 
       // reopen where they left off, and follow along as units change
       if (pdfOpen() || state.ui.pdfOpen) showPdf(startPage);
-      syncToggle(); // the chip was built before that, so bring it back in step
+      toggle.sync(); // the chip was built before that, so bring it back in step
     }
 
     // A test section can be sat rather than practised. The chip is only on the
@@ -6890,6 +6931,7 @@
     // re-renders the paper starts a new one.
     stopExamTick();
     stopTaskTimers();
+    currentTask = null;   // only the page about to render may claim the rail
     if (window.WordLookup) window.WordLookup.hide();
     var r = parseHash(location.hash);
     // Where ◇ goes back to from a session. Every page that is not a session

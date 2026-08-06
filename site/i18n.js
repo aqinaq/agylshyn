@@ -474,10 +474,8 @@ window.I18N = {
     // тапсырма, сағат, сөз саны, жоба және жазба бар; баға жоқ.
     'task.chip': 'Writing / Speaking',
     'task.sidebar': 'Writing / Speaking',
-    'task.test': '{n}-тест',
+    // Бір ғана дағды көрсетілсе — тақырып та, тізімдегі аты да бірдей болсын.
     'task.h1': '{n}-тест — Writing және Speaking',
-    'task.h1w': '{n}-тест — Writing',
-    'task.h1s': '{n}-тест — Speaking',
     'task.writingUnit': 'Test {n} — Writing',
     'task.speakingUnit': 'Test {n} — Speaking',
     'task.intro': 'Тапсырманың өзі кітапта: Writing-те график, Speaking-те карточка — олар сурет, сайтта дұрыс шықпайды. Мұнда кітап бере алмайтыны бар: емтихан уақыты, сөз санағышы, өзі сақталатын жобаң және дауысыңды жазып тыңдау.',
@@ -1204,10 +1202,7 @@ window.I18N = {
 
     'task.chip': 'Writing / Speaking',
     'task.sidebar': 'Writing / Speaking',
-    'task.test': 'Test {n}',
     'task.h1': 'Test {n} — Writing and Speaking',
-    'task.h1w': 'Test {n} — Writing',
-    'task.h1s': 'Test {n} — Speaking',
     'task.writingUnit': 'Test {n} — Writing',
     'task.speakingUnit': 'Test {n} — Speaking',
     'task.intro': 'The task itself is in the book: Writing is a chart and Speaking is a card, and neither survives being pulled out as text. What is here is what the book cannot give — the exam timing, a word counter, a draft that saves itself, and a recording you can play back.',
