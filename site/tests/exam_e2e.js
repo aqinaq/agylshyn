@@ -7,7 +7,7 @@
 
    node site/tests/exam_e2e.js   (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, newContextPage, goto, sleep } = require('./cdp.js');
+const { connect, newContextPage, goto, sleep, until } = require('./cdp.js');
 const { Report } = require('./report.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
@@ -80,7 +80,7 @@ async function run() {
   /* ================= the way in ================= */
   r.head('the way in');
   await goto(s, BASE + UNIT);
-  await sleep(700);
+  await until(s, `!!document.querySelector('.exam-chip')`);
   const entry = await s.eval(`({
     chip: !!document.querySelector('.exam-chip'),
     href: (document.querySelector('.exam-chip')||{}).getAttribute
@@ -92,7 +92,7 @@ async function run() {
 
   // A grammar unit is not a paper and must not pretend to be one.
   await goto(s, BASE + '#/b/grammar/unit/1');
-  await sleep(700);
+  await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
   const grammar = await s.eval(`({
     chip: !!document.querySelector('.exam-chip'),
     band: !!document.querySelector('.band-chip')
@@ -103,7 +103,7 @@ async function run() {
   /* ================= the paper ================= */
   r.head('the paper');
   await goto(s, BASE + UNIT + '/exam');
-  await sleep(700);
+  await until(s, `!!document.querySelector('.exam-card')`);
   const desk = await s.eval(`({
     start: !!document.querySelector('.exam-card .btn.primary'),
     rules: document.querySelectorAll('.exam-rules li').length,
@@ -152,7 +152,7 @@ async function run() {
   /* ================= a reload mid-test ================= */
   r.head('a reload mid-test');
   await goto(s, BASE + UNIT + '/exam');
-  await sleep(700);
+  await until(s, `!!document.querySelector('.eb-clock')`);
   const after = await s.eval(`({
     onPaper: !!document.querySelector('.eb-clock'),
     kept: (document.querySelectorAll('.answer-line input')[0] || {}).value,
@@ -201,7 +201,7 @@ async function run() {
   /* ================= back on the practice page ================= */
   r.head('back on the practice page');
   await goto(s, BASE + UNIT);
-  await sleep(700);
+  await until(s, `!!document.querySelector('.band-chip')`);
   const practice = await s.eval(`({
     band: (document.querySelector('.band-chip')||{}).textContent,
     verdicts: document.querySelectorAll('.row.correct, .row.wrong').length,
@@ -213,7 +213,7 @@ async function run() {
 
   const stats = await (async () => {
     await goto(s, BASE + '#/b/ielts-19/stats');
-    await sleep(700);
+    await until(s, `!!document.querySelector('.exam-table')`);
     return s.eval(`({
       rows: document.querySelectorAll('.exam-table tbody tr').length,
       band: (document.querySelector('.exam-table .band')||{}).textContent

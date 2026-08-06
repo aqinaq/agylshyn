@@ -7,7 +7,7 @@
 
    node site/tests/dictation_e2e.js  (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, goto, sleep } = require('./cdp.js');
+const { connect, goto, sleep, until } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { signedIn, LIVE } = require('./supamock.js');
 
@@ -29,7 +29,7 @@ async function run() {
   /* ================= the data ================= */
   r.head('the transcripts');
   await goto(s, BASE + UNIT);
-  await sleep(2500);
+  await until(s, `document.querySelectorAll('.ielts-audio').length === 4`);
 
   const parts = await s.eval(`document.querySelectorAll('.ielts-audio').length`);
   r.eq('the test has four recordings', parts, 4);
@@ -127,7 +127,7 @@ async function run() {
   /* ================= not during an exam ================= */
   r.head('under exam conditions');
   await goto(s, BASE + UNIT + '/exam');
-  await sleep(2000);
+  await until(s, `!!document.querySelector('.exam-card .btn.primary')`);
   await s.eval(`document.querySelector('.exam-card .btn.primary').click()`);
   await sleep(600);
   const inExam = await s.eval(`({

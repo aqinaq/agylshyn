@@ -14,13 +14,25 @@ const { signedIn, LIVE } = require('./supamock.js');
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
 
+/* Each scenario gets a context of its own, and the one before it is closed.
+   Leaving them open leaves four renderers running — one of them with a live
+   service worker precaching in the background — and the last of them answers
+   Runtime.evaluate slowly enough to trip the CDP timeout on a loaded machine. */
+async function nextPage(conn, prev, opts) {
+  if (prev) {
+    try { await conn.send('Target.closeTarget', { targetId: prev.targetId }); }
+    catch (e) { /* already gone */ }
+  }
+  return newContextPage(conn, null, opts);
+}
+
 async function run() {
   const r = Report('device');
   const conn = await connect(PORT);
 
   /* ================= a phone ================= */
   r.head('phone (390 × 844)');
-  let s = await newContextPage(conn);
+  let s = await nextPage(conn, null);
   await s.send('Emulation.setDeviceMetricsOverride',
     { width: 390, height: 844, deviceScaleFactor: 3, mobile: true });
   await s.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
@@ -152,7 +164,7 @@ async function run() {
 
   /* ================= offline ================= */
   r.head('offline');
-  s = await newContextPage(conn, null, { keepServiceWorker: true });
+  s = await nextPage(conn, s, { keepServiceWorker: true });
   await goto(s, BASE);
   await sleep(1200);
   const sw = await s.eval(`(async () => {
@@ -188,7 +200,7 @@ async function run() {
 
   /* ================= keyboard and labels ================= */
   r.head('keyboard and labels');
-  s = await newContextPage(conn);
+  s = await nextPage(conn, s);
   await goto(s, BASE + '#/b/grammar/unit/1');
   await sleep(900);
   const a11y = await s.eval(`(() => {

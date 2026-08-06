@@ -151,4 +151,21 @@ async function goto(s, url) {
   await sleep(150);
 }
 
-module.exports = { launch, connect, newContextPage, goto, sleep, Session };
+/* Wait for the page to actually be in the state the next assertion needs.
+
+   Fixed sleeps after a navigation were the harness's own flakiest habit: a
+   book takes two round trips to open when it is paid, a cold browser profile
+   is several times slower than a warm one, and twelve suites in a row means
+   the first of them always pays that cost. A poll costs nothing when the page
+   is ready and waits when it is not. Returns false on timeout rather than
+   throwing, so the assertion that follows reports what it saw. */
+async function until(s, expression, ms) {
+  const stop = Date.now() + (ms || 10000);
+  for (;;) {
+    if (await s.eval(expression)) return true;
+    if (Date.now() > stop) return false;
+    await sleep(120);
+  }
+}
+
+module.exports = { launch, connect, newContextPage, goto, sleep, until, Session };

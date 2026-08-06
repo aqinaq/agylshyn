@@ -4,7 +4,7 @@
 
    node site/tests/classes_e2e.js  (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, newContextPage, goto, sleep } = require('./cdp.js');
+const { connect, newContextPage, goto, sleep, until } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { mock, signedIn } = require('./supamock.js');
 
@@ -12,14 +12,6 @@ const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
 const PAGE = '#/class';
 
-async function until(s, expr, ms) {
-  const stop = Date.now() + (ms || 8000);
-  for (;;) {
-    if (await s.eval(expr)) return true;
-    if (Date.now() > stop) return false;
-    await sleep(120);
-  }
-}
 
 async function run() {
   const r = Report('classes');
@@ -98,6 +90,7 @@ async function run() {
 
   /* ================= the board ================= */
   r.head('the progress board');
+  await until(s, `!!document.querySelector('.cls-card .btn.primary')`);
   await s.eval(`document.querySelector('.cls-card .btn.primary').click()`);
   await until(s, `!!document.querySelector('.cls-roster') &&
     !/Loading|Жүктелуде/.test(document.querySelector('.cls-roster').textContent)`);
@@ -114,7 +107,7 @@ async function run() {
   });
   s.on('Runtime.exceptionThrown', p => errors.push(p.exceptionDetails.text));
   await goto(s, BASE + PAGE);
-  await until(s, `!!document.querySelector('.cls-card')`);
+  await until(s, `!!document.querySelector('.cls-card .btn.primary')`);
   await s.eval(`document.querySelector('.cls-card .btn.primary').click()`);
   await until(s, `!!document.querySelector('.cls-table tbody tr')`);
 

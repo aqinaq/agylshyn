@@ -7,7 +7,7 @@
 
    node site/tests/tasks_e2e.js   (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, goto, sleep } = require('./cdp.js');
+const { connect, goto, sleep, until } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { signedIn, LIVE } = require('./supamock.js');
 
@@ -26,7 +26,7 @@ async function run() {
   /* ================= the page ================= */
   r.head('the tasks page');
   await goto(s, BASE + TASKS);
-  await sleep(1200);
+  await until(s, `document.querySelectorAll('.task-card').length >= 5`);
 
   const page = await s.eval(`({
     cards: document.querySelectorAll('.task-card').length,
@@ -101,7 +101,7 @@ async function run() {
 
   r.head('a reload');
   await goto(s, BASE + TASKS);
-  await sleep(1200);
+  await until(s, `document.querySelectorAll('.task-card').length >= 5`);
   const back = await s.eval(`({
     text: document.querySelector('.task-area').value.length,
     saved: (document.querySelector('.task-saved')||{}).textContent
@@ -140,7 +140,7 @@ async function run() {
   /* ================= speaking ================= */
   r.head('speaking');
   await goto(s, BASE + TASKS);
-  await sleep(1200);
+  await until(s, `document.querySelectorAll('.task-card').length >= 5`);
   const speak = await s.eval(`(() => {
     const cards = [...document.querySelectorAll('.task-card')];
     const p2 = cards[3];      // Writing 1, Writing 2, Speaking 1, Speaking 2
@@ -164,7 +164,7 @@ async function run() {
   /* ================= the way in ================= */
   r.head('the way in');
   await goto(s, BASE + '#/b/ielts-21/unit/1');
-  await sleep(1200);
+  await until(s, `!!document.querySelector('.exam-chip')`);
   const entry = await s.eval(`({
     chip: [...document.querySelectorAll('.chips a')].map(e => e.getAttribute('href')),
     tags: [...document.querySelectorAll('#unitList .u-num')].map(e => e.textContent),
@@ -181,7 +181,7 @@ async function run() {
 
   // Cambridge 19 has no Writing or Speaking in its data, and must not claim to.
   await goto(s, BASE + '#/b/ielts-19/unit/1');
-  await sleep(900);
+  await until(s, `!!document.querySelector('.exam-chip')`);
   const bare = await s.eval(`({
     side: document.querySelectorAll('.task-link').length,
     chip: [...document.querySelectorAll('.chips a')].map(e => e.getAttribute('href'))

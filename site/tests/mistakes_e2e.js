@@ -4,7 +4,7 @@
 
    node site/tests/mistakes_e2e.js  (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, newContextPage, goto, sleep } = require('./cdp.js');
+const { connect, newContextPage, goto, sleep, until } = require('./cdp.js');
 const { Report } = require('./report.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
@@ -35,7 +35,7 @@ async function run() {
   /* ================= once is not enough ================= */
   r.head('one mistake');
   await goto(s, BASE + UNIT);
-  await sleep(1600);
+  await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
   const n = await s.eval(answerAllWrong);
   r.ok('the unit has answers to get wrong', n > 3, String(n));
   await sleep(400);
@@ -95,12 +95,12 @@ async function run() {
   // automatic sweep leaves alone and the button on the page exists for.
   r.head('the Mistakes page');
   await goto(s, BASE + '#/b/grammar/unit/2');
-  await sleep(1600);
+  await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
   await s.eval(answerAllWrong);
   await sleep(400);
 
   await goto(s, BASE + '#/b/grammar/errors');
-  await sleep(1600);
+  await until(s, `!!document.querySelector('.err-run')`);
   const page = await s.eval(`({
     button: !!document.querySelector('.err-run .btn:not(.primary)'),
     label: (document.querySelector('.err-run .btn:not(.primary)') || {}).textContent
@@ -123,7 +123,7 @@ async function run() {
   r.ok('and cannot be pressed twice', added.off);
 
   await goto(s, BASE + '#/b/grammar/errors');
-  await sleep(1600);
+  await until(s, `!!document.querySelector('.err-run')`);
   const twice = await s.eval(`({
     button: !!document.querySelector('.err-run .btn:not(.primary)'),
     cards: ${deck}.length
@@ -134,7 +134,7 @@ async function run() {
   /* ================= what cannot become a card ================= */
   r.head('an answer sheet has nothing to give');
   await goto(s, BASE + '#/b/ielts-19/unit/1');
-  await sleep(1600);
+  await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
   await s.eval(answerAllWrong);
   await s.eval(answerAllWrong);
   await sleep(500);
@@ -149,7 +149,7 @@ async function run() {
   /* ================= the switch ================= */
   r.head('turning it off');
   await goto(s, BASE + '#/srs/settings');
-  await sleep(1000);
+  await until(s, `!!document.querySelector('.srs-check input')`);
   const setting = await s.eval(`(() => {
     const box = document.querySelector('.srs-check input');
     if (!box) return { found: false };
@@ -166,7 +166,7 @@ async function run() {
   r.eq('turning it off is remembered', setting.saved, false);
 
   await goto(s, BASE + '#/b/vocab-preint/unit/1');
-  await sleep(1600);
+  await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
   await s.eval(answerAllWrong);
   await s.eval(answerAllWrong);
   await sleep(500);

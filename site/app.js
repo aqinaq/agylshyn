@@ -956,7 +956,18 @@
   var cache = {};          // id -> {id, meta, units}
   var pending = {};
 
+  // One fetch, one promise, however many callers: the index says which books
+  // are paid, and everything that opens a book has to be able to wait for that
+  // answer rather than racing it.
+  var indexOnce = null;
+
   function loadIndex() {
+    if (indexOnce) return indexOnce;
+    indexOnce = loadIndexNow();
+    return indexOnce;
+  }
+
+  function loadIndexNow() {
     // The answer-key page map is small and needed the moment a unit renders, so
     // fetch it alongside the index; a failure just means no "answer key" button.
     fetch('data/answer-key-pages.json')
@@ -4058,9 +4069,12 @@
     for (var pi = 0; pi < list.length; pi++) {
       if (list[pi].pdfPage != null) { firstPage = Number(list[pi].pdfPage); break; }
     }
-    if (firstPage != null && book.meta && book.meta.pdf && !isNarrow() &&
-        (pdfOpen() || state.ui.pdfOpen)) {
-      showPdf(firstPage);
+    // The whole page now says "the task is in the book", so the book had
+    // better be open: same first-visit rule a unit page uses, and after that
+    // whatever the reader last chose.
+    if (firstPage != null && book.meta && book.meta.pdf && !isNarrow()) {
+      if (state.ui.pdfOpen == null && window.innerWidth >= 1000) state.ui.pdfOpen = true;
+      if (pdfOpen() || state.ui.pdfOpen) showPdf(firstPage);
     }
 
     var writing = list.filter(function (p) { return p.skill === 'writing'; });
@@ -4077,6 +4091,11 @@
       main.appendChild(el('div', 'section-title', t('task.speaking')));
       speaking.forEach(function (p) { main.appendChild(buildSpeakingTask(test, p)); });
     }
+    // Opened straight from a link, this page is the first thing rendered for
+    // the book — and nothing else here draws the unit list, so without this the
+    // whole rail is blank and the reader cannot get back to L1.
+    renderSidebar();
+    refreshBadge();
     window.scrollTo(0, 0);
   }
 
@@ -6780,10 +6799,19 @@
     clear(unitListEl);
     errBadge.hidden = true;
     showLoading();
+    // The index first, always. Whether a book is paid is decided by the flag
+    // that arrives with it, and a book opened before that answer lands is
+    // fetched as a free one — a 404 for a paid book, which then retries and
+    // ends on a lock screen with the free sample never asked for. That race is
+    // reachable in the app itself: sync.js emitting makes ENTITLE re-ask, which
+    // re-routes, which opened the book while data/index.json was still in
+    // flight. loadIndex() is one shared promise, so this costs nothing after
+    // the first call.
+    //
     // Two-argument then: the second handler covers download failures only, so a
     // bug thrown while rendering surfaces in the console instead of being
     // disguised as "the book didn't load".
-    loadBook(id).then(function (bk) {
+    loadIndex().then(function () { return loadBook(id); }).then(function (bk) {
       // a later navigation may have won the race
       var m = parseHash(location.hash);
       if (m.view !== 'book' || m.id !== id) return;

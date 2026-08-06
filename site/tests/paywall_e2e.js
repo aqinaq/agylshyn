@@ -19,6 +19,18 @@ const { Report } = require('./report.js');
 const { PAID, supabaseHost, mock, signedIn, LIVE, LAPSED } = require('./supamock.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
+
+/* A locked book takes two round trips to draw — the paid fetch has to be
+   refused before the sample is asked for — and under a full suite run the
+   machine is busy enough that a fixed sleep is a coin toss. Poll instead. */
+async function until(s, expr, ms) {
+  const stop = Date.now() + (ms || 8000);
+  for (;;) {
+    if (await s.eval(expr)) return true;
+    if (Date.now() > stop) return false;
+    await sleep(120);
+  }
+}
 const PORT = Number(process.env.TEST_CDP || 9333);
 
 // One of each, chosen from tiers.json rather than written down, so moving a
@@ -70,9 +82,9 @@ async function run() {
   // A paid book opens onto its free sample rather than a bare lock — a couple
   // of units, published as a static file on purpose, and a banner that says how
   // little of the book that is.
+  await s.eval(`location.hash = '#/b/${PAID_BOOK}'`);
+  await until(s, `!!document.querySelector('.sample-bar')`);
   const sample = await s.eval(`(async () => {
-    location.hash = '#/b/${PAID_BOOK}';
-    await new Promise(r=>setTimeout(r,1600));
     return { units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
              banner: !!document.querySelector('.sample-bar'),
              ofBook: (document.querySelector('.sample-bar')||{}).textContent || '',
@@ -122,7 +134,7 @@ async function run() {
   r.head('an account with no subscription');
   s = await signedIn(conn, { access: null });
   await goto(s, BASE + '#/b/' + PAID_BOOK + '/unlock');
-  await sleep(1800);
+  await until(s, `!!document.querySelector('#main .offer')`);
   const nosub = await s.eval(`(() => {
     const main = document.getElementById('main');
     return { units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
@@ -228,7 +240,7 @@ async function run() {
   r.head('a subscription that has lapsed');
   s = await signedIn(conn, { access: LAPSED });
   await goto(s, BASE + '#/b/' + PAID_BOOK);
-  await sleep(1800);
+  await until(s, `!!document.querySelector('.sample-bar')`);
   const lapsed = await s.eval(`(() => ({
     units: document.querySelectorAll('#unitList .unit-link:not(.locked-link)').length,
     sample: !!document.querySelector('.sample-bar'),
@@ -255,7 +267,7 @@ async function run() {
   // The unlock page is where a reader who has paid ends up: the sample banner's
   // button, or the locked unit they tried to open.
   await goto(s, BASE + '#/b/' + PAID_BOOK + '/unlock');
-  await sleep(1800);
+  await until(s, `!!document.querySelector('#main .offer')`);
   s.mock.setAccess(LIVE);                       // you press Grant, they press this
   const recheck = await s.eval(`(async () => {
     const b = [...document.querySelectorAll('#main button')]
