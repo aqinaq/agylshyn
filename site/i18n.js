@@ -439,6 +439,19 @@ window.I18N = {
     'exam.thRuns': 'Жүгіру',
     'stats.exams': 'Емтихан жүгірулері',
 
+    // Writing емтихан режимі. Мұнда балл жоқ әрі болмайды: эссені машина
+    // бағалай алмайды, сөз санын band-қа айналдырсақ — өтірік болады. Бар
+    // бағалайтыны: бір сағат пен сөз саны.
+    'wexam.intro': 'Нағыз емтихандағыдай: екі тапсырмаға бір сағат. Уақытты өзің бөлесің — Task 2-нің салмағы екі есе.',
+    'wexam.rule.split': '✍ Екі тапсырма да осында. Кеңес: Task 1-ге 20 минут, Task 2-ге 40.',
+    'wexam.rule.noBand': '⚖️ Балл қойылмайды — эссені машина бағаламайды. Соңында уақытың мен сөз саның шығады.',
+    'wexam.confirmFinish': 'Аяқтаймыз ба? Жазғаның сақталады, уақыт тоқтайды.',
+    'wexam.confirmAbandon': 'Тоқтатсақ, бұл жүгіру есептелмейді (жазғаның сақтаулы қалады). Жалғастырамыз ба?',
+    'wexam.noBand': 'Мұнда band жоқ: Writing-ті тек адам бағалай алады. Төмендегі критерийлерді оқып, өз жауабыңды өзің қарап шық.',
+    'wexam.byTask': 'Тапсырма бойынша',
+    'wexam.seeDraft': 'Жазғанымды оқу →',
+    'wexam.th.words': 'Сөз',
+
     'cls.home.title': 'Сынып',
     'cls.home.sub': 'Мұғалімге: сыныбыңның прогресін көр',
     'cls.title': 'Сыныптар',
@@ -1209,6 +1222,16 @@ window.I18N = {
     'exam.thBest': 'Best',
     'exam.thRuns': 'Runs',
     'stats.exams': 'Mock exams',
+
+    'wexam.intro': 'The real thing: one hour for both tasks. How you split it is yours to decide — Task 2 is worth twice Task 1.',
+    'wexam.rule.split': '✍ Both tasks are here. The exam’s own advice: about 20 minutes on Task 1, 40 on Task 2.',
+    'wexam.rule.noBand': '⚖️ Nothing is marked — no machine can grade an essay. You get your time and your word counts.',
+    'wexam.confirmFinish': 'Finish? What you wrote is kept; the clock stops.',
+    'wexam.confirmAbandon': 'Stopping means this run is not recorded (your writing is kept). Go on?',
+    'wexam.noBand': 'No band here: only a person can mark Writing. Read your answer against the criteria below.',
+    'wexam.byTask': 'By task',
+    'wexam.seeDraft': 'Read what you wrote →',
+    'wexam.th.words': 'Words',
 
     'cls.home.title': 'Classes',
     'cls.home.sub': 'For teachers: watch your class',

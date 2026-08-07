@@ -90,10 +90,13 @@ window.EXAM = (function () {
   // the real exam is the length of the recording plus ten minutes to copy
   // answers onto the answer sheet; here the reader starts the recording
   // themselves, so the allowance is the usual ~30 minutes of audio plus that
-  // transfer time. Both are deliberately round numbers a learner can hold in
-  // their head, and both can be turned off — the timer is a rehearsal aid, not
-  // a lock.
-  var LIMIT = { listening: 40 * 60, reading: 60 * 60 };
+  // transfer time. Writing is one hour for both tasks TOGETHER: the exam does
+  // not stop anybody at twenty minutes, it prints "you should spend about" and
+  // leaves the split to the candidate — budgeting that hour is half of what is
+  // being rehearsed, so the clock is the hour and the twenty is advice. All are
+  // deliberately round numbers a learner can hold in their head, and all can be
+  // turned off — the timer is a rehearsal aid, not a lock.
+  var LIMIT = { listening: 40 * 60, reading: 60 * 60, writing: 60 * 60 };
 
   function limitFor(skill) { return LIMIT[skill] || 60 * 60; }
 
@@ -125,6 +128,16 @@ window.EXAM = (function () {
       (unit.skill === 'listening' || unit.skill === 'reading'));
   }
 
+  // The Writing paper can be sat too. Nothing about it can be marked, so the
+  // run ends with a time and a word count rather than a band — but the thing
+  // most candidates actually fail at is the hour, and an hour can be run.
+  // Speaking is left out on purpose: it is an interview, not a paper, and the
+  // per-part clocks on its own page are the honest rehearsal of it.
+  function isExamTask(bookMeta, skill, prompts) {
+    return !!(bookMeta && bookMeta.kind === 'ielts' && skill === 'writing' &&
+      prompts && prompts.length);
+  }
+
   return {
     bandFor: bandFor,
     chartFor: chartFor,
@@ -132,6 +145,7 @@ window.EXAM = (function () {
     limitFor: limitFor,
     clock: clock,
     testOf: testOf,
-    isExamUnit: isExamUnit
+    isExamUnit: isExamUnit,
+    isExamTask: isExamTask
   };
 })();

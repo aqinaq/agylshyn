@@ -4192,10 +4192,16 @@
     var shown = only === 'w' ? writing : (only === 's' ? speaking : writing.concat(speaking));
 
     /* The head a unit page has: the title of the section, the page it is on in
-       the book, the button that opens the book, and the way across to the rest
-       of the test. L1 and S1 are the same kind of page to a reader and now look
-       it — what differs is only what a Speaking page can honestly offer (no
-       score, so no progress bar, and no exam-mode: nothing here is marked). */
+       the book, the button that opens the book, and — on Writing — the same
+       "⏱ Емтихан режимі" chip a Listening page carries. L1 and W1 are the same
+       kind of page to a reader and now look it. What still differs is what a
+       page can honestly offer: no score anywhere here, so no progress bar, and
+       no exam mode on Speaking, which is an interview rather than a paper.
+
+       The chip across to the other skill is gone. W1 and S1 are their own
+       entries in the rail, one click away on every page of the book, and a
+       "switch to Speaking" button in the head only made the two pages look like
+       two halves of one thing the reader has to toggle between. */
     var head = el('div', 'page-head');
     head.appendChild(el('h1', null, t(
       only === 'w' ? 'task.writingUnit' : (only === 's' ? 'task.speakingUnit' : 'task.h1'),
@@ -4214,19 +4220,28 @@
     }
     var toggle = pdfToggleChip(firstPage);
     if (toggle) chips.appendChild(toggle);
-    // The other half of the same test, the way a unit page points here.
-    if (only === 's' && writing.length) {
-      var wc = el('a', 'chip chip-btn', '✍ ' + t('task.writing'));
-      wc.href = '#/b/' + book.id + '/tasks/' + test + '/w';
-      chips.appendChild(wc);
-    }
-    if (only === 'w' && speaking.length) {
-      var sc = el('a', 'chip chip-btn', '🎙 ' + t('task.speaking'));
-      sc.href = '#/b/' + book.id + '/tasks/' + test + '/s';
-      chips.appendChild(sc);
+    // The Writing paper can be sat, the same way a Listening section can. Only
+    // on the Writing page: on the page that carries both skills the chip would
+    // have to mean "sit half of what is below you", which is not a thing.
+    if (only === 'w' && EXAM.isExamTask(book.meta, 'writing', writing)) {
+      var xc = el('a', 'chip chip-btn exam-chip', '⏱ ' + t('exam.chip'));
+      xc.href = '#/b/' + book.id + '/tasks/' + test + '/w/exam';
+      xc.title = t('exam.chipHint', { m: Math.round(EXAM.limitFor('writing') / 60) });
+      chips.appendChild(xc);
     }
     head.appendChild(chips);
     head.appendChild(el('div', 'instructions', t('task.intro')));
+
+    // A paper abandoned by navigating away rather than finishing: the clock is
+    // still going, exactly as on a unit page.
+    if (only === 'w' && liveWriteExam(test)) {
+      var resume = el('div', 'exam-resume');
+      resume.appendChild(document.createTextNode(t('exam.resumeNote')));
+      var rlink = el('a', 'btn small primary', t('exam.resume'));
+      rlink.href = '#/b/' + book.id + '/tasks/' + test + '/w/exam';
+      resume.appendChild(rlink);
+      head.appendChild(resume);
+    }
     main.appendChild(head);
 
     // The Writing task IS a chart in the book — the words alone are half the
@@ -4330,11 +4345,20 @@
     taskTimers = [];
   }
 
-  function buildWritingTask(test, p) {
+  /* `exam` — this card is on the exam paper rather than the practice page.
+     What changes is the same thing that changes on an exam row: the practice
+     furniture goes. One clock runs the hour in the bar above, so the per-task
+     countdown would be a second, contradictory clock; Clear is a button nobody
+     wants within reach of an essay they are sixteen minutes into; and the
+     marking criteria are for reading your answer against afterwards, so they
+     wait for the result screen. The word count stays — it is printed on the
+     real question paper as a rule, not offered as feedback — and so does the
+     draft, under the same key, because the essay is the reader's either way. */
+  function buildWritingTask(test, p, exam) {
     var part = Number(p.part) || 1;
     var spec = WRITE_SPEC[part] || WRITE_SPEC[1];
     var key = writeKey(book.id, test, 'w' + part);
-    var box = el('div', 'task-card');
+    var box = el('div', 'task-card' + (exam ? ' exam-task' : ''));
 
     var head = el('div', 'task-head');
     head.appendChild(el('b', null, t('task.writingPart', { n: part })));
@@ -4342,7 +4366,7 @@
     head.appendChild(el('span', 'task-chip', t('task.minWords', { n: spec.words })));
     box.appendChild(head);
     box.appendChild(promptBody(p));
-    box.appendChild(taskTimer(spec.min * 60));
+    if (!exam) box.appendChild(taskTimer(spec.min * 60));
 
     var d = draft(key);
     var area = el('textarea', 'task-area');
@@ -4358,39 +4382,32 @@
     var saved = el('span', 'muted task-saved');
     foot.appendChild(saved);
 
-    var copy = el('button', 'btn small ghost', t('task.copy'));
-    copy.addEventListener('click', function () {
-      copyText(area.value);
-      copy.textContent = t('task.copied');
-      setTimeout(function () { copy.textContent = t('task.copy'); }, 1500);
-    });
-    foot.appendChild(copy);
+    if (!exam) {
+      var copy = el('button', 'btn small ghost', t('task.copy'));
+      copy.addEventListener('click', function () {
+        copyText(area.value);
+        copy.textContent = t('task.copied');
+        setTimeout(function () { copy.textContent = t('task.copy'); }, 1500);
+      });
+      foot.appendChild(copy);
 
-    var wipe = el('button', 'btn small ghost', t('task.clear'));
-    wipe.addEventListener('click', function () {
-      if (!area.value) return;
-      ASK.confirm(t('task.clearConfirm'),
-        { title: t('task.clear'), yes: t('task.clear'), danger: true })
-        .then(function (ok) {
-          if (!ok) return;
-          area.value = '';
-          saveDraft(key, '');
-          paintCount();
-        });
-    });
-    foot.appendChild(wipe);
+      var wipe = el('button', 'btn small ghost', t('task.clear'));
+      wipe.addEventListener('click', function () {
+        if (!area.value) return;
+        ASK.confirm(t('task.clearConfirm'),
+          { title: t('task.clear'), yes: t('task.clear'), danger: true })
+          .then(function (ok) {
+            if (!ok) return;
+            area.value = '';
+            saveDraft(key, '');
+            paintCount();
+          });
+      });
+      foot.appendChild(wipe);
+    }
     box.appendChild(foot);
 
-    // The four things an examiner is actually marking. Not a score — a reminder
-    // to read your own answer against the criteria before deciding it is done.
-    var crit = el('details', 'task-crit');
-    crit.appendChild(el('summary', null, t('task.criteria')));
-    var ul = el('ul');
-    ['task.crit1', 'task.crit2', 'task.crit3', 'task.crit4'].forEach(function (k) {
-      ul.appendChild(el('li', null, t(k)));
-    });
-    crit.appendChild(ul);
-    box.appendChild(crit);
+    if (!exam) box.appendChild(buildCriteria());
 
     function paintCount() {
       var n = wordCount(area.value);
@@ -4409,6 +4426,306 @@
     });
     paintCount();
     if (d && d.ts) saved.textContent = t('task.savedAt', { d: authDate(new Date(d.ts).toISOString()) });
+    return box;
+  }
+
+  // The four things an examiner is actually marking. Not a score — a reminder
+  // to read your own answer against the criteria before deciding it is done.
+  function buildCriteria(open) {
+    var crit = el('details', 'task-crit');
+    if (open) crit.open = true;
+    crit.appendChild(el('summary', null, t('task.criteria')));
+    var ul = el('ul');
+    ['task.crit1', 'task.crit2', 'task.crit3', 'task.crit4'].forEach(function (k) {
+      ul.appendChild(el('li', null, t(k)));
+    });
+    crit.appendChild(ul);
+    return crit;
+  }
+
+  /* ========== IELTS: the Writing paper under exam conditions ==========
+
+     Everything the practice page offers is an aid: a countdown per task you
+     start when you feel ready, a Clear button, the criteria open beside you.
+     The exam gives none of that. It gives one hour, two tasks, and no idea how
+     you did until somebody marks it — and the hour is the part candidates lose,
+     because Task 2 is worth twice Task 1 and is the one that gets ten minutes.
+     So this is the same two boxes with the aids taken away and a single clock
+     over both, which is exactly what exam mode means everywhere else here.
+
+     What it cannot do is put a number on the answer. A band invented out of a
+     word count would be worse than no band, so the result screen reports the
+     hour, the two counts against the minimums the exam sets, and the criteria
+     to read the answer against — the same refusal the practice page makes, at
+     the moment it matters most. The essays stay in the ordinary drafts, so
+     "read what you wrote" is just the page this was started from. */
+
+  var writeShowResult = null;      // 'book|w<test>' whose result screen to draw
+
+  // A Writing run is filed beside the Listening ones, under 'w<test>' where a
+  // section run is filed under a unit number — so one `state.exam` slot still
+  // answers "is there an exam going on?" and the two can never collide.
+  function writeExamKey(test) { return 'w' + test; }
+
+  function liveWriteExam(test) {
+    var e = state.exam;
+    if (!e || e.book !== book.id || e.unit !== writeExamKey(test)) return null;
+    return e;
+  }
+
+  function writingOf(test) {
+    return bookPrompts(test)
+      .filter(function (p) { return p.skill === 'writing'; })
+      .sort(function (a, b) { return Number(a.part) - Number(b.part); });
+  }
+
+  // What the reader has actually written, per task, read back out of the drafts
+  // the boxes save into. This is the only measurable thing a Writing run
+  // produces, and it is reported as a count — never converted into a verdict.
+  function writeWords(test, list) {
+    return list.map(function (p) {
+      var part = Number(p.part) || 1;
+      var spec = WRITE_SPEC[part] || WRITE_SPEC[1];
+      var d = draft(writeKey(book.id, test, 'w' + part));
+      return { part: part, n: wordCount(d && d.text), min: spec.words };
+    });
+  }
+
+  function startWriteExam(test) {
+    stopExamTick();
+    state.exam = {
+      book: book.id,
+      unit: writeExamKey(test),
+      test: test,
+      skill: 'writing',
+      start: Date.now(),
+      ends: Date.now() + EXAM.limitFor('writing') * 1000,
+      answers: {}
+    };
+    flush();                       // a clock that has started must survive a reload
+    writeShowResult = null;
+    renderWriteExam(test);
+  }
+
+  function finishWriteExam(test, list, timedOut) {
+    var e = liveWriteExam(test);
+    if (!e) return;
+    stopExamTick();
+    var res = {
+      ts: e.start,
+      end: Date.now(),
+      secs: Math.round((Date.now() - e.start) / 1000),
+      skill: 'writing',
+      test: test,
+      words: writeWords(test, list),
+      timedOut: !!timedOut
+    };
+    var k = examKey(book.id, writeExamKey(test));
+    state.exams[k] = (state.exams[k] || []).concat([res]);
+    state.exam = null;
+    flush();
+    if (window.SYNC) SYNC.touch(k);
+    writeShowResult = k;
+    renderWriteExam(test);
+  }
+
+  function abandonWriteExam(test) {
+    stopExamTick();
+    state.exam = null;
+    flush();
+    renderWriteExam(test);
+  }
+
+  function renderWriteExam(testNo) {
+    var tests = promptTests();
+    if (!tests.length) { renderNotFound(testNo || 1, 'tasks'); return; }
+    var test = tests.indexOf(Number(testNo)) > -1 ? Number(testNo) : tests[0];
+    var list = writingOf(test);
+    // '/s/exam' is a URL the route regex will match and nothing offers: an
+    // interview is not a paper. Nor is a book whose prompts carry no Writing.
+    if (taskSkill !== 'w' || !EXAM.isExamTask(book.meta, 'writing', list)) {
+      renderNotFound(test, 'exam');
+      renderSidebar();
+      return;
+    }
+    currentUnit = null;
+    currentTask = 'w' + test;
+    setTab('units');
+    stopExamTick();
+    clear(main);
+    afterChange = function () {};
+
+    var e = liveWriteExam(test);
+    if (e) renderWritePaper(test, list, e);
+    else {
+      var k = examKey(book.id, writeExamKey(test));
+      var runs = writeShowResult === k ? (state.exams[k] || []) : [];
+      writeShowResult = null;
+      if (runs.length) renderWriteResult(test, list, runs[runs.length - 1]);
+      else renderWriteDesk(test, list);
+    }
+    // Nothing above draws the unit list, and this page is reachable from a
+    // bookmark — without it the rail is blank and there is no way back to W1.
+    renderSidebar();
+    refreshBadge();
+    window.scrollTo(0, 0);
+  }
+
+  // The page before the paper: what is about to happen, and what it costs.
+  function renderWriteDesk(test, list) {
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null, t('exam.h1', { t: t('task.writingUnit', { n: test }) })));
+    main.appendChild(head);
+
+    var card = el('div', 'exam-card');
+    card.appendChild(el('p', null, t('wexam.intro')));
+    var ul = el('ul', 'exam-rules');
+    [
+      t('exam.rule.time', { m: Math.round(EXAM.limitFor('writing') / 60) }),
+      t('wexam.rule.split'),
+      t('wexam.rule.noBand'),
+      t('exam.rule.pdf')
+    ].forEach(function (s) { ul.appendChild(el('li', null, s)); });
+    card.appendChild(ul);
+
+    var go = el('button', 'btn primary big', t('exam.start'));
+    go.addEventListener('click', function () { startWriteExam(test); });
+    card.appendChild(go);
+
+    var back = el('a', 'btn ghost', t('exam.backToPractice'));
+    back.href = '#/b/' + book.id + '/tasks/' + test + '/w';
+    card.appendChild(back);
+    main.appendChild(card);
+
+    var hist = writeHistory(test);
+    if (hist) main.appendChild(hist);
+  }
+
+  // The paper: a clock, the two tasks with nothing to press, one button to end.
+  function renderWritePaper(test, list, e) {
+    var bar = el('div', 'exam-bar');
+    bar.appendChild(el('span', 'eb-title', t('task.writingUnit', { n: test })));
+    var clockEl = el('b', 'eb-clock');
+    bar.appendChild(clockEl);
+    var doneBtn = el('button', 'btn small primary', t('exam.finish'));
+    doneBtn.addEventListener('click', confirmFinish);
+    bar.appendChild(doneBtn);
+    var quit = el('button', 'btn small ghost', t('exam.abandon'));
+    quit.addEventListener('click', function () {
+      ASK.confirm(t('wexam.confirmAbandon'),
+        { title: t('exam.abandon'), yes: t('exam.abandon'), danger: true })
+        .then(function (ok) { if (ok) abandonWriteExam(test); });
+    });
+    bar.appendChild(quit);
+    main.appendChild(bar);
+
+    // The task IS the chart on page 30. Exam conditions do not change that —
+    // they are the reason the book has to be open.
+    var firstPage = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].pdfPage != null) { firstPage = Number(list[i].pdfPage); break; }
+    }
+    if (firstPage != null && book.meta && book.meta.pdf && !isNarrow()) showPdf(firstPage);
+
+    list.forEach(function (p) { main.appendChild(buildWritingTask(test, p, true)); });
+
+    var foot = el('div', 'unit-foot');
+    var endBtn = el('button', 'btn primary big', t('exam.finish'));
+    endBtn.addEventListener('click', confirmFinish);
+    foot.appendChild(endBtn);
+    main.appendChild(foot);
+
+    function confirmFinish() {
+      ASK.confirm(t('wexam.confirmFinish'), { title: t('exam.finish'), yes: t('exam.finish') })
+        .then(function (ok) { if (ok) finishWriteExam(test, list, false); });
+    }
+
+    function paintClock() {
+      var left = examLeft(e);
+      clockEl.textContent = EXAM.clock(left);
+      bar.classList.toggle('low', left <= 300);       // last five minutes
+      if (left <= 0) finishWriteExam(test, list, true);
+    }
+    paintClock();
+    examTick = setInterval(paintClock, 1000);
+  }
+
+  // No score, by design. What there is: the hour, the two counts, and the four
+  // things to read your own answer against.
+  function renderWriteResult(test, list, r) {
+    var head = el('div', 'page-head');
+    head.appendChild(el('h1', null,
+      t('exam.resultH', { t: t('task.writingUnit', { n: test }) })));
+    main.appendChild(head);
+
+    var card = el('div', 'exam-result');
+    var meta = el('div', 'er-meta');
+    meta.appendChild(el('span', null, t('exam.took', { time: EXAM.clock(r.secs) })));
+    if (r.timedOut) meta.appendChild(el('span', 'bad', t('exam.timedOut')));
+    card.appendChild(meta);
+    card.appendChild(el('div', 'muted er-note', t('wexam.noBand')));
+    main.appendChild(card);
+
+    // Word count per task against the minimum. Under it and the answer is not
+    // eligible for a full band whatever else is right about it, so this is the
+    // one place a machine can say something definite about an essay.
+    var box = el('div', 'exam-parts');
+    box.appendChild(el('h2', null, t('wexam.byTask')));
+    (r.words || writeWords(test, list)).forEach(function (w) {
+      var line = el('div', 'ep-row');
+      line.appendChild(el('span', 'ep-num', 'T' + w.part));
+      line.appendChild(el('span', 'ep-label', t('task.writingPart', { n: w.part })));
+      var barBox = el('div', 'ep-bar');
+      var fill = el('i');
+      fill.style.width = Math.min(100, Math.round(w.n / w.min * 100)) + '%';
+      barBox.appendChild(fill);
+      line.appendChild(barBox);
+      var sc = el('span', 'ep-score' + (w.n >= w.min ? ' ok' : ' low'), w.n + '/' + w.min);
+      line.appendChild(sc);
+      box.appendChild(line);
+    });
+    main.appendChild(box);
+
+    main.appendChild(buildCriteria(true));
+
+    var acts = el('div', 'exam-actions');
+    var see = el('a', 'btn primary', t('wexam.seeDraft'));
+    see.href = '#/b/' + book.id + '/tasks/' + test + '/w';
+    acts.appendChild(see);
+    var again = el('button', 'btn', t('exam.again'));
+    again.addEventListener('click', function () { startWriteExam(test); });
+    acts.appendChild(again);
+    main.appendChild(acts);
+
+    var hist = writeHistory(test);
+    if (hist) main.appendChild(hist);
+  }
+
+  // Past sittings of this paper, newest first. No band column: there is no band.
+  function writeHistory(test) {
+    var runs = (state.exams[examKey(book.id, writeExamKey(test))] || []).slice().reverse();
+    if (!runs.length) return null;
+    var box = el('div', 'exam-hist');
+    box.appendChild(el('h2', null, t('exam.past')));
+    var tbl = el('table', 'exam-table');
+    var thead = el('thead');
+    var hr = el('tr');
+    [t('exam.th.when'), t('wexam.th.words'), t('exam.th.time')].forEach(function (h) {
+      hr.appendChild(el('th', null, h));
+    });
+    thead.appendChild(hr);
+    tbl.appendChild(thead);
+    var tb = el('tbody');
+    runs.forEach(function (r) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, authDate(new Date(r.ts).toISOString())));
+      var words = (r.words || []).map(function (w) { return w.n; }).join(' + ') || '—';
+      tr.appendChild(el('td', 'num', words));
+      tr.appendChild(el('td', 'num', EXAM.clock(r.secs)));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    box.appendChild(tbl);
     return box;
   }
 
@@ -7057,6 +7374,7 @@
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
     else if (sub === 'exam') renderExam(arg);
+    else if (sub === 'taskexam') renderWriteExam(arg);
     else if (sub === 'tasks') renderTasks(arg, taskSkill);
     else if (sub === 'unit') renderUnit(arg);
     else renderUnit(book.units.length ? book.units[0].unit : 1);
@@ -7080,10 +7398,13 @@
     // and the browser's back button means "leave the exam".
     // '#/b/<id>/tasks/<test>' — the Writing and Speaking half of an IELTS test.
     // '#/b/<id>/tasks/<test>' — both skills; '/w' or '/s' — one of them, which
-    // is what the W1 and S1 entries in the unit list point at.
-    var tk = /^#\/b\/([a-z0-9-]+)\/tasks(?:\/(\d+)(?:\/(w|s))?)?/.exec(h);
+    // is what the W1 and S1 entries in the unit list point at. '/w/exam' is the
+    // Writing paper under exam conditions, a page of its own for the same
+    // reason a Listening one is: a reload in the fiftieth minute comes back to
+    // the paper, and Back means "leave the exam".
+    var tk = /^#\/b\/([a-z0-9-]+)\/tasks(?:\/(\d+)(?:\/(w|s)(\/exam)?)?)?/.exec(h);
     if (tk) {
-      return { view: 'book', id: tk[1], sub: 'tasks',
+      return { view: 'book', id: tk[1], sub: tk[4] ? 'taskexam' : 'tasks',
                arg: tk[2] ? parseInt(tk[2], 10) : null, skill: tk[3] || null };
     }
     var m = /^#\/b\/([a-z0-9-]+)(?:\/(unit)\/(\d+)(\/exam)?|\/(errors|stats|unlock))?/.exec(h);

@@ -3381,6 +3381,15 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
 .ep-bar { width: 120px; height: 7px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
 .ep-bar i { display: block; height: 100%; background: var(--accent); }
 .ep-score { min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+/* Writing: the count is a pass/fail against the exam's minimum, not a score
+   out of a total, so it is coloured the way the live counter beside the box is. */
+.ep-score.ok { color: var(--ok); font-weight: 600; }
+.ep-score.low { color: var(--gold); }
+
+/* A task card on the exam paper. The practice card is a panel among panels;
+   this one is the paper, so it takes the same quiet border an exam row does
+   and loses the hover the practice page gives it. */
+.exam-task { border-color: var(--line); }
 
 .exam-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
 .exam-actions .btn { text-decoration: none; }

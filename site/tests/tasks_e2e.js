@@ -7,7 +7,7 @@
 
    node site/tests/tasks_e2e.js   (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, goto, sleep, until } = require('./cdp.js');
+const { connect, goto, sleep, until, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { signedIn, LIVE } = require('./supamock.js');
 
@@ -185,9 +185,12 @@ async function run() {
   r.eq('titled the way the rail names it', sOnly.h1, 'Test 1 — Speaking');
   r.eq('and it opens the book at the Speaking card', sOnly.page, '32');
   r.eq('the h1 already names the skill, so no band repeats it', sOnly.bands, 0);
-  r.eq('the other half of the test is one chip away',
-    sOnly.cross.join(' '), '#/b/ielts-21/tasks/1/w');
+  // W1 and S1 are their own entries in the rail on every page of the book, so
+  // the head does not also carry a "switch to the other skill" button.
+  r.eq('no chip toggles between the two skills', sOnly.cross.length, 0);
   r.eq('and the rail marks where the reader is', sOnly.current.join(' '), 'S1');
+  r.eq('Speaking is an interview, not a paper: no exam mode',
+    await s.eval(`document.querySelectorAll('.exam-chip').length`), 0);
 
   await goto(s, BASE + '#/b/ielts-21/tasks/1/w');
   await until(s, `document.querySelectorAll('.task-card').length >= 2`);
@@ -200,7 +203,120 @@ async function run() {
   r.eq('the Writing page carries only the two written tasks', wOnly.cards, 2);
   r.eq('titled to match', wOnly.h1, 'Test 1 — Writing');
   r.eq('and opens the book at Task 1', wOnly.page, '30');
-  r.eq('with Speaking one chip away', wOnly.cross.join(' '), '#/b/ielts-21/tasks/1/s');
+  // The whole point: W1 has the furniture L1 has, exam mode included.
+  r.eq('the only link in the head is exam mode', wOnly.cross.join(' '),
+    '#/b/ielts-21/tasks/1/w/exam');
+
+  /* ================= the Writing paper under exam conditions ================= */
+  /* W1 is a page like L1, so it can be sat like one: one hour over both tasks,
+     the practice aids gone, and — because no machine can mark an essay — a
+     result that reports the hour and the word counts and refuses to invent a
+     band. */
+  r.head('exam conditions');
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/w/exam');
+  await until(s, `!!document.querySelector('.exam-card')`);
+  const desk = await s.eval(`({
+    h1: document.querySelector('.page-head h1').textContent,
+    rules: [...document.querySelectorAll('.exam-rules li')].map(e => e.textContent),
+    start: !!document.querySelector('.exam-card .btn.primary'),
+    live: !!JSON.parse(localStorage.getItem('agylshyn_v1')).exam
+  })`);
+  r.ok('the desk names the paper', /Writing/.test(desk.h1), desk.h1);
+  r.eq('four rules', desk.rules.length, 4);
+  r.ok('the hour is one of them', desk.rules.some(x => /60/.test(x)), JSON.stringify(desk.rules));
+  r.ok('and so is "nothing is marked"',
+    desk.rules.some(x => /marked|қойылмайды/i.test(x)), JSON.stringify(desk.rules));
+  r.ok('no clock is running yet', !desk.live);
+
+  await s.eval(`document.querySelector('.exam-card .btn.primary').click()`);
+  await until(s, `!!document.querySelector('.eb-clock')`);
+  const paper = await s.eval(`({
+    clock: document.querySelector('.eb-clock').textContent,
+    cards: document.querySelectorAll('.task-card').length,
+    areas: document.querySelectorAll('.task-area').length,
+    timers: document.querySelectorAll('.task-timer').length,
+    crit: document.querySelectorAll('.task-crit').length,
+    ghosts: document.querySelectorAll('.task-foot .btn').length,
+    counts: document.querySelectorAll('.task-count').length,
+    inBook: document.querySelectorAll('.task-inbook').length,
+    skill: JSON.parse(localStorage.getItem('agylshyn_v1')).exam.skill
+  })`);
+  r.ok('the clock is counting from an hour', /^(59|1:00):/.test(paper.clock), paper.clock);
+  r.eq('both tasks are on the paper', paper.cards, 2);
+  r.eq('with a box each', paper.areas, 2);
+  r.eq('the per-task countdowns are gone — one clock runs the hour', paper.timers, 0);
+  r.eq('and so are the criteria: they are for afterwards', paper.crit, 0);
+  r.eq('nothing to press beside the box, so no Clear mid-essay', paper.ghosts, 0);
+  r.eq('the word count stays: the exam prints it as a rule', paper.counts, 2);
+  r.eq('and the task is still where it always was — in the book', paper.inBook, 2);
+  r.eq('the run knows which skill it is', paper.skill, 'writing');
+
+  const wrote = await s.eval(`(() => {
+    const a = [...document.querySelectorAll('.task-area')];
+    a[0].value = Array.from({length: 151}, (_, i) => 'w' + i).join(' ');
+    a[0].dispatchEvent(new Event('input', { bubbles: true }));
+    a[1].value = 'far too short';
+    a[1].dispatchEvent(new Event('input', { bubbles: true }));
+    return document.querySelectorAll('.task-count.ok').length;
+  })()`);
+  r.eq('one of the two clears its minimum', wrote, 1);
+  await sleep(700);
+
+  r.head('a reload mid-paper');
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/w/exam');
+  await until(s, `!!document.querySelector('.eb-clock')`);
+  const back2 = await s.eval(`({
+    onPaper: !!document.querySelector('.eb-clock'),
+    kept: document.querySelectorAll('.task-area')[0].value.split(/\\s+/).length
+  })`);
+  r.ok('the paper comes back rather than the desk', back2.onPaper);
+  r.eq('with the essay still in its box', back2.kept, 151);
+
+  // The practice page must say so too, the way a unit page does.
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/w');
+  await until(s, `document.querySelectorAll('.task-card').length >= 2`);
+  r.ok('and the practice page flags the run still ticking',
+    await s.eval(`!!document.querySelector('.exam-resume')`));
+
+  r.head('handing it in');
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/w/exam');
+  await until(s, `!!document.querySelector('.eb-clock')`);
+  await s.eval(`document.querySelectorAll('.exam-bar .btn')[0].click()`);
+  r.ok('handing in asks first', await answerAsk(s));
+  await until(s, `!!document.querySelector('.exam-parts')`);
+  const result = await s.eval(`({
+    band: document.querySelectorAll('.er-band, .er-raw').length,
+    note: (document.querySelector('.er-note')||{}).textContent,
+    rows: [...document.querySelectorAll('.ep-score')].map(e => e.textContent),
+    ok: document.querySelectorAll('.ep-score.ok').length,
+    low: document.querySelectorAll('.ep-score.low').length,
+    crit: document.querySelectorAll('.task-crit li').length,
+    hist: document.querySelectorAll('.exam-hist tbody tr').length,
+    stored: (JSON.parse(localStorage.getItem('agylshyn_v1')).exams['ielts-21|w1']||[]).length,
+    live: !!JSON.parse(localStorage.getItem('agylshyn_v1')).exam
+  })`);
+  r.eq('no score and no band — an essay is not machine-markable', result.band, 0);
+  r.ok('and the page says why', /band/i.test(result.note || ''), result.note);
+  r.eq('the counts are reported per task', result.rows.join(' '), '151/150 3/250');
+  r.eq('the one that made the minimum is marked so', result.ok, 1);
+  r.eq('the one that did not is flagged', result.low, 1);
+  r.eq('the four criteria are put in front of the reader', result.crit, 4);
+  r.eq('the sitting is written to history', result.stored, 1);
+  r.eq('and listed', result.hist, 1);
+  r.ok('the clock is no longer running', !result.live);
+
+  // A Writing run must not turn up in the band table on Statistics, which is
+  // about sections that have a raw score.
+  await goto(s, BASE + '#/b/ielts-21/stats');
+  await sleep(600);
+  r.eq('Statistics keeps the band table to the sections that have one',
+    await s.eval(`document.querySelectorAll('.exam-table tbody tr').length`), 0);
+
+  // Speaking is an interview; '/s/exam' is a URL nothing offers.
+  await goto(s, BASE + '#/b/ielts-21/tasks/1/s/exam');
+  await sleep(500);
+  r.ok('there is no Speaking paper to sit',
+    await s.eval(`!!document.querySelector('.empty-state')`));
 
   /* ================= the way in ================= */
   r.head('the way in');
