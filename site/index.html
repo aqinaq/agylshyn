@@ -4,6 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ағылшын — жаттығулар</title>
+
+<!-- How this site looks when somebody pastes the link. It is sold and shared
+     through Telegram, so the link preview IS the shop window — without these
+     it arrived as a bare "Ағылшын — жаттығулар" and no picture at all.
+     og:url and og:image must be absolute for a scraper to resolve them, so
+     they name the Pages origin; a fork serving from somewhere else should
+     change these four lines and nothing else. The numbers in the description
+     are the real shelf (see data/index.json) — update them with the books. -->
+<meta name="description" content="Кембридж оқулықтарының жаттығулары: 13 кітап, 21 672 сұрақ. Жауабыңды жаз, бірден тексер, қателерің өз тізіміне жиналады. Тегін, тіркелусіз.">
+<link rel="canonical" href="https://aqinaq.github.io/agylshyn/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ағылшын — жаттығулар">
+<meta property="og:locale" content="kk_KZ">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:url" content="https://aqinaq.github.io/agylshyn/">
+<meta property="og:title" content="Ағылшын — жаттығулар: Cambridge кітаптары, бір жерде">
+<meta property="og:description" content="Кембридж оқулықтарының жаттығулары: 13 кітап, 21 672 сұрақ. Жауабыңды жаз, бірден тексер, қателерің өз тізіміне жиналады. Тегін, тіркелусіз.">
+<meta property="og:image" content="https://aqinaq.github.io/agylshyn/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ағылшын — жаттығулар: 13 кітап, 937 юнит, 21 672 сұрақ">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ағылшын — жаттығулар: Cambridge кітаптары, бір жерде">
+<meta name="twitter:description" content="13 кітап, 21 672 сұрақ. Жауабыңды жаз, бірден тексер. Тегін, тіркелусіз.">
+<meta name="twitter:image" content="https://aqinaq.github.io/agylshyn/og.png">
+
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6feb'/%3E%3Ctext x='16' y='23' font-size='19' font-family='-apple-system,Segoe UI,Arial' font-weight='700' fill='%23fff' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2f6feb">
@@ -29,6 +55,14 @@
 </script>
 </head>
 <body data-view="home">
+
+<!-- First thing Tab reaches, invisible until it has focus. Inside a book the
+     topbar alone is a dozen stops (menu, library, account, three tabs, drill,
+     deck, search, help, theme, two languages) before the first answer box —
+     that is a dozen presses per unit for anyone navigating by keyboard. The
+     target flips with the view: #main is the exercise column, #bookGrid the
+     library, and app.js keeps the href pointed at whichever is on screen. -->
+<a href="#main" class="skip-link" id="skipLink" data-i18n="a11y.skip"></a>
 
 <!-- ================= home: intro + book picker ================= -->
 <section id="home" class="screen">
@@ -246,7 +280,37 @@
   </div>
 </div>
 
+<!-- ================= ask: the app's own confirm() and alert() =============
+     Every destructive step used to raise a native window.confirm(), which on a
+     phone is a system box titled with the bare domain — jarring in an app that
+     builds every other dialog itself, and untranslatable. ask.js drives this
+     one. Kept in the markup rather than created on demand so the focus trap,
+     the backdrop and the Esc handling are the same code path as the four
+     dialogs above. -->
+<div id="askModal" class="modal" hidden>
+  <div class="modal-backdrop" data-close-ask></div>
+  <div class="modal-panel ask-panel" role="alertdialog" aria-modal="true"
+       aria-labelledby="askTitle" aria-describedby="askText">
+    <div class="modal-head">
+      <h2 id="askTitle"></h2>
+      <button type="button" class="modal-close" data-close-ask data-i18n-aria="ask.no">✕</button>
+    </div>
+    <div class="modal-body ask-body">
+      <p id="askText"></p>
+      <!-- The generic labels are here rather than only in ask.js, so the two
+           buttons are never nameless to a screen reader between calls. Each
+           call replaces them with something specific ("Delete the class"). -->
+      <div class="ask-actions">
+        <button type="button" class="btn" id="askNo" data-i18n="ask.no"></button>
+        <button type="button" class="btn primary" id="askYes" data-i18n="ask.yes"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="i18n.js"></script>
+<!-- Before every file that might need to ask a question. -->
+<script src="ask.js"></script>
 <script src="help.js"></script>
 <script src="books.js"></script>
 <script src="placement.js"></script>

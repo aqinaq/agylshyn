@@ -7,7 +7,8 @@
  {
   "id": "grammar",
   "units": 145,
-  "tracked": 4045
+  "tracked": 4045,
+  "notes": 1
  },
  {
   "id": "advanced-grammar",

@@ -463,24 +463,51 @@ create index if not exists class_members_user_idx on public.class_members (user_
 alter table public.classes enable row level security;
 alter table public.class_members enable row level security;
 
+-- These two lookups have to be SECURITY DEFINER functions rather than sub-
+-- selects in the policies themselves. Written the obvious way — the policy on
+-- `classes` reading `class_members`, and the policy on `class_members` reading
+-- `classes` — each policy invokes the other's, and Postgres refuses the whole
+-- query with 42P17 "infinite recursion detected in policy for relation". That
+-- was live: `GET /rest/v1/classes` answered 500 for every caller. A definer
+-- function runs as the table owner, which is not subject to the policy, so the
+-- cycle is broken without widening what anyone can read.
+create or replace function public.is_class_member(p_class uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.class_members m
+                  where m.class_id = p_class and m.user_id = auth.uid());
+$$;
+
+create or replace function public.owns_class(p_class uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.classes c
+                  where c.id = p_class and c.owner = auth.uid());
+$$;
+
+revoke all on function public.is_class_member(uuid) from public, anon;
+revoke all on function public.owns_class(uuid) from public, anon;
+grant execute on function public.is_class_member(uuid) to authenticated;
+grant execute on function public.owns_class(uuid) to authenticated;
+
 -- Read-your-own only, and no write policy anywhere: a class is created, joined
 -- and left through the functions below, which is what keeps "who owns this
 -- class" out of a client's reach.
 drop policy if exists classes_select_own on public.classes;
 create policy classes_select_own on public.classes
-  for select using (
-    auth.uid() = owner
-    or exists (select 1 from public.class_members m
-                where m.class_id = id and m.user_id = auth.uid())
-  );
+  for select using (auth.uid() = owner or public.is_class_member(id));
 
 drop policy if exists class_members_select_own on public.class_members;
 create policy class_members_select_own on public.class_members
-  for select using (
-    auth.uid() = user_id
-    or exists (select 1 from public.classes c
-                where c.id = class_id and c.owner = auth.uid())
-  );
+  for select using (auth.uid() = user_id or public.owns_class(class_id));
 
 revoke all on table public.classes from anon, authenticated;
 revoke all on table public.class_members from anon, authenticated;

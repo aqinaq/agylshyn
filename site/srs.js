@@ -964,11 +964,15 @@ window.SRS = (function () {
         clear(list); fillList(list, all);
       }));
     acts.appendChild(btn('btn small danger', t('srs.cards.delete'), function () {
-      if (!confirm(t('srs.cards.confirmDelete', { w: c.word }))) return;
-      remove(c.id);
-      var i = all.indexOf(c);
-      if (i > -1) all.splice(i, 1);
-      clear(list); fillList(list, all);
+      ASK.confirm(t('srs.cards.confirmDelete', { w: c.word }),
+        { title: t('srs.cards.delete'), yes: t('srs.cards.delete'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          remove(c.id);
+          var i = all.indexOf(c);
+          if (i > -1) all.splice(i, 1);
+          clear(list); fillList(list, all);
+        });
     }));
     row.appendChild(acts);
 
@@ -1301,13 +1305,17 @@ window.SRS = (function () {
     var danger = el('div', 'sub-actions');
     danger.appendChild(btn('btn', t('srs.import.export'), exportFile));
     danger.appendChild(btn('btn danger', t('srs.set.wipe'), function () {
-      if (!confirm(tn('srs.set.wipeConfirm', live().length, { n: num(live().length) }))) return;
-      live().forEach(function (c) { remove(c.id); });
-      data.history = {};
-      session = null;
-      save();
-      location.hash = '#/srs';
-      render('');
+      ASK.confirm(tn('srs.set.wipeConfirm', live().length, { n: num(live().length) }),
+        { title: t('srs.set.wipe'), yes: t('srs.set.wipe'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          live().forEach(function (c) { remove(c.id); });
+          data.history = {};
+          session = null;
+          save();
+          location.hash = '#/srs';
+          render('');
+        });
     }));
     main.appendChild(danger);
   }

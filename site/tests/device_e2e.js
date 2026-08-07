@@ -232,6 +232,63 @@ async function run() {
   r.ok('focus moves into the dialog', keys.trapped);
   r.ok('Esc closes it', keys.closed);
 
+  /* ================= the app's own confirm (ask.js) =================
+     Every destructive step used to raise a native window.confirm(). The
+     replacement has to behave like one in the ways that matter: it blocks
+     until answered, Esc and the backdrop mean no, and — the part a native
+     dialog gets right for free — a reflex Enter must not be the destructive
+     answer. */
+  r.head('the confirm dialog');
+  const ask = await s.eval(`(async () => {
+    const p = ASK.confirm('Delete everything?', { title: 'Careful', yes: 'Delete', danger: true });
+    await new Promise(r=>setTimeout(r,200));
+    const m = document.getElementById('askModal');
+    const out = {
+      up: !m.hidden,
+      title: (document.getElementById('askTitle')||{}).textContent,
+      text: (document.getElementById('askText')||{}).textContent,
+      yes: (document.getElementById('askYes')||{}).textContent,
+      yesDanger: document.getElementById('askYes').classList.contains('bad'),
+      focusOnCancel: document.activeElement === document.getElementById('askNo'),
+      trapped: document.activeElement.closest('#askModal') !== null,
+      role: m.querySelector('.modal-panel').getAttribute('role')
+    };
+    document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape', bubbles:true}));
+    out.escAnswer = await p;
+    out.closed = m.hidden;
+    return out;
+  })()`);
+  r.ok('a confirmation opens the app\'s own dialog, not the browser\'s', ask.up);
+  r.eq('with the caller\'s title', ask.title, 'Careful');
+  r.eq('and the caller\'s question', ask.text, 'Delete everything?');
+  r.eq('the confirming button is named for what it does', ask.yes, 'Delete');
+  r.ok('a destructive one is coloured as destructive', ask.yesDanger);
+  r.ok('it announces itself as an alertdialog', ask.role === 'alertdialog', ask.role);
+  r.ok('focus lands on Cancel, so a reflex Enter destroys nothing', ask.focusOnCancel);
+  r.ok('focus is inside the dialog', ask.trapped);
+  r.eq('Esc answers no', ask.escAnswer, false);
+  r.ok('and closes it', ask.closed);
+
+  const askYes = await s.eval(`(async () => {
+    const p = ASK.confirm('Go on?');
+    await new Promise(r=>setTimeout(r,200));
+    document.getElementById('askYes').click();
+    return { answer: await p, closed: document.getElementById('askModal').hidden };
+  })()`);
+  r.eq('pressing the confirming button answers yes', askYes.answer, true);
+  r.ok('and closes it too', askYes.closed);
+
+  const tell = await s.eval(`(async () => {
+    const p = ASK.tell('Saved.');
+    await new Promise(r=>setTimeout(r,200));
+    const oneButton = document.getElementById('askNo').hidden;
+    document.getElementById('askYes').click();
+    await p;
+    return { oneButton, closed: document.getElementById('askModal').hidden };
+  })()`);
+  r.ok('an alert offers one button, not two', tell.oneButton);
+  r.ok('and closes when it is pressed', tell.closed);
+
   return r.done();
 }
 

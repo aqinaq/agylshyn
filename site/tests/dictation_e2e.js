@@ -7,7 +7,7 @@
 
    node site/tests/dictation_e2e.js  (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, goto, sleep, until } = require('./cdp.js');
+const { connect, goto, sleep, until, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { signedIn, LIVE } = require('./supamock.js');
 
@@ -139,8 +139,8 @@ async function run() {
   r.eq('but the transcript is not on the page', inExam.dict, 0);
   r.eq('and neither is the slow-it-down bar', inExam.tools, 0);
 
-  await s.eval(`window.confirm = () => true;
-    [...document.querySelectorAll('.exam-bar .btn')][1].click()`);   // abandon
+  await s.eval(`[...document.querySelectorAll('.exam-bar .btn')][1].click()`);  // abandon
+  await answerAsk(s);
 
   r.eq('nothing threw', errors.length, 0);
   if (errors.length) r.note(errors.slice(0, 3).join('\n    '));

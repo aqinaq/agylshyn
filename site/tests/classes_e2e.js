@@ -4,7 +4,7 @@
 
    node site/tests/classes_e2e.js  (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, newContextPage, goto, sleep, until } = require('./cdp.js');
+const { connect, newContextPage, goto, sleep, until, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { mock, signedIn } = require('./supamock.js');
 
@@ -184,8 +184,9 @@ async function run() {
   })()`);
   r.eq('and cannot read the roster of a class they only study in', rosterDenied, 403);
 
-  await s.eval(`window.confirm = () => true;
-    [...document.querySelectorAll('.cls-card .btn')].find(b => !b.classList.contains('ghost')).click()`);
+  await s.eval(`[...document.querySelectorAll('.cls-card .btn')]
+    .find(b => !b.classList.contains('ghost')).click()`);
+  r.ok('leaving asks first', await answerAsk(s));
   await until(s, `!document.querySelector('.cls-card')`);
   const left = await s.eval(`({
     cards: document.querySelectorAll('.cls-card').length,

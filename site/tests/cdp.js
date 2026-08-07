@@ -168,4 +168,23 @@ async function until(s, expression, ms) {
   }
 }
 
-module.exports = { launch, connect, newContextPage, goto, sleep, until, Session };
+/* Answer the app's own confirm dialog (ask.js).
+
+   These used to be native window.confirm(), and every suite stubbed it with
+   `window.confirm = () => true`. The dialog is the app's now, so a stub would
+   test nothing: the button has to be found and pressed like a reader would.
+   Waits for it, because ASK.confirm is raised from a click handler and the
+   modal is unhidden a frame later.
+
+   `yes: false` presses the cancelling button instead, which is what a suite
+   asserting "nothing was deleted" needs. Returns false if no dialog appeared —
+   the assertion that follows then reports what it saw rather than hanging. */
+async function answerAsk(s, yes) {
+  const up = await until(s, `!document.getElementById('askModal').hidden`, 5000);
+  if (!up) return false;
+  await s.eval(`document.getElementById(${yes === false ? "'askNo'" : "'askYes'"}).click()`);
+  await until(s, `document.getElementById('askModal').hidden`, 5000);
+  return true;
+}
+
+module.exports = { launch, connect, newContextPage, goto, sleep, until, answerAsk, Session };

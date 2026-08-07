@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- Source for site/og.png, the link-preview card. Rendered once at 1200×630:
+
+       node site/tools/build_og.js
+
+     It is a file rather than a drawing so the numbers can be corrected when the
+     shelf changes: edit the three figures below and re-run. Colours are copied
+     from style.css's dark theme rather than imported, because a scraper fetches
+     a flat PNG and there is no stylesheet in the picture. -->
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "Segoe UI", Inter, Arial, sans-serif;
+    background: #0f1420;
+    color: #e8ecf5;
+    padding: 66px 72px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    /* the same blue the icon and theme-color use, bled in from the corner */
+    background-image: radial-gradient(900px 520px at 88% -12%, rgba(47,111,235,.34), transparent 62%);
+  }
+  .mark { font-size: 21px; letter-spacing: .16em; text-transform: uppercase; color: #7ea6f5; font-weight: 700; }
+  h1 { font-size: 78px; line-height: 1.06; letter-spacing: -.025em; font-weight: 760; margin-top: 26px; }
+  p  { font-size: 30px; line-height: 1.42; color: #a8b3c9; margin-top: 24px; max-width: 900px; }
+  .stats { display: flex; gap: 18px; }
+  .s {
+    flex: 1; padding: 22px 26px; border-radius: 16px;
+    background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
+  }
+  .v { font-size: 46px; font-weight: 730; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .k { font-size: 19px; color: #93a0b8; text-transform: uppercase; letter-spacing: .07em; margin-top: 6px; }
+  .free { color: #63d19b; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="mark">Grammar &amp; Vocabulary in Use</div>
+    <h1>Ағылшын — жаттығулар</h1>
+    <p>Кембридж оқулықтарының жаттығулары. Жауабыңды жаз, бірден тексер —
+       қателерің өз тізіміне жиналады. <span class="free">Тегін, тіркелусіз.</span></p>
+  </div>
+  <div class="stats">
+    <div class="s"><div class="v">13</div><div class="k">кітап</div></div>
+    <div class="s"><div class="v">937</div><div class="k">юнит</div></div>
+    <div class="s"><div class="v">21 672</div><div class="k">сұрақ</div></div>
+    <div class="s"><div class="v">2</div><div class="k">тіл: қаз / eng</div></div>
+  </div>
+</body>
+</html>

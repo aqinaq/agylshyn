@@ -7,7 +7,7 @@
 
    node site/tests/admin_e2e.js */
 'use strict';
-const { connect, goto, sleep } = require('./cdp.js');
+const { connect, goto, sleep, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
 const { ROSTER, supabaseHost, signedIn } = require('./supamock.js');
 
@@ -173,11 +173,15 @@ async function run() {
   r.eq('the grant asked for exactly 30 days', (s.mock.calls.grant[0] || {}).p_days, 30);
   r.eq('and named the right account', (s.mock.calls.grant[0] || {}).target, 'u-3');
 
-  const revoked = await s.eval(`(async () => {
-    const target = [...document.querySelectorAll('#main tbody tr')].find(tr => /nurlan/.test(tr.textContent));
-    window.confirm = () => true;
-    [...target.querySelectorAll('.u-sub button')][2].click();
-    await new Promise(r=>setTimeout(r,600));
+  // Revoking is the destructive one, so it goes through the app's own dialog.
+  // The click and the assertion are separate evaluations now: the confirmation
+  // has to be answered from out here, in between.
+  await s.eval(`[...[...document.querySelectorAll('#main tbody tr')]
+    .find(tr => /nurlan/.test(tr.textContent))
+    .querySelectorAll('.u-sub button')][2].click()`);
+  r.ok('revoking asks before it takes the subscription away', await answerAsk(s));
+  await sleep(600);
+  const revoked = await s.eval(`(() => {
     const after = [...document.querySelectorAll('#main tbody tr')].find(tr => /nurlan/.test(tr.textContent));
     return { none: !!after.querySelector('.sub-none'),
              buttons: after.querySelectorAll('.u-sub button').length };
@@ -191,22 +195,27 @@ async function run() {
   // caches "no subscription", so without a re-ask the shelf keeps its locks and
   // the books stay shut until a reload — which reads as the grant not working.
   r.head('granting yourself');
-  const mine = await s.eval(`(async () => {
+  const before = await s.eval(`(async () => {
     location.hash = '#/';
     await new Promise(r=>setTimeout(r,900));
-    const before = document.querySelectorAll('.bc-lock').length;
+    return document.querySelectorAll('.bc-lock').length;
+  })()`);
+  // A lifetime grant is the one grant that asks first (app.js passes it a
+  // users.confirmLife message), so the dialog has to be answered here.
+  await s.eval(`(async () => {
     location.hash = '#/users';
     await new Promise(r=>setTimeout(r,900));
     const row = [...document.querySelectorAll('tbody tr')]
       .find(tr => tr.textContent.indexOf('owner@example.com') > -1);
-    const life = [...row.querySelectorAll('.sub-acts button')]
-      .find(b => /Мәңгілік|Lifetime/i.test(b.textContent));
-    window.confirm = () => true;
-    life.click();
-    await new Promise(r=>setTimeout(r,1400));
+    [...row.querySelectorAll('.sub-acts button')]
+      .find(b => /Мәңгілік|Lifetime/i.test(b.textContent)).click();
+  })()`);
+  r.ok('granting a lifetime asks first', await answerAsk(s));
+  await sleep(1400);
+  const mine = await s.eval(`(async () => {
     location.hash = '#/';
     await new Promise(r=>setTimeout(r,900));
-    return { before: before, after: document.querySelectorAll('.bc-lock').length,
+    return { before: ${before}, after: document.querySelectorAll('.bc-lock').length,
              active: window.ENTITLE.active() };
   })()`);
   r.ok('the shelf was locked before the grant', mine.before > 0, String(mine.before));

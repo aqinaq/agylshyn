@@ -948,6 +948,12 @@
   function setView(name) {
     body.setAttribute('data-view', name);
     homeEl.hidden = name !== 'home';
+    // Keep the skip link aimed at whatever is actually on screen: on the
+    // library that is the shelf, everywhere else the working column. A skip
+    // link pointing at a hidden element is worse than none — it looks like it
+    // did nothing.
+    var skip = document.getElementById('skipLink');
+    if (skip) skip.setAttribute('href', name === 'home' ? '#bookGrid' : '#main');
   }
 
   /* ================= book loading ================= */
@@ -1105,6 +1111,10 @@
     box.hidden = false;
   }
 
+  // Which CEFR band the library is narrowed to, or null for the whole shelf.
+  // In memory only, on purpose — see the filter bar in renderHome().
+  var libBand = null;
+
   function renderHome() {
     setView('home');
     var units = 0, items = 0;
@@ -1194,8 +1204,21 @@
     // one, and a newcomer never learned that any of this is tracked. It is shown
     // from the first visit now; only the accuracy reads "—" rather than 0 %,
     // because nothing answered is not the same as everything wrong.
+    //
+    // But four zeros and a blank month is not "this is tracked", it is an
+    // empty dashboard — the first impression of a whole column, and on a phone
+    // the note the page ends on. Before the first answer the same space says
+    // what will land here instead; from the first answer on it is the real
+    // figures, which is the point of showing it at all.
     var aside = document.getElementById('asideDyn');
-    if (aside) {
+    if (aside && !done) {
+      clear(aside);
+      aside.appendChild(el('div', 'aside-title', t('home.snapshot')));
+      var soon = el('div', 'ov-empty');
+      soon.appendChild(el('b', null, t('home.snapSoon')));
+      soon.appendChild(el('span', null, t('home.snapSoonSub')));
+      aside.appendChild(soon);
+    } else if (aside) {
       clear(aside);
       aside.appendChild(el('div', 'aside-title', t('home.snapshot')));
       var ovCards = el('div', 'ov-cards');
@@ -1220,20 +1243,60 @@
     }
 
     clear(bookGrid);
+
+    /* Thirteen cards is five and a half screens on a phone, and a reader who
+       knows their level has to scroll past every book that is not theirs to
+       reach the one that is. These chips narrow the shelf by CEFR band; the
+       levels come out of books.js rather than being listed here, so a book at
+       a new band brings its own chip with it. The state is deliberately not
+       persisted — a filter that survives a reload is how somebody comes back
+       tomorrow and finds half the library missing. */
+    var bands = [];
+    BOOKS.forEach(function (b) {
+      (b.level || '').split('–').forEach(function (lv) {
+        lv = lv.trim();
+        if (lv && bands.indexOf(lv) < 0) bands.push(lv);
+      });
+    });
+    bands.sort();
+    if (bands.length > 1) {
+      var bar = el('div', 'lib-filter');
+      bar.setAttribute('role', 'group');
+      bar.setAttribute('aria-label', t('lib.filterAria'));
+      var mkChip = function (lv, label) {
+        var c = el('button', 'lib-chip' + (libBand === lv ? ' on' : ''), label);
+        c.type = 'button';
+        c.setAttribute('aria-pressed', libBand === lv ? 'true' : 'false');
+        c.addEventListener('click', function () {
+          libBand = libBand === lv ? null : lv;
+          renderHome();
+        });
+        return c;
+      };
+      bar.appendChild(mkChip(null, t('lib.filterAll')));
+      bands.forEach(function (lv) { bar.appendChild(mkChip(lv, lv)); });
+      bookGrid.appendChild(bar);
+    }
+
+    var shelf = BOOKS.filter(function (b) {
+      return !libBand || (b.level || '').indexOf(libBand) > -1;
+    });
+
     // Group order follows books.js, so adding a book with a new kind can never
     // drop it off this page silently.
     var kinds = [];
-    BOOKS.forEach(function (b) {
+    shelf.forEach(function (b) {
       if (kinds.indexOf(b.kind) < 0) kinds.push(b.kind);
     });
     kinds.forEach(function (kind) {
-      var list = BOOKS.filter(function (b) { return b.kind === kind; });
+      var list = shelf.filter(function (b) { return b.kind === kind; });
       if (!list.length) return;
       bookGrid.appendChild(el('div', 'lib-group', t('lib.group.' + kind)));
       var grid = el('div', 'book-grid');
       list.forEach(function (b) { grid.appendChild(bookCard(b)); });
       bookGrid.appendChild(grid);
     });
+    if (!shelf.length) bookGrid.appendChild(el('div', 'find-note', t('lib.filterNone')));
     paintStartBand();
     window.scrollTo(0, 0);
   }
@@ -1548,6 +1611,11 @@
     a.appendChild(el('span', 'plc-rec-title', b.title));
     a.appendChild(el('span', 'plc-rec-lvl', b.level));
     a.appendChild(el('span', 'plc-rec-blurb', b.blurb[state.lang] || b.blurb.kk));
+    // The quiz sends the lowest band at Essential Grammar, which is the one
+    // book that ships no question text at all — so the reader who is least
+    // able to work from a scan was the one finding that out by opening it.
+    // Say it here, where the recommendation is made.
+    if (b.needsPdf) a.appendChild(el('span', 'plc-rec-warn', t('plc.needsPdf')));
     a.appendChild(el('span', 'plc-rec-go', t('plc.openBook')));
     a.addEventListener('click', closePlaceModal);
     return a;
@@ -1988,8 +2056,12 @@
     var everywhere = el('button', 'btn', t('auth.signOutAll'));
     everywhere.type = 'button';
     everywhere.addEventListener('click', function () {
-      if (!confirm(t('auth.signOutAllConfirm'))) return;
-      SYNC.signOutEverywhere().then(function () { authMsg = null; renderAuth(); });
+      ASK.confirm(t('auth.signOutAllConfirm'),
+        { title: t('auth.signOutAll'), yes: t('auth.signOutAll'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          SYNC.signOutEverywhere().then(function () { authMsg = null; renderAuth(); });
+        });
     });
     secRow.appendChild(everywhere);
     authBody.appendChild(secRow);
@@ -2030,30 +2102,38 @@
     var wipe = el('button', 'btn danger', t('auth.wipeCloud'));
     wipe.type = 'button';
     wipe.addEventListener('click', function () {
-      if (!confirm(t('auth.wipeCloudConfirm'))) return;
-      authBusy = true;
-      renderAuth();
-      SYNC.deleteCloudProgress()
-        .then(function () { authSay(t('auth.wipeCloudOk'), false); })
-        .catch(authFail);
+      ASK.confirm(t('auth.wipeCloudConfirm'),
+        { title: t('auth.wipeCloud'), yes: t('auth.wipeCloud'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          authBusy = true;
+          renderAuth();
+          SYNC.deleteCloudProgress()
+            .then(function () { authSay(t('auth.wipeCloudOk'), false); })
+            .catch(authFail);
+        });
     });
     dangerRow.appendChild(wipe);
 
     var del = el('button', 'btn danger', t('auth.deleteAccount'));
     del.type = 'button';
     del.addEventListener('click', function () {
-      if (!confirm(t('auth.deleteConfirm'))) return;
-      authBusy = true;
-      renderAuth();
-      SYNC.deleteAccount().then(function () {
-        forgetAdminList();
-        authSay(t('auth.deleteOk'), false);
-      }).catch(function (e) {
-        // A project that never ran the delete_me() half of the schema answers
-        // 404 here. Saying so beats "Failed: Not Found".
-        if (e && e.status === 404) return authSay(t('auth.deleteNoRpc'), true);
-        authFail(e);
-      });
+      ASK.confirm(t('auth.deleteConfirm'),
+        { title: t('auth.deleteAccount'), yes: t('auth.deleteAccount'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          authBusy = true;
+          renderAuth();
+          SYNC.deleteAccount().then(function () {
+            forgetAdminList();
+            authSay(t('auth.deleteOk'), false);
+          }).catch(function (e) {
+            // A project that never ran the delete_me() half of the schema
+            // answers 404 here. Saying so beats "Failed: Not Found".
+            if (e && e.status === 404) return authSay(t('auth.deleteNoRpc'), true);
+            authFail(e);
+          });
+        });
     });
     dangerRow.appendChild(del);
     authBody.appendChild(dangerRow);
@@ -2905,8 +2985,13 @@
 
       var status = el('span', 'status ' + (r.mastered ? 'gold' : (r.last === 'correct' ? 'ok' : 'bad')));
       if (r.last === 'correct') {
+        // A hinted answer deliberately keeps the streak at 0 (applyAnswer:
+        // recognition is not recall), which made the generic line read
+        // "✓ correct — 0/3 in a row" and look like the counter was broken.
+        // It is not a streak of nought, it is a streak that did not start.
         status.textContent = r.mastered
           ? t('row.mastered')
+          : r.hinted ? t('row.streakHinted')
           : t('row.streak', { a: r.streak, b: MASTER_STREAK });
       } else {
         status.textContent = t('row.wrong');
@@ -2924,7 +3009,9 @@
         feedback.appendChild(k);
       }
       if (r.self) feedback.appendChild(el('span', 'key', t('row.selfMarked')));
-      if (r.hinted) feedback.appendChild(el('span', 'key hinted', t('hint.used')));
+      // `r.hinted` is only ever set on a correct answer, and row.streakHinted
+      // above now says so in the verdict itself — a second "💡 with a hint"
+      // chip beside it was the same fact twice.
 
       if (r.last === 'wrong') {
         // "Why?" — jump to the page that explains the rule they just missed.
@@ -3610,6 +3697,13 @@
 
   function loadNotes(bookId, done) {
     if (notes[bookId] !== undefined) { done(); return; }
+    // index.json says which books have a notes file (index_json.py stamps it
+    // from what is on disk). Without this the other twelve books each fired a
+    // request that could only 404 — one wasted round trip per book opened, and
+    // a network tab that looks like something is broken. If the index has not
+    // landed yet, fall through and ask: a 404 is still handled below, and the
+    // notes are worth more than the request.
+    if (INDEX[bookId] && !INDEX[bookId].notes) { notes[bookId] = false; done(); return; }
     if (notesPending[bookId]) return;
     notesPending[bookId] = true;
     fetch('data/notes/' + bookId + '.json')
@@ -3795,7 +3889,10 @@
     for (var i = 0; i < book.units.length; i++) {
       if (book.units[i].unit === no) { u = book.units[i]; break; }
     }
-    if (!u || !EXAM.isExamUnit(book.meta, u)) { renderNotFound(no); return; }
+    // No unit by that number is a 404; a unit that exists in a book with no
+    // exam mode is not — say which.
+    if (!u) { renderNotFound(no); return; }
+    if (!EXAM.isExamUnit(book.meta, u)) { renderNotFound(no, 'exam'); return; }
     currentUnit = no;
     state.last = { book: book.id, unit: no };
     save();
@@ -3883,12 +3980,15 @@
     bar.appendChild(clockEl);
     var doneBtn = el('button', 'btn small primary', t('exam.finish'));
     doneBtn.addEventListener('click', function () {
-      if (window.confirm(t('exam.confirmFinish'))) finishExam(u, false);
+      ASK.confirm(t('exam.confirmFinish'), { title: t('exam.finish'), yes: t('exam.finish') })
+        .then(function (ok) { if (ok) finishExam(u, false); });
     });
     bar.appendChild(doneBtn);
     var quit = el('button', 'btn small ghost', t('exam.abandon'));
     quit.addEventListener('click', function () {
-      if (window.confirm(t('exam.confirmAbandon'))) abandonExam(u);
+      ASK.confirm(t('exam.confirmAbandon'),
+        { title: t('exam.abandon'), yes: t('exam.abandon'), danger: true })
+        .then(function (ok) { if (ok) abandonExam(u); });
     });
     bar.appendChild(quit);
     main.appendChild(bar);
@@ -3906,7 +4006,8 @@
     var foot = el('div', 'unit-foot');
     var endBtn = el('button', 'btn primary big', t('exam.finish'));
     endBtn.addEventListener('click', function () {
-      if (window.confirm(t('exam.confirmFinish'))) finishExam(u, false);
+      ASK.confirm(t('exam.confirmFinish'), { title: t('exam.finish'), yes: t('exam.finish') })
+        .then(function (ok) { if (ok) finishExam(u, false); });
     });
     foot.appendChild(endBtn);
     main.appendChild(foot);
@@ -4070,7 +4171,10 @@
 
   function renderTasks(testNo, only) {
     var tests = promptTests();
-    if (!tests.length) { renderNotFound(testNo || 1); return; }
+    // Writing and Speaking exist only in a book that ships prompts — today
+    // just ielts-21. Elsewhere this route is not a missing unit, it is a
+    // feature the book does not have.
+    if (!tests.length) { renderNotFound(testNo || 1, 'tasks'); return; }
     var test = tests.indexOf(Number(testNo)) > -1 ? Number(testNo) : tests[0];
     currentUnit = null;
     currentTask = only ? only + test : null;
@@ -4264,10 +4368,15 @@
 
     var wipe = el('button', 'btn small ghost', t('task.clear'));
     wipe.addEventListener('click', function () {
-      if (!area.value || !confirm(t('task.clearConfirm'))) return;
-      area.value = '';
-      saveDraft(key, '');
-      paintCount();
+      if (!area.value) return;
+      ASK.confirm(t('task.clearConfirm'),
+        { title: t('task.clear'), yes: t('task.clear'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          area.value = '';
+          saveDraft(key, '');
+          paintCount();
+        });
     });
     foot.appendChild(wipe);
     box.appendChild(foot);
@@ -4616,11 +4725,33 @@
     focusPending();
   }
 
-  function renderNotFound(no) {
+  /* `kind` says which of three different things went wrong, because they used
+     to share one sentence. A link to #/b/<id>/unit/9 in a book with 8 units is
+     a missing unit; /exam on a grammar book and /tasks on an IELTS collection
+     that carries no prompts are not — those units exist, the *feature* does
+     not apply to that book, and "Unit 1 not found." is simply untrue there.
+     All three now get a way onwards as well: a dead end with no link out is
+     the one screen in the app a reader can arrive at and be stuck on. */
+  function renderNotFound(no, kind) {
     clear(main);
     var s = el('div', 'empty-state');
     s.appendChild(el('span', 'big', '🤔'));
-    s.appendChild(el('div', null, t('unit.notFound', { n: no })));
+    var msg = kind === 'exam' ? t('unit.noExam')
+            : kind === 'tasks' ? t('unit.noTasks')
+            : t('unit.notFound', { n: no });
+    s.appendChild(el('div', null, msg));
+
+    var row = el('div', 'sub-actions');
+    row.style.justifyContent = 'center';
+    if (book && book.units && book.units.length) {
+      var first = el('a', 'btn primary', t('unit.toFirst'));
+      first.href = '#/b/' + book.id + '/unit/' + book.units[0].unit;
+      row.appendChild(first);
+    }
+    var lib = el('a', 'btn', t('load.back'));
+    lib.href = '#/';
+    row.appendChild(lib);
+    s.appendChild(row);
     main.appendChild(s);
   }
 
@@ -4839,16 +4970,20 @@
     var reset = el('button', 'btn danger', t('stats.reset'));
     reset.style.marginTop = '14px';
     reset.addEventListener('click', function () {
-      if (!confirm(t('stats.confirm', { book: (book.meta && book.meta.title) || book.id }))) return;
-      var prefix = book.id + '|';
-      for (var k in state.items) {
-        if (k.lastIndexOf(prefix, 0) === 0) delete state.items[k];
-      }
-      delete state.books[book.id];
-      save();
-      renderStats();
-      renderSidebar();
-      refreshBadge();
+      ASK.confirm(t('stats.confirm', { book: (book.meta && book.meta.title) || book.id }),
+        { title: t('stats.reset'), yes: t('stats.reset'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          var prefix = book.id + '|';
+          for (var k in state.items) {
+            if (k.lastIndexOf(prefix, 0) === 0) delete state.items[k];
+          }
+          delete state.books[book.id];
+          save();
+          renderStats();
+          renderSidebar();
+          refreshBadge();
+        });
     });
     main.appendChild(reset);
 
@@ -5495,8 +5630,7 @@
     function run(label, cls, fn, confirmMsg) {
       var b = el('button', 'btn ' + cls, label);
       b.type = 'button';
-      b.addEventListener('click', function () {
-        if (confirmMsg && !confirm(confirmMsg)) return;
+      function go() {
         var all = acts.querySelectorAll('button');
         for (var i = 0; i < all.length; i++) all[i].disabled = true;
         fn().then(function (row) {
@@ -5520,8 +5654,16 @@
           }
         }).catch(function (e) {
           for (var j = 0; j < all.length; j++) all[j].disabled = false;
-          alert(String((e && e.message) || e));
+          ASK.tell(String((e && e.message) || e), { title: t('users.failed') });
         });
+      }
+
+      b.addEventListener('click', function () {
+        // No message means the action is not destructive — granting a month —
+        // so it runs straight away. Revoking asks first.
+        if (!confirmMsg) return go();
+        ASK.confirm(confirmMsg, { title: label, yes: label, danger: true })
+          .then(function (ok) { if (ok) go(); });
       });
       acts.appendChild(b);
     }
@@ -5703,23 +5845,31 @@
 
       var del = el('button', 'btn small danger', t('cls.delete'));
       del.addEventListener('click', function () {
-        if (!confirm(t('cls.deleteConfirm', { name: c.name }))) return;
-        CLASSES.remove(c.id).then(function () {
-          forgetClasses();
-          classMsg = { text: t('cls.deleted', { name: c.name }) };
-          renderClasses();
-        }, classFail);
+        ASK.confirm(t('cls.deleteConfirm', { name: c.name }),
+          { title: t('cls.delete'), yes: t('cls.delete'), danger: true })
+          .then(function (ok) {
+            if (!ok) return;
+            CLASSES.remove(c.id).then(function () {
+              forgetClasses();
+              classMsg = { text: t('cls.deleted', { name: c.name }) };
+              renderClasses();
+            }, classFail);
+          });
       });
       acts.appendChild(del);
     } else {
       var leave = el('button', 'btn small', t('cls.leave'));
       leave.addEventListener('click', function () {
-        if (!confirm(t('cls.leaveConfirm', { name: c.name }))) return;
-        CLASSES.leave(c.id).then(function () {
-          forgetClasses();
-          classMsg = { text: t('cls.left', { name: c.name }) };
-          renderClasses();
-        }, classFail);
+        ASK.confirm(t('cls.leaveConfirm', { name: c.name }),
+          { title: t('cls.leave'), yes: t('cls.leave'), danger: true })
+          .then(function (ok) {
+            if (!ok) return;
+            CLASSES.leave(c.id).then(function () {
+              forgetClasses();
+              classMsg = { text: t('cls.left', { name: c.name }) };
+              renderClasses();
+            }, classFail);
+          });
       });
       acts.appendChild(leave);
     }
@@ -5776,12 +5926,16 @@
       var act = el('td');
       var kick = el('button', 'btn small ghost', t('cls.remove'));
       kick.addEventListener('click', function () {
-        if (!confirm(t('cls.removeConfirm', { name: r.name || r.email }))) return;
-        CLASSES.leave(c.id, r.user_id).then(function () {
-          delete classRoster[c.id];
-          classList = null;                 // the student count moved
-          renderClasses();
-        }, classFail);
+        ASK.confirm(t('cls.removeConfirm', { name: r.name || r.email }),
+          { title: t('cls.remove'), yes: t('cls.remove'), danger: true })
+          .then(function (ok) {
+            if (!ok) return;
+            CLASSES.leave(c.id, r.user_id).then(function () {
+              delete classRoster[c.id];
+              classList = null;             // the student count moved
+              renderClasses();
+            }, classFail);
+          });
       });
       act.appendChild(kick);
       tr.appendChild(act);
@@ -6332,7 +6486,7 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    } catch (e) { alert(t('stats.exportBad')); }
+    } catch (e) { ASK.tell(t('stats.exportBad')); }
   }
 
   function importProgress() {
@@ -6344,16 +6498,24 @@
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function () {
+        var incoming;
         try {
-          var incoming = JSON.parse(reader.result);
+          incoming = JSON.parse(reader.result);
           if (!incoming || !incoming.items) throw new Error('bad');
-          if (!confirm(t('stats.importConfirm'))) return;
-          mergeInto(state, incoming);      // newest answer per question wins
-          state.books = {};                // force a recount from merged items
-          flush();
-          route();
-          alert(t('stats.importOk'));
-        } catch (e) { alert(t('stats.importBad')); }
+        } catch (e) { return ASK.tell(t('stats.importBad')); }
+        // The parse has to finish before the question is asked: confirming no
+        // longer blocks, so the work below happens in the answer's callback.
+        ASK.confirm(t('stats.importConfirm'), { title: t('stats.import'), yes: t('stats.import') })
+          .then(function (ok) {
+            if (!ok) return;
+            try {
+              mergeInto(state, incoming);  // newest answer per question wins
+              state.books = {};            // force a recount from merged items
+              flush();
+              route();
+              ASK.tell(t('stats.importOk'));
+            } catch (e) { ASK.tell(t('stats.importBad')); }
+          });
       };
       reader.readAsText(file);
     });
@@ -6476,7 +6638,16 @@
 
     var res = findSearch(q);
     if (!res.list.length) {
-      findResults.appendChild(el('div', 'find-note', t('find.none')));
+      var none = el('div', 'find-note', t('find.none'));
+      // Everything indexed here is English — the questions and the answer keys
+      // of English coursebooks. A Kazakh speaker typing a Kazakh word gets a
+      // flat "Nothing found." and no way to tell a missing word from a search
+      // that could never have matched. Say which it is.
+      // Any Cyrillic at all (U+0400–U+04FF covers both Kazakh and Russian).
+      if (/[Ѐ-ӿ]/.test(q)) {
+        none.appendChild(el('span', 'find-none-why', t('find.noneKk')));
+      }
+      findResults.appendChild(none);
       return;
     }
     res.list.forEach(function (r) {
@@ -6719,13 +6890,16 @@
     }
     steps.appendChild(send);
 
-    steps.appendChild(el('li', null, t('offer.step.wait')));
+    // "press Check again on this page" — but that button only exists once the
+    // reader is signed in, so signed out the last step was pointing at a
+    // control that was not on the screen. Signed out, the step is signing in.
+    var mail = (window.SYNC && SYNC.email && SYNC.email()) || null;
+    steps.appendChild(el('li', null, t(mail ? 'offer.step.wait' : 'offer.step.waitOut')));
     how.appendChild(steps);
 
     // Signed in: print the address, because "the email you registered with" is
     // a question a lot of people get wrong about themselves. Signed out: say
     // that an account has to exist first — there is nothing to open otherwise.
-    var mail = (window.SYNC && SYNC.email && SYNC.email()) || null;
     if (mail) {
       var box = el('div', 'offer-mail');
       box.appendChild(el('span', 'offer-mail-k', t('offer.yourEmail')));
@@ -6875,7 +7049,11 @@
     if (pdfOpen() && (sub === 'errors' || sub === 'stats') && window.innerWidth <= 860) {
       hidePdf(false);
     }
-    if (sub === 'unlock') { showLocked(book.id, 'paid'); return; }
+    // Every other branch paints the rail on its way through. This one returned
+    // before it did, so /unlock — the page a buyer is most likely to land on
+    // from a link — showed an empty sidebar next to the offer. The sample units
+    // are exactly what somebody deciding whether to pay wants to see.
+    if (sub === 'unlock') { renderSidebar(); showLocked(book.id, 'paid'); return; }
     if (sub === 'errors') renderErrors();
     else if (sub === 'stats') renderStats();
     else if (sub === 'exam') renderExam(arg);

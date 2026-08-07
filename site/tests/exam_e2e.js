@@ -7,7 +7,7 @@
 
    node site/tests/exam_e2e.js   (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, newContextPage, goto, sleep, until } = require('./cdp.js');
+const { connect, newContextPage, goto, sleep, until, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
@@ -163,9 +163,10 @@ async function run() {
 
   /* ================= handing it in ================= */
   r.head('handing it in');
-  await s.eval(`window.confirm = () => true`);
+  // Handing in asks first, in the app's own dialog — press Finish for real.
   await s.eval(`[...document.querySelectorAll('.exam-bar .btn')][0].click()`);
-  await sleep(500);
+  r.ok('handing in asks before it marks', await answerAsk(s));
+  await until(s, `!!document.querySelector('.er-raw')`);
   const result = await s.eval(`({
     raw: (document.querySelector('.er-raw')||{}).textContent,
     band: (document.querySelector('.er-band')||{}).textContent,

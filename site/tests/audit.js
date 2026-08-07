@@ -45,7 +45,7 @@ const bookFile = id => {
 };
 
 const JS = ['app.js', 'srs.js', 'dict.js', 'sync.js', 'entitle.js', 'help.js',
-  'pdfview.js', 'placement.js'];
+  'pdfview.js', 'placement.js', 'ask.js', 'classes.js', 'exam.js'];
 const html = read('index.html');
 
 /* ===================== 1. the two languages ===================== */

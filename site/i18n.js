@@ -35,7 +35,25 @@ window.I18N = {
     'home.ovWeek': 'Осы аптадағы сұрақ',
     'home.ovWeekSub': 'соңғы 7 күн',
     'home.ovMistakes': 'Қате (барлық кітап)',
+    // ask.js — қосымшаның өз confirm/alert терезесі. Батырма атаулары
+    // шақырған жерде нақтыланады; булар — әдепкі нұсқасы.
+    'ask.title': 'Растау',
+    'ask.yes': 'Иә',
+    'ask.no': 'Болдырмау',
+    'ask.ok': 'Жарайды',
+
+    // Кітап сөресінің деңгей сүзгісі.
+    'a11y.skip': 'Мазмұнға өту',
+    'lib.filterAria': 'Деңгей бойынша сүзу',
+    'lib.filterAll': 'Барлығы',
+    'lib.filterNone': 'Бұл деңгейде кітап жоқ.',
+
     'home.snapshot': 'Қысқаша шолу',
+    // Бірінші жауапқа дейін: нөл толған тақтаның орнына не болатынын айтамыз.
+    'home.snapSoon': 'Осы жерде статистикаң тұрады',
+    'home.snapSoonSub': 'Кез келген кітаптан бір сұраққа жауап бер — дәлдігің, ' +
+                        'күнделікті есебің, сериялар мен қателер тізімі осы жерде жиналады. ' +
+                        'Тіркелудің қажеті жоқ.',
 
     'home.choose': 'Кітапты таңда — прогресс әр кітап үшін бөлек сақталады.',
     'guide.s1t': 'Кітап пен юнитті таңда',
@@ -66,6 +84,9 @@ window.I18N = {
     'plc.score': '{c} / {n} дұрыс',
     'plc.startWith': 'Осы екеуінен баста',
     'plc.openBook': 'Ашу →',
+    // Бұл кітапта сұрақтың мәтіні жоқ. Ұсыныс картасында бірден айтылады —
+    // әйтпесе жаңа оқырман кітапты ашып қана біледі.
+    'plc.needsPdf': '📕 Кітап қасыңда болуы керек: сұрақтардың мәтіні жоқ, оларды PDF-тен оқисың (PDF қатар ашылады).',
     'plc.goalsH': 'Нақты мақсатың бар ма?',
     'plc.goal.ielts': 'IELTS-ке дайындық',
     'plc.goal.business': 'Жұмыс / бизнес тілі',
@@ -127,6 +148,10 @@ window.I18N = {
     'find.placeholder': 'Сұрақ, жауап немесе юнит атауы…',
     'find.hint': 'Кемінде 2 таңба тер.',
     'find.none': 'Ештеңе табылмады.',
+    // Іздеу кітаптардың өз мәтіні бойынша жүреді, ал ол — ағылшынша.
+    'find.noneKk': 'Іздеу кітаптардың мәтіні бойынша жүреді, ол ағылшынша. '
+                   + 'Ағылшынша сөзбен көр — ал қазақша аудармасын жаттығудағы '
+                   + 'сөздің үстіне басып қарауға болады.',
     'find.noBooks': 'Алдымен кітапты аш.',
     'find.loading': 'Кітаптар жүктелуде…',
     'find.scopeBook': 'Осы кітап',
@@ -186,6 +211,9 @@ window.I18N = {
     'row.lastTime': 'өткен жолы: ',
     'row.mastered': '★ меңгерілді',
     'row.streak': '✓ дұрыс — {a}/{b} қатарынан',
+    // Көмекпен тапқан жауап сериясын бастамайды — «0/3» деп жазу бұзылған
+    // санауыш сияқты көрінетін. Себебін айтқан дұрыс.
+    'row.streakHinted': '✓ дұрыс — бірақ көмекпен, сондықтан серия басталмайды',
     'row.wrong': '✗ қате',
     'row.bookKey': 'Кітап: ',
     'row.selfMarked': '(өзің белгіледің)',
@@ -542,6 +570,12 @@ window.I18N = {
     'ui.resize': 'Панельдің енін өзгерту',
     'unit.additional': 'Қосымша {n}',
     'unit.notFound': 'Unit {n} табылмады.',
+    // Бұл екеуі — «юнит жоқ» емес, «бұл кітапта ондай мүмкіндік жоқ».
+    'unit.noExam': 'Бұл кітапта емтихан режимі жоқ — ол тек IELTS жинақтарында '
+                   + '(әр бөлім — уақыты бар толық тест).',
+    'unit.noTasks': 'Бұл кітапта Writing / Speaking тапсырмалары жоқ. '
+                    + 'Олар тек тапсырма мәтіні бар IELTS жинағында болады.',
+    'unit.toFirst': 'Бірінші юнитке →',
     'unit.score': '{c}/{t} дұрыс — {p}%',
     'unit.scoreMeta': '  ·  ★ меңгерілді: {m}  ·  қайталау: {r}',
 
@@ -666,6 +700,8 @@ window.I18N = {
     'users.th.sub': 'Жазылым',
     'users.sub.lifetime': 'Мәңгілік',
     'users.sub.lapsed': 'Мерзімі бітті',
+    // ASK.tell тақырыбы: RPC қате қайтарғанда.
+    'users.failed': 'Орындалмады',
     'users.grantMonth': '+30 күн',
     'users.grantLife': 'Мәңгілік',
     'users.revoke': '✕',
@@ -715,6 +751,9 @@ window.I18N = {
                       'төлем жолын айтамын:',
     'offer.step.wait': 'Жазылымды қолмен қосамын. Қосылған соң осы беттегі ' +
                        '«Қайта тексеру» батырмасын бассаң, кітап ашылады.',
+    // Кірмеген оқырманда «Қайта тексеру» батырмасы жоқ — оған алдымен кіру керек.
+    'offer.step.waitOut': 'Жазылымды қолмен қосамын. Сосын осы беттен аккаунтыңа ' +
+                          'кірсең, кітап ашылады.',
     'offer.yourEmail': 'Тіркелген поштаң:',
     'offer.copy': 'Көшіру',
     'offer.copied': 'Көшірілді',
@@ -759,7 +798,25 @@ window.I18N = {
     'home.ovWeek': 'Questions this week',
     'home.ovWeekSub': 'last 7 days',
     'home.ovMistakes': 'Mistakes (all books)',
+    // ask.js — the app's own confirm/alert. Button labels are usually made
+    // specific at the call site; these are the defaults.
+    'ask.title': 'Confirm',
+    'ask.yes': 'Yes',
+    'ask.no': 'Cancel',
+    'ask.ok': 'OK',
+
+    // The library's level filter.
+    'a11y.skip': 'Skip to the content',
+    'lib.filterAria': 'Filter by level',
+    'lib.filterAll': 'All',
+    'lib.filterNone': 'No books at that level.',
+
     'home.snapshot': 'Snapshot',
+    // Before the first answer: what will appear here, rather than a wall of zeros.
+    'home.snapSoon': 'Your progress will show up here',
+    'home.snapSoonSub': 'Answer one question in any book and this fills in: ' +
+                        'accuracy, a daily count, streaks, and the list your ' +
+                        'mistakes collect into. No sign-up needed.',
 
     'home.choose': 'Pick a book — progress is kept separately for each one.',
     'guide.s1t': 'Pick a book and unit',
@@ -790,6 +847,9 @@ window.I18N = {
     'plc.score': '{c} / {n} correct',
     'plc.startWith': 'Start with these two',
     'plc.openBook': 'Open →',
+    // This book carries no question text. Said on the recommendation card
+    // itself — otherwise a new reader only finds out by opening it.
+    'plc.needsPdf': '📕 Keep the book to hand: the questions themselves are not on the site, you read them from the PDF (it opens alongside).',
     'plc.goalsH': 'Aiming at something specific?',
     'plc.goal.ielts': 'Prep for IELTS',
     'plc.goal.business': 'Work / business English',
@@ -851,6 +911,10 @@ window.I18N = {
     'find.placeholder': 'A question, an answer or a unit title…',
     'find.hint': 'Type at least 2 characters.',
     'find.none': 'Nothing found.',
+    // The index is the books' own text, and that text is English.
+    'find.noneKk': 'Search runs over the books themselves, and they are in '
+                   + 'English. Try an English word — for a translation, tap a '
+                   + 'word inside an exercise instead.',
     'find.noBooks': 'Open a book first.',
     'find.loading': 'Loading books…',
     'find.scopeBook': 'This book',
@@ -910,6 +974,9 @@ window.I18N = {
     'row.lastTime': 'last time: ',
     'row.mastered': '★ mastered',
     'row.streak': '✓ correct — {a}/{b} in a row',
+    // A hinted answer starts no streak, and printing "0/3 in a row" read as a
+    // broken counter rather than as the rule it is. Say the rule instead.
+    'row.streakHinted': '✓ correct — but with a hint, so no streak yet',
     'row.wrong': '✗ wrong',
     'row.bookKey': 'Book: ',
     'row.selfMarked': '(you marked this)',
@@ -1267,6 +1334,12 @@ window.I18N = {
     'ui.resize': 'Resize this panel',
     'unit.additional': 'Additional {n}',
     'unit.notFound': 'Unit {n} not found.',
+    // Neither of these is a missing unit — the book simply has no such feature.
+    'unit.noExam': 'This book has no exam mode — that belongs to the IELTS '
+                   + 'collections, where a section is a whole timed test.',
+    'unit.noTasks': 'This book has no Writing or Speaking tasks. They come with '
+                    + 'the IELTS collection that ships the task prompts.',
+    'unit.toFirst': 'Go to the first unit →',
     'unit.score': '{c}/{t} correct — {p}%',
     'unit.scoreMeta': '  ·  ★ mastered: {m}  ·  to review: {r}',
 
@@ -1388,6 +1461,8 @@ window.I18N = {
     'users.th.sub': 'Subscription',
     'users.sub.lifetime': 'Lifetime',
     'users.sub.lapsed': 'Ran out',
+    // Title for the ASK.tell raised when an RPC comes back with an error.
+    'users.failed': 'That did not work',
     'users.grantMonth': '+30 days',
     'users.grantLife': 'Lifetime',
     'users.revoke': '✕',
@@ -1437,6 +1512,10 @@ window.I18N = {
                       'on Telegram, and I will tell you how to pay:',
     'offer.step.wait': 'I turn the subscription on by hand. Once it is on, press ' +
                        '"Check again" on this page and the book opens.',
+    // A signed-out reader has no "Check again" button, so that wording pointed
+    // at a control that was not on their screen. Their next step is signing in.
+    'offer.step.waitOut': 'I turn the subscription on by hand. Then sign in on ' +
+                          'this page and the book opens.',
     'offer.yourEmail': 'Your registered email:',
     'offer.copy': 'Copy',
     'offer.copied': 'Copied',

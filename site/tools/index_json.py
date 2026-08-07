@@ -88,6 +88,18 @@ def update(entries):
         else:
             r.pop('paid', None)
 
+        # Does this book have a Kazakh-notes file? app.js used to just try
+        # data/notes/<id>.json for whichever book was opened and treat the 404
+        # as "none" — correct, but it meant twelve of the thirteen books fired
+        # a failing request every time one was opened, which is a wasted round
+        # trip and a devtools console that reads as broken. Stamped from what
+        # is actually on disk, next to `paid`, so it cannot go stale: add a
+        # notes file and the next build turns the fetch on by itself.
+        if os.path.exists(os.path.join(DATA, 'notes', r['id'] + '.json')):
+            r['notes'] = 1
+        else:
+            r.pop('notes', None)
+
     order = catalogue_order()
     rows.sort(key=lambda r: (order.index(r['id']) if r['id'] in order else len(order),
                              r['id']))
