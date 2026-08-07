@@ -594,11 +594,19 @@ def refine(bid, units):
     if pdf:
         with fitz.open(pdf) as doc:
             gaps, respelled = repair.regap_book(units, doc, pages_of)
+            # After the realignment, so both passes read the questions the page
+            # prints rather than the damaged ones they arrived as.
+            examples = repair.mark_printed_examples(units, doc, pages_of)
+            refilled = repair.recover_questions(units, doc, pages_of)
             fixed = repair.fix_answer_words(units, repair.book_vocabulary(doc))
         if gaps:
             log.append('%d gaps restored' % gaps)
         if respelled:
             log.append('%d respelled' % respelled)
+        if examples:
+            log.append('%d printed examples' % examples)
+        if refilled:
+            log.append('%d questions recovered' % refilled)
         if fixed:
             log.append('%d keys respelled' % fixed)
 

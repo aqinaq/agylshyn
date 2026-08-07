@@ -7,13 +7,13 @@
  {
   "id": "grammar",
   "units": 145,
-  "tracked": 4045,
+  "tracked": 3948,
   "notes": 1
  },
  {
   "id": "advanced-grammar",
   "units": 116,
-  "tracked": 2480,
+  "tracked": 2473,
   "paid": 1
  },
  {
@@ -24,12 +24,12 @@
  {
   "id": "vocab-preint",
   "units": 100,
-  "tracked": 2391
+  "tracked": 2390
  },
  {
   "id": "vocab-upint",
   "units": 101,
-  "tracked": 2621,
+  "tracked": 2616,
   "paid": 1
  },
  {

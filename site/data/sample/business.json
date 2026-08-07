@@ -125,6 +125,32 @@
      "number": "2.1",
      "type": "items",
      "instructions": "Look at the six expressions (a–f) from A opposite. Which person (1–6) is most likely to do each",
+     "options": [
+      {
+       "letter": "a",
+       "text": "work in shifts"
+      },
+      {
+       "letter": "b",
+       "text": "work under a flexitime system"
+      },
+      {
+       "letter": "c",
+       "text": "telecommute"
+      },
+      {
+       "letter": "d",
+       "text": "commute to work"
+      },
+      {
+       "letter": "e",
+       "text": "clock in and out at the same time every day"
+      },
+      {
+       "letter": "f",
+       "text": "work overtime"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -162,27 +188,53 @@
      "number": "2.2",
      "type": "items",
      "instructions": "Look at the words and expressions in B and C opposite. Five people describe their jobs. Match",
+     "options": [
+      {
+       "letter": "a",
+       "text": "‘Obviously, my work involves …  (travel) a lot. It can be quite physically (demand), but I enjoy …  (deal) with customers, except when they become tired and anxious about arriving. This doesn’t happen often, but it can be very frustrating for us and the other passengers.’"
+      },
+      {
+       "letter": "b",
+       "text": "‘I love my job. It’s very …  (stimulate) and not at all …  (repeat): no two days are the same. The children are fine: you see them learn and develop. The parents can be more of a problem.’"
+      },
+      {
+       "letter": "c",
+       "text": "‘I was good at maths at school and I like …  (work) with figures. But my job is much less …  (bore) and routine than people think. The work (involve) a lot of human contact and teamwork, working with other managers.’"
+      },
+      {
+       "letter": "d",
+       "text": "‘You’ve got to think in a very logical way. There’s a lot of teamwork between the developers. The work can be mentally …  (tire), but it’s very satisfying to write a program that works.’"
+      },
+      {
+       "letter": "e",
+       "text": "‘Of course, it involves getting up quite early in the morning. But I like …  (be) out in the open air. And you get a lot of exercise. I walk two or three miles every day.’"
+      }
+     ],
      "items": [
       {
        "n": 1,
        "answer": "c working, boring, involves",
-       "question": "accountant 2 postwoman 3 flight attendant 4 software developer 5 teacher …"
+       "question": "accountant …"
       },
       {
        "n": 2,
-       "answer": "e being / to be"
+       "answer": "e being / to be",
+       "question": "postwoman …"
       },
       {
        "n": 3,
-       "answer": "a travelling, demanding, dealing"
+       "answer": "a travelling, demanding, dealing",
+       "question": "flight attendant …"
       },
       {
        "n": 4,
-       "answer": "d tiring"
+       "answer": "d tiring",
+       "question": "software developer …"
       },
       {
        "n": 5,
-       "answer": "b stimulating, repetitive"
+       "answer": "b stimulating, repetitive",
+       "question": "teacher"
       }
      ]
     }

@@ -88,11 +88,42 @@ def _same_printed_line(prev, w):
     return abs(w[1] - prev[1]) < height * 0.6
 
 
+# The face these books set a worked answer in. Nothing else on the page uses it:
+# Grammar in Use and Advanced Grammar print their examples in HandfontPND,
+# Vocabulary in Use in CalibanStd, both of them handwriting faces chosen to look
+# like something the reader filled in. A book whose PDF uses neither simply
+# gains nothing from the pass that reads this — it never guesses from anything
+# else on the page.
+_ANSWER_FONT = re.compile(r'handfont|caliban', re.I)
+
+
+def _hand_boxes(page):
+    """Where the page prints an answer in its handwriting face."""
+    boxes = []
+    for block in page.get_text('dict')['blocks']:
+        for line in block.get('lines', []):
+            for span in line.get('spans', []):
+                if span.get('text', '').strip() and _ANSWER_FONT.search(span.get('font') or ''):
+                    boxes.append(span['bbox'])
+    return boxes
+
+
+def _in_boxes(w, boxes):
+    """Is this word inside one of them? Compared on the word's centre, because
+    a span's box is drawn to the glyphs and a word's to its cell, so the two
+    overlap without either containing the other."""
+    x, y = (w[0] + w[2]) / 2, (w[1] + w[3]) / 2
+    return any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in boxes)
+
+
 def _page_string(page):
-    """The page as text, with every printed blank written out as GAP."""
+    """The page as text, with every printed blank written out as GAP.
+
+    Returns (text, handwritten) where `handwritten` is the character ranges of
+    `text` the book set in the answer face — see PageIndex.handwritten."""
     words = page.get_text('words')          # x0, y0, x1, y1, word, block, line, n
     if not words:
-        return ''
+        return '', []
 
     spacings = []
     prev = None
@@ -106,20 +137,26 @@ def _page_string(page):
     median = spacings[len(spacings) // 2] if spacings else 5.0
     threshold = max(_GAP_FLOOR, _GAP_FACTOR * median)
 
+    boxes = _hand_boxes(page)
+
     # Each word is normalised on its own. Normalising the finished string would
     # decompose the GAP marker itself — NFKC turns "…" into three full stops.
-    out, prev = [], None
+    out, hand, at, prev = [], [], 0, None
     for w in words:
-        if prev is None:
-            out.append(_norm(w[4]))
-        elif _same_printed_line(prev, w):
-            out.append(' %s ' % GAP if (w[0] - prev[2]) > threshold else ' ')
-            out.append(_norm(w[4]))
-        else:
-            out.append('\n')
-            out.append(_norm(w[4]))
+        if prev is not None:
+            if not _same_printed_line(prev, w):
+                join = '\n'
+            else:
+                join = ' %s ' % GAP if (w[0] - prev[2]) > threshold else ' '
+            out.append(join)
+            at += len(join)
+        text = _norm(w[4])
+        out.append(text)
+        if boxes and _in_boxes(w, boxes):
+            hand.append((at, at + len(text)))
+        at += len(text)
         prev = w
-    return ''.join(out)
+    return ''.join(out), hand
 
 
 def _tidy(s):
@@ -133,21 +170,27 @@ class PageIndex:
     """One unit's pages, searchable by letters so damaged spacing still matches."""
 
     def __init__(self, doc, pages):
-        chunks = []
+        chunks, hand, at = [], [], 0
         for p in pages:
             if 1 <= p <= doc.page_count:
-                chunks.append(_page_string(doc[p - 1]))
+                text, spans = _page_string(doc[p - 1])
+                hand += [(a + at, b + at) for a, b in spans]
+                chunks.append(text)
+                at += len(text) + 1          # + the '\n' the join puts back
         self.text = '\n'.join(chunks)
+        self.hand = hand
         self.key, self.pos = _letter_map(self.text)
         self.cursor = 0          # keeps the alignment moving forward, in reading order
 
-    def find(self, question):
-        """The page's own rendering of `question`, or None when it is not there.
+    def locate(self, question):
+        """Where the page prints `question`, as (start, end) offsets into
+        self.text, or None when it is not there.
 
-        Matching is on letters alone, so "cro ss" finds "cross" and the text that
-        comes back is the book's spelling with the book's blanks — which is the
-        whole point. Because the comparison key is identical either way, a
-        replacement can add spacing and punctuation but never a different word.
+        Matching is on letters alone, so "cro ss" finds "cross" and the span
+        that comes back covers the book's spelling with the book's blanks —
+        which is the whole point. Because the comparison key is identical either
+        way, a replacement can add spacing and punctuation but never a different
+        word.
         """
         want = _letters(question)
         if not want:
@@ -181,7 +224,19 @@ class PageIndex:
         tail = re.match(r"""(?:\s?[.,;:!?)\]'’"”])*""", self.text[end_c:])
         if tail and tail.group(0):
             end_c += tail.end()
+        return start_c, end_c
 
+    def handwritten(self, span):
+        """Does the book print an answer of its own inside this span?"""
+        start, end = span
+        return any(a < end and b > start for a, b in self.hand)
+
+    def find(self, question):
+        """The page's own rendering of `question`, or None when it is not there."""
+        span = self.locate(question)
+        if span is None:
+            return None
+        start_c, end_c = span
         fixed = _tidy(self.text[start_c:end_c])
 
         # A blank that opens the sentence ("…… the road.") falls before the
@@ -270,6 +325,233 @@ def regap_book(units, doc, pages_of):
                     words += 1
                 it['question'] = fixed
     return gaps, words
+
+
+# ---------------------------------------------------------------------------
+# examples the extractors missed
+# ---------------------------------------------------------------------------
+
+# An exercise opens with a worked example, and the extractors were told to
+# expect one. Ninety of them print two — Grammar in Use 1.4 answers both "I'm
+# trying" and "It isn't raining" before the learner starts — and the second one
+# arrived as an ordinary question: the book's answer sitting in the middle of
+# its own prompt, nothing in the key to check against. The app could only offer
+# it as a question to type and then self-check, with the answer printed in front
+# of the learner, and it counted towards the unit's total.
+#
+# The page knows which rows are worked, because it sets those answers in a
+# handwriting face (see _ANSWER_FONT). A row with no key of its own, whose text
+# on the page carries that face, is an example.
+
+
+def mark_printed_examples(units, doc, pages_of):
+    """Mark the rows the book has already answered. Returns how many.
+
+    Conservative in both directions: a row that has a key is never touched, and
+    a row is only marked when its own text — located on the page, not guessed at
+    from its neighbours — is what the handwriting sits inside.
+    """
+    marked = 0
+    for u in units:
+        pages = pages_of(u)
+        if not pages:
+            continue
+        index = PageIndex(doc, pages)
+        if not index.hand:
+            continue
+        for s in u.get('subExercises', []) or []:
+            for it in s.get('items', []) or []:
+                if not it.get('question'):
+                    continue
+                # Located for every item, not only the candidates: the cursor is
+                # what keeps the alignment in reading order, and skipping a row
+                # would let a later one match the wrong copy of its own words.
+                span = index.locate(it['question'])
+                if span is None or it.get('isExample'):
+                    continue
+                if (it.get('answer') or '').strip() or (it.get('blank') or '').strip():
+                    continue
+                if index.handwritten(span):
+                    it['isExample'] = True
+                    marked += 1
+    return marked
+
+
+# ---------------------------------------------------------------------------
+# questions that never made it off the page
+# ---------------------------------------------------------------------------
+
+# Some rows shipped with no prompt at all, or with a scrap of one: Grammar in
+# Use 2.5 item 2 is the page number, "5", where the book prints "I won't tell
+# anybody what you said. …….", and 18.3 items 3-6 kept nothing but the word
+# "but". The answer is in the key, so the row is a question the learner is asked
+# and given nothing to answer.
+#
+# The rows that did survive bracket the ones that did not: on the page, item 2
+# is printed between item 1 and item 3, and the printed item numbers inside that
+# strip say where one row ends and the next begins. So the text is recoverable
+# without guessing — it is read off the page, in the place the page keeps it.
+#
+# Rows that are pictures, and there are a few dozen of them, have no text there
+# to find; they are left as they are and the app goes on pointing at the PDF.
+
+_RECOVER_MAX = 300       # a printed item is not longer than this
+_SCRAP_MAX = 20          # and a scrap of one is no longer than this
+
+
+_WORD = re.compile(r'[A-Za-z]{3}')
+
+# A blank, however the row spells it: the marker this module uses, and the two
+# the extractors left behind ("hail ___", "strong.........").
+_BLANK = re.compile(r'%s|_{2,}|\.{3,}' % GAP)
+
+# Where the row below starts: a number on a line of its own. It is what ends a
+# recovered piece, and it is also what keeps the page's furniture out of one —
+# the "8 ➜ Additional exercise 9" that follows the last item of a unit is a line
+# beginning with a number just as an item is.
+_NEXT_ROW = re.compile(r'(?:^|\n)\s*\d{1,3}[.)]?(?:[ \t\n]|$)')
+
+
+def _needs_question(it):
+    """A row whose prompt is missing or is a scrap of one.
+
+    The scraps are what the extractor swept up instead of the sentence, so the
+    first test is not "short" but "not a sentence": no run of letters long
+    enough to be a word ("5", "(4)", "1 … 2 13", ""). The second is a single
+    short word left behind where a whole line should be ("but", "I") — short
+    because Upper-intermediate arrived with the spaces missing from its
+    questions, and every sentence in it is one long "word"."""
+    q = (it.get('question') or '').strip()
+    if it.get('isExample'):
+        return False
+    if not _WORD.search(q):
+        return True
+    return len(_strip_gaps(q).split()) <= 1 and len(q) <= _SCRAP_MAX
+
+
+def _strip_number(text, n):
+    """`text` from just after the printed item number `n`, or None."""
+    m = re.search(r'(?:^|[\s\n])%d[.)]?[\s\n]' % n, text)
+    return text[m.end():] if m else None
+
+
+def _next_number(text, numbers):
+    """Where another row of the same exercise starts inside `text`.
+
+    A matching exercise prints both its columns on one line, so the row below
+    does not always begin a line of its own — but it does begin with its own
+    printed number, and a number the exercise uses as a row is not something a
+    sentence in that exercise ends with."""
+    for m in re.finditer(r'[\s\n](\d{1,2})[.)]?[\s\n]', text):
+        if int(m.group(1)) in numbers:
+            return m
+    return None
+
+
+def recover_questions(units, doc, pages_of):
+    """Read back the missing prompts from the pages. Returns how many.
+
+    A run of empty rows is only filled when every one of its numbers is printed
+    in the strip its neighbours bracket, in order, and every piece that comes
+    out reads as a sentence. Anything less and the whole run is left alone —
+    half a recovery would put one row's text against another row's number.
+    """
+    filled = 0
+    for u in units:
+        pages = pages_of(u)
+        if not pages:
+            continue
+        index = PageIndex(doc, pages)
+        for s in u.get('subExercises', []) or []:
+            if s.get('type') not in ('items', 'text'):
+                continue
+            items = s.get('items') or []
+            if not any(_needs_question(it) for it in items):
+                continue
+
+            # Anchors first, in reading order, so the strips between them are
+            # the page's own. A scrap is never an anchor: "but" would place
+            # itself at the first "but" on the page and drag the strip with it.
+            spans = []
+            for it in items:
+                # An example row is exempt from _needs_question, so it can reach
+                # here with no question at all; there is nothing to locate.
+                anchor = (it.get('question') and not _needs_question(it)
+                          and isinstance(it.get('n'), int)
+                          and index.locate(it['question']))
+                spans.append(anchor or None)
+
+            # A matching exercise prints its two halves as two columns of the
+            # same lines, so the strip for "estranged ……." holds the right-hand
+            # column of that line as well ("estranged ……. separation") — a word
+            # belonging to another row. Two things give such an exercise away:
+            # its key is a bare letter, and the rows that did survive stop at
+            # the blank. Where either says so, the recovered rows stop there too.
+            anchored = [items[k]['question'] for k, sp in enumerate(spans) if sp]
+            ends_at_gap = [q for q in anchored if q.rstrip().endswith(GAP)]
+            lettered = [it for it in items
+                        if re.fullmatch(r'[a-l]', (it.get('answer') or '').strip() or 'x')]
+            column = ((len(anchored) >= 2 and len(ends_at_gap) * 2 >= len(anchored))
+                      or len(lettered) * 2 >= len(items))
+            numbers = {it['n'] for it in items if isinstance(it.get('n'), int)}
+
+            i = 0
+            while i < len(items):
+                if spans[i] or not isinstance(items[i].get('n'), int):
+                    i += 1
+                    continue
+                run = i
+                while run < len(items) and not spans[run]:
+                    run += 1
+                # Both ends are needed: without the one below, the strip runs to
+                # the end of the page and swallows the next exercise.
+                before = spans[i - 1][1] if i and spans[i - 1] else None
+                after = spans[run][0] if run < len(items) else None
+                if before is not None and after is not None and before < after:
+                    filled += _fill_run(items[i:run], index.text[before:after],
+                                        column, numbers)
+                i = run + 1
+    return filled
+
+
+def _fill_run(run, strip, column, numbers):
+    """Split one strip of page between the rows printed on it."""
+    pieces = []
+    for k, it in enumerate(run):
+        rest = _strip_number(strip, it['n'])
+        if rest is None:
+            return 0
+        # The row ends where the next printed row begins, whether or not that
+        # row is one of the ones being filled, and whether it begins a line of
+        # its own or opens the second column of this one.
+        ends = [m.start() for m in (_NEXT_ROW.search(rest),
+                                    _next_number(rest, numbers - {it['n']})) if m]
+        piece = _tidy(rest[:min(ends)] if ends else rest)
+        cut = piece.find(GAP, 1)
+        if column and cut > 0:
+            piece = _tidy(piece[:cut + len(GAP)])
+        if not _WORD.search(piece) or len(piece) > _RECOVER_MAX:
+            return 0
+        piece = _settle_gaps(piece, it)
+        # A scrap is only replaced by the line of page it came off: whatever was
+        # there has to still be there afterwards, blanks included. A row that
+        # already knows where its blank is keeps it — read back off a
+        # two-column line, "……. Euro" picks up the blank of the column beside
+        # it, and settling the blanks against the key then drops both.
+        cur = it.get('question') or ''
+        if _WORD.search(cur) and _letters(cur) not in _letters(piece):
+            return 0
+        if len(_BLANK.findall(cur)) > len(_BLANK.findall(piece)):
+            return 0
+        pieces.append(piece)
+        strip = rest
+
+    filled = 0
+    for it, piece in zip(run, pieces):
+        if piece != it.get('question'):
+            it['question'] = piece
+            filled += 1
+    return filled
 
 
 # ---------------------------------------------------------------------------

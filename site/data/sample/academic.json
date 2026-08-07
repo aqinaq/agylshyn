@@ -226,38 +226,80 @@
      "number": "2.3",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "scope of your research."
+      },
+      {
+       "letter": "b",
+       "text": "awareness of the problem."
+      },
+      {
+       "letter": "c",
+       "text": "issues facing the world today."
+      },
+      {
+       "letter": "d",
+       "text": "into the environmental eff ects of nanoparticles."
+      },
+      {
+       "letter": "e",
+       "text": "approach to their theme."
+      },
+      {
+       "letter": "f",
+       "text": "aspect of modern society."
+      },
+      {
+       "letter": "g",
+       "text": "pattern of changes in temperature."
+      },
+      {
+       "letter": "h",
+       "text": "case for restructuring parliament."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "g"
+       "answer": "g",
+       "question": "The study revealed a regular …"
       },
       {
        "n": 2,
-       "answer": "f"
+       "answer": "f",
+       "question": "The research focuses on one particular …"
       },
       {
        "n": 3,
-       "answer": "h"
+       "answer": "h",
+       "question": "The writer makes a powerful …"
       },
       {
        "n": 4,
-       "answer": "e"
+       "answer": "e",
+       "question": "The writers take an original …"
       },
       {
        "n": 5,
-       "answer": "b"
+       "answer": "b",
+       "question": "Until recently there was little …"
       },
       {
        "n": 6,
-       "answer": "a"
+       "answer": "a",
+       "question": "I think you should broaden the …"
       },
       {
        "n": 7,
-       "answer": "d"
+       "answer": "d",
+       "question": "To date, there has been little research …"
       },
       {
        "n": 8,
-       "answer": "c"
+       "answer": "c",
+       "question": "There are many important …"
       }
      ]
     },
