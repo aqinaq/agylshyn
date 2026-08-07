@@ -4,7 +4,7 @@
 
    node site/tests/app_e2e.js   (or via tests/run.js, which starts the server) */
 'use strict';
-const { connect, newContextPage, goto, sleep } = require('./cdp.js');
+const { connect, newContextPage, goto, sleep, until } = require('./cdp.js');
 const { Report } = require('./report.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
@@ -192,6 +192,148 @@ async function run() {
   // The "two rows, one number" regression (Advanced Grammar 17.2) lives in
   // tests/paywall_e2e.js now: that book is paid, so opening it needs a
   // subscription, and this pass is deliberately signed out.
+
+  /* ================= the writing pad =================
+
+     An exercise nothing can grade used to be a heading and a "show answer"
+     button — a book with the key at the back, which is the one thing this site
+     is not for. Collocations unit 1 is four such exercises in a row (1.2-1.5),
+     so it is where a pad going missing would show first. */
+  r.head('the writing pad');
+  await goto(s, BASE + '#/b/collocations/unit/1');
+  // A book this pass has not opened before has to come down first; 800 ms is
+  // enough for grammar out of the disk cache and not for a cold fetch.
+  r.ok('the unit renders', await until(s, `!!document.querySelector('#main .sub')`));
+  const pad = await s.eval(`(async () => {
+    const d = await (await fetch('data/collocations.json')).json();
+    const u = d.units.find(x => Number(x.unit) === 1) || d.units[0];
+    const ungradable = (u.subExercises||[]).filter(
+      s => s.type === 'freeform' || s.type === 'crossword' || !(s.items||[]).length);
+    return {
+      wanted: ungradable.length,
+      pads: document.querySelectorAll('#main .sub .pad-area').length,
+      // Every ungradable exercise must have one, and no exercise two.
+      subsWithPad: [...document.querySelectorAll('#main .sub')]
+        .filter(x => x.querySelector('.pad-area')).length,
+      doubles: [...document.querySelectorAll('#main .sub')]
+        .filter(x => x.querySelectorAll('.pad-area').length > 1).length,
+      labelled: [...document.querySelectorAll('#main .pad-area')]
+        .every(x => (x.getAttribute('aria-label')||'').trim() && (x.placeholder||'').trim())
+    };
+  })()`);
+  r.ok('every exercise the app cannot grade has somewhere to write',
+    pad.pads >= pad.wanted && pad.wanted > 0, pad.pads + ' pads for ' + pad.wanted + ' exercises');
+  r.eq('and none has two', pad.doubles, 0);
+  r.ok('each pad says what it is', pad.labelled);
+
+  const padSave = await s.eval(`(async () => {
+    const a = document.querySelector('#main .sub .pad-area');
+    a.value = 'a heavy snow, a storm in a tea cup';
+    a.dispatchEvent(new Event('input', {bubbles:true}));
+    await new Promise(r=>setTimeout(r,600));
+    const st = JSON.parse(localStorage.getItem('agylshyn_v1')||'{}');
+    const keys = Object.keys(st.writing||{});
+    const sub = a.closest('.sub');
+    return {
+      keys: keys,
+      text: keys.length ? st.writing[keys[0]].text : null,
+      // The only mark an ungradable exercise can honestly wear.
+      tick: !!sub && sub.classList.contains('written'),
+      count: sub ? (sub.querySelector('.task-count')||{}).textContent : ''
+    };
+  })()`);
+  r.eq('what is written is filed under one key', padSave.keys.length, 1);
+  r.ok('under the book, unit and exercise it belongs to',
+    /^collocations\|1\|1\.\d+\|pad$/.test(padSave.keys[0] || ''), padSave.keys[0]);
+  r.eq('with the text in it', padSave.text, 'a heavy snow, a storm in a tea cup');
+  r.ok('the exercise is ticked once it is written in', padSave.tick);
+  r.ok('and the words are counted', /\b9\b/.test(padSave.count || ''), padSave.count);
+
+  await goto(s, BASE + '#/b/collocations/unit/1');
+  await until(s, `!!document.querySelector('#main .pad-area')`);
+  const padBack = await s.eval(`(() => {
+    const a = document.querySelector('#main .sub .pad-area');
+    return { val: a ? a.value : null, written: !!a && !!a.closest('.sub.written') };
+  })()`);
+  r.eq('and it is still there after a reload', padBack.val, 'a heavy snow, a storm in a tea cup');
+  r.ok('with the tick still on it', padBack.written);
+
+  /* And the worst case: a unit whose exercises never came off the scan at all.
+     Essential Grammar 23 and 66 are a title, a PDF page and nothing else, which
+     is where "there is nowhere to write" started. */
+  const bare = await s.eval(`(async () => {
+    const d = await (await fetch('data/essential-grammar.json')).json();
+    const u = d.units.find(x => !(x.subExercises||[]).length);
+    return u ? u.unit : null;
+  })()`);
+  r.ok('a unit with no exercises at all exists to test', bare != null, String(bare));
+  if (bare != null) {
+    await goto(s, BASE + '#/b/essential-grammar/unit/' + bare);
+    await until(s, `!!document.querySelector('#main .pad-area')`);
+    const bareOut = await s.eval(`(() => {
+      const a = document.querySelector('#main .pad-area');
+      if (!a) return { pads: 0 };
+      a.value = 'worked through unit ' + ${bare};
+      a.dispatchEvent(new Event('input', {bubbles:true}));
+      return { pads: document.querySelectorAll('#main .pad-area').length,
+               aria: a.getAttribute('aria-label') };
+    })()`);
+    r.eq('an empty unit gets one pad for the whole unit', bareOut.pads, 1);
+    // There is no exercise here to name, so the label must not invent one.
+    r.ok('named after the unit rather than a nonexistent exercise',
+      (bareOut.aria || '').indexOf(String(bare)) >= 0 &&
+      !/exercise|тапсырма/i.test(bareOut.aria || ''), bareOut.aria);
+    await sleep(600);
+    const bareKey = await s.eval(`Object.keys(JSON.parse(localStorage.getItem('agylshyn_v1')).writing)
+      .filter(k => k.indexOf('essential-grammar|') === 0)`);
+    r.eq('filed under the unit', bareKey[0], 'essential-grammar|' + bare + '|unit|pad');
+  }
+
+  /* ================= a matching exercise spends its options ================= */
+  r.head('used options are crossed off');
+  await goto(s, BASE + '#/b/grammar/unit/1');
+  await sleep(700);
+  // 1.2 — "The sentences on the right follow those on the left": eight endings,
+  // each one answering exactly one sentence.
+  const cross = await s.eval(`(() => {
+    const sub = [...document.querySelectorAll('#main .sub')]
+      .find(x => x.querySelector('.options') && x.querySelectorAll('.answer-line input').length > 3);
+    if (!sub) return { missing: true };
+    const chip = L => [...sub.querySelectorAll('.opt')].find(c => c.querySelector('b').textContent.trim() === L);
+    const box = sub.querySelector('.answer-line input');
+    const type = v => { box.value = v; box.dispatchEvent(new Event('input', {bubbles:true})); };
+    const out = {};
+    out.before = chip('e').classList.contains('used');
+    type('e');
+    out.typed = chip('e').classList.contains('used');
+    out.others = sub.querySelectorAll('.opt.used').length;
+    type('E) ');                       // however the letter gets written
+    out.messy = chip('e').classList.contains('used');
+    type('');
+    out.cleared = chip('e').classList.contains('used');
+    return out;
+  })()`);
+  r.ok('the matching exercise is on the page', !cross.missing);
+  r.ok('an untouched pool has nothing crossed off', cross.before === false);
+  r.ok('typing a letter crosses that option off, before any checking', cross.typed === true);
+  r.eq('and only that one', cross.others, 1);
+  r.ok('a letter with punctuation round it still counts', cross.messy === true);
+  r.ok('clearing the box puts the option back', cross.cleared === false);
+
+  // Unit 24.1 is not a matching exercise: its four options are groups of
+  // statements and an answer is "b and d are true", so the same letter is right
+  // in more than one place. Nothing there may be crossed off.
+  await goto(s, BASE + '#/b/grammar/unit/24');
+  await sleep(700);
+  const reuse = await s.eval(`(() => {
+    const sub = [...document.querySelectorAll('#main .sub')].find(x => x.querySelector('.options'));
+    if (!sub) return { missing: true };
+    const box = sub.querySelector('.answer-line input');
+    box.value = 'b'; box.dispatchEvent(new Event('input', {bubbles:true}));
+    return { used: sub.querySelectorAll('.opt.used').length };
+  })()`);
+  r.ok('the exercise with repeating options is on the page', !reuse.missing);
+  r.eq('and it crosses nothing off', reuse.used, 0);
 
   /* ================= mistakes and statistics ================= */
   r.head('mistakes and statistics');

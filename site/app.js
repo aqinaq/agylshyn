@@ -3144,15 +3144,145 @@
 
   // "📗 Answer key" — opens this unit's printed key in the PDF pane. null when
   // the book has no machine-locatable key (IELTS 19/20) or no PDF.
-  function answerKeyBtn() {
+  // `only` says the app can show no answer at all for this exercise — no key on
+  // any row, no rawAnswer to reveal, nothing behind a Check. There the printed
+  // page is not a second opinion, it is the only answer that exists, so the
+  // button is painted red instead of sitting grey among the others.
+  function answerKeyBtn(only) {
     var akPage = akUnitPage;
     if (akPage == null || !(book.meta && book.meta.pdf)) return null;
-    var b = el('button', 'btn small key-btn');
+    var b = el('button', 'btn small key-btn' + (only ? ' key-only' : ''));
     b.type = 'button';
-    b.title = t('unit.answerKeyHint');
+    b.title = t(only ? 'unit.answerKeyOnlyHint' : 'unit.answerKeyHint');
     b.appendChild(document.createTextNode('📗 ' + t('unit.answerKey')));
     b.addEventListener('click', function () { showPdf(akPage); });
     return b;
+  }
+
+  // "a" from an option chip or from a typed answer: one letter, whatever
+  // punctuation the book or the learner put around it ("b)", "B.", " c ").
+  function optLetter(v) {
+    var s = String(v == null ? '' : v).toLowerCase().replace(/[^a-z]/g, '');
+    return s.length === 1 ? s : '';
+  }
+
+  // A matching exercise spends its options: each letter answers exactly one
+  // question, so once it is written it is out of the pool. Only exercises whose
+  // key really is one letter per question qualify — an exercise where the same
+  // option can answer several questions ("tick the sentences which are true")
+  // would be crossing out choices that are still live.
+  function oneToOneLetters(sub) {
+    var seen = {}, n = 0;
+    var items = sub.items || [];
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (isExample(it) || !it.answer) continue;
+      var L = optLetter(it.answer);
+      if (!L || seen[L]) return false;
+      seen[L] = 1; n++;
+    }
+    return n > 1;
+  }
+
+  /* ================= the writing pad ================= */
+
+  /* An exercise the app cannot grade — a table to fill in, a paragraph to
+     write, a crossword, an exercise whose rows never survived extraction — used
+     to offer exactly one button: "show answer". That is a book with the key at
+     the back, and this site exists to be the other thing: the place the work
+     happens, instead of a copybook. So every exercise with nowhere to type gets
+     a pad. It saves itself as you type, survives the tab closing, and rides the
+     same cloud sync as the IELTS essays.
+
+     Filed under 'book|unit|sub|pad' — an item key's shape, but in
+     `state.writing`, so it can never collide with an answer record, and it
+     travels with the drafts in the META row rather than a book's answers. */
+  function padKey(unitNo, subNumber) {
+    return keyOf(book.id, unitNo, subNumber, 'pad');
+  }
+
+  /* `box` is the exercise's own element, marked `.written` while the pad has
+     anything in it. Nothing here can be graded, so there is no score to show —
+     but "I have done this one" is the thing a reader scrolling back up the unit
+     wants to know, and the tick in the head is the whole of it. */
+  function buildPad(unitNo, sub, rows, box) {
+    var key = padKey(unitNo, sub.number);
+    var d = draft(key);
+    var wrap = el('div', 'pad');
+    wrap.appendChild(el('div', 'pad-label', t('pad.label')));
+
+    var area = el('textarea', 'task-area pad-area');
+    area.rows = rows || 6;
+    area.spellcheck = true;
+    area.placeholder = t('pad.ph');
+    // A unit with no exercises at all gets one pad for the whole unit, and
+    // "exercise unit" is not a thing to read out.
+    area.setAttribute('aria-label', sub.number === 'unit'
+      ? t('pad.ariaUnit', { unit: unitNo })
+      : t('pad.aria', { unit: unitNo, sub: sub.number }));
+    area.value = (d && d.text) || '';
+    wrap.appendChild(area);
+
+    var foot = el('div', 'task-foot');
+    var count = el('span', 'task-count');
+    var saved = el('span', 'muted task-saved');
+    foot.appendChild(count);
+    foot.appendChild(saved);
+
+    var copy = el('button', 'btn small ghost', t('task.copy'));
+    copy.type = 'button';
+    copy.addEventListener('click', function () {
+      if (!area.value) return;
+      copyText(area.value);
+      copy.textContent = t('task.copied');
+      setTimeout(function () { copy.textContent = t('task.copy'); }, 1500);
+    });
+    foot.appendChild(copy);
+
+    var wipe = el('button', 'btn small ghost', t('task.clear'));
+    wipe.type = 'button';
+    wipe.addEventListener('click', function () {
+      if (!area.value) return;
+      ASK.confirm(t('pad.clearConfirm'),
+        { title: t('task.clear'), yes: t('task.clear'), danger: true })
+        .then(function (ok) {
+          if (!ok) return;
+          area.value = '';
+          saveDraft(key, '');
+          paint();
+        });
+    });
+    foot.appendChild(wipe);
+    wrap.appendChild(foot);
+
+    function paint() {
+      var n = wordCount(area.value);
+      count.textContent = n ? t('pad.words', { n: n }) : '';
+      if (!n) saved.textContent = '';
+      if (box) box.classList.toggle('written', n > 0);
+      // Copy and Clear are about text that exists. On an empty pad they are two
+      // buttons that do nothing, under every ungradable exercise in the book.
+      copy.hidden = wipe.hidden = !n;
+    }
+
+    var padTimer = null;
+    area.addEventListener('input', function () {
+      paint();
+      clearTimeout(padTimer);
+      padTimer = setTimeout(function () {
+        saveDraft(key, area.value);
+        saved.textContent = t('task.saved');
+      }, 400);
+    });
+    paint();
+    if (d && d.ts) saved.textContent = t('task.savedAt', { d: authDate(new Date(d.ts).toISOString()) });
+    return wrap;
+  }
+
+  // The tick the head wears once the pad has been written in. Hidden by CSS
+  // until the exercise carries `.written`, which buildPad keeps in step.
+  function padTick() {
+    return el('span', 'sub-written', '✓ ' + t('pad.written'));
   }
 
   // `exam` — a live run from startExam(). Passed down rather than read from a
@@ -3188,19 +3318,33 @@
     }
 
     // matching exercises: the a/b/c choices, listed once
+    var optChips = null;
     if (sub.options && sub.options.length) {
-      var ol = el('div', 'options');
+      // A choice is a word ("telecommute") in a matching exercise and a whole
+      // sentence in a reordering one. Pills work for the first and are unusable
+      // for the second, so anything long is stacked one per line instead.
+      var wordy = sub.options.some(function (o) {
+        return String(o.text || '').length > 42;
+      });
+      var ol = el('div', 'options' + (wordy ? ' long' : ''));
+      optChips = [];
       sub.options.forEach(function (o) {
         var chip = el('span', 'opt');
         chip.appendChild(el('b', null, o.letter));
         chip.appendChild(document.createTextNode(' ' + o.text));
         ol.appendChild(chip);
+        optChips.push({ chip: chip, letter: optLetter(o.letter) });
       });
       box.appendChild(ol);
     }
 
     if (sub.type === 'freeform') {
       if (sub.rawQuestion) box.appendChild(el('div', 'raw', sub.rawQuestion));
+      // Write it here, then look. The pad goes above the reveal for the same
+      // reason the Check button sits above the key on a graded row: an answer
+      // read before it is written is not an answer.
+      head.appendChild(padTick());
+      box.appendChild(buildPad(unitNo, sub, 8, box));
       var ansBox = el('div', 'raw answer', sub.rawAnswer || t('sub.noAnswer'));
       ansBox.hidden = true;
       var show = el('button', 'btn small', t('sub.showAnswer'));
@@ -3211,8 +3355,10 @@
       var acts = el('div', 'sub-actions');
       acts.appendChild(show);
       // The reveal text is the extracted (sometimes OCR-mangled) key; the real
-      // page in the PDF is the source of truth for an unclear answer.
-      var fk = answerKeyBtn();
+      // page in the PDF is the source of truth for an unclear answer. With no
+      // rawAnswer the reveal has nothing to show ("No answer key — see the
+      // PDF"), so the book is the only key there is.
+      var fk = answerKeyBtn(!sub.rawAnswer);
       if (fk) acts.appendChild(fk);
       box.appendChild(acts);
       box.appendChild(ansBox);
@@ -3221,7 +3367,12 @@
 
     if (sub.type === 'crossword') {
       box.appendChild(el('div', 'note', t('sub.crossword') + (sub.note ? ' ' + sub.note : '')));
-      var cwKey = answerKeyBtn();
+      // The grid itself belongs on paper, but the words that go in it are the
+      // exercise, and they can be listed here.
+      head.appendChild(padTick());
+      box.appendChild(buildPad(unitNo, sub, 5, box));
+      // The grid is solved on paper; nothing here can ever be checked.
+      var cwKey = answerKeyBtn(!sub.rawAnswer);
       if (cwKey) { var cwActs = el('div', 'sub-actions'); cwActs.appendChild(cwKey); box.appendChild(cwActs); }
       return box;
     }
@@ -3231,12 +3382,21 @@
     var items = sub.items || [];
     if (!items.length) {
       box.appendChild(el('div', 'note', t('sub.doInPdf')));
-      var emptyKey = answerKeyBtn();
+      // Read it in the book, answer it here — which is the whole arrangement
+      // this site is, and the one thing this branch used not to offer.
+      head.appendChild(padTick());
+      box.appendChild(buildPad(unitNo, sub, 6, box));
+      // No rows extracted at all — the exercise lives entirely in the PDF.
+      var emptyKey = answerKeyBtn(!sub.rawAnswer);
       if (emptyKey) { var emptyActs = el('div', 'sub-actions'); emptyActs.appendChild(emptyKey); box.appendChild(emptyActs); }
       return box;
     }
 
-    var hasCheckable = false, hasManual = false, notedWhy = {};
+    // `shownKeys` counts the rows that will print a key of their own once
+    // answered — every auto row, plus the self-check rows that do carry the
+    // book's wording (an example answer, a model sentence). Zero of them and no
+    // rawAnswer means this exercise shows the reader nothing, ever.
+    var hasCheckable = false, hasManual = false, shownKeys = 0, notedWhy = {};
     items.forEach(function (it) {
       var why = isManual(it) ? (it.selfWhy || 'open') : null;
       var first = why != null && !notedWhy[why];
@@ -3244,7 +3404,27 @@
       box.appendChild(buildRow(unitNo, sub, it, { introPage: introPage, selfNote: first, exam: exam }));
       if (isAuto(it)) hasCheckable = true;
       else if (isManual(it)) hasManual = true;
+      if (!isExample(it) && norm(it.answer)) shownKeys++;
     });
+
+    // Cross the used letters out of the pool as they are typed — before any
+    // checking, because narrowing the pool is how a matching exercise is
+    // actually solved, and re-reading eight endings to work out which four are
+    // still free is the part that has nothing to do with English.
+    if (optChips && oneToOneLetters(sub)) {
+      var syncUsed = function () {
+        var used = {};
+        [].forEach.call(box.querySelectorAll('.answer-line input'), function (inp) {
+          var L = optLetter(inp.value);
+          if (L) used[L] = 1;
+        });
+        optChips.forEach(function (c) {
+          if (c.letter) c.chip.classList.toggle('used', !!used[c.letter]);
+        });
+      };
+      box.addEventListener('input', syncUsed);
+      syncUsed();       // answers typed in an earlier session are already there
+    }
 
     // Under exam conditions there is nothing to press: no per-exercise check,
     // no printed key one click away. The only button on the page is "finish".
@@ -3264,7 +3444,7 @@
     // against the book page. Purely auto-gradable exercises are left out: their
     // key sits one Check away already and would only tempt cheating.
     if (hasManual) {
-      var kb = answerKeyBtn();
+      var kb = answerKeyBtn(!shownKeys && !sub.rawAnswer);
       if (kb) actions.appendChild(kb);
     }
 
@@ -4974,8 +5154,15 @@
 
     if (!(u.subExercises && u.subExercises.length)) {
       // A few Essential Grammar units had no answers in the scan at all; keep
-      // the unit reachable (title + PDF) rather than showing a blank page.
-      main.appendChild(el('div', 'note', t('sub.doInPdf')));
+      // the unit reachable (title + PDF) rather than showing a blank page — and
+      // give it the pad every other ungradable exercise has, so the unit can
+      // still be worked through here instead of in a copybook. One pad for the
+      // whole unit, since there are no exercises to hang one on each: filed
+      // under 'book|unit|unit|pad'.
+      var solo = el('div', 'sub');
+      solo.appendChild(el('div', 'note', t('sub.doInPdf')));
+      solo.appendChild(buildPad(u.unit, { number: 'unit' }, 12, solo));
+      main.appendChild(solo);
     }
     (u.subExercises || []).forEach(function (sub) {
       // An IELTS group opens the part it belongs to, so its recording or its
@@ -5352,13 +5539,12 @@
     return tbl;
   }
 
-  // Colour bucket for a day's answer count — a GitHub-style five-step scale.
+  // Colour step for a day's answer count. The blue deepens one step every 25
+  // answers, so the darkest shade is reserved for 1000 answers in a day.
+  var CAL_STEP = 25, CAL_STEPS = 40;   // 25 × 40 = 1000
   function activityLevel(v) {
     if (!v) return 0;
-    if (v <= 2) return 1;
-    if (v <= 5) return 2;
-    if (v <= 10) return 3;
-    return 4;
+    return Math.min(CAL_STEPS, Math.ceil(v / CAL_STEP));
   }
 
   function monthLabel(d) {
@@ -5436,7 +5622,13 @@
         var key = todayKey(date.getTime());
         var v = state.daily[key] || 0;
         total += v;
-        var cell = el('span', 'cal-cell cal-l' + activityLevel(v), String(d));
+        var lvl = activityLevel(v);
+        var cell = el('span', 'cal-cell' + (lvl ? '' : ' cal-l0'), String(d));
+        if (lvl) {
+          // the mix percentage between the two ends of the blue ramp
+          cell.style.setProperty('--h', (lvl * 100 / CAL_STEPS).toFixed(1) + '%');
+          if (lvl * 2 >= CAL_STEPS) cell.classList.add('cal-hot');
+        }
         if (key === todayKey()) cell.classList.add('today');
         cell.setAttribute('aria-label', key + ': ' + v);
         (function (dv, ddate, dcell) {
@@ -6544,7 +6736,9 @@
       box.appendChild(wb);
     }
     if (c.sub.options && c.sub.options.length && c.sub.options.length <= 12) {
-      var ol = el('div', 'options');
+      var ol = el('div', 'options' + (c.sub.options.some(function (o) {
+        return String(o.text || '').length > 42;
+      }) ? ' long' : ''));
       c.sub.options.forEach(function (o) {
         var chip = el('span', 'opt');
         chip.appendChild(el('b', null, o.letter));

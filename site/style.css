@@ -472,7 +472,35 @@ body.dragging iframe { pointer-events: none; }
   padding: 1px 7px;
 }
 
+/* "✓ written" — the only mark an ungradable exercise can honestly wear. It is
+   not a score, so it does not sit with the accuracy colours; it appears when
+   the pad has words in it and goes again when it is cleared. */
+.sub-written {
+  display: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ok);
+  margin-left: auto;
+}
+.sub.written .sub-written { display: inline-block; }
+
 .instructions { color: var(--muted); font-size: 13.5px; margin-bottom: 12px; }
+
+/* ===== The writing pad =====
+   Every exercise the app cannot grade gets one, so it has to read as part of
+   the exercise rather than as a widget bolted underneath: no card of its own,
+   just a label and a box wide enough to answer in. */
+.pad { margin-top: 10px; }
+.pad-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.pad-area { font-size: 14.5px; }
+.pad-area::placeholder { color: var(--muted); opacity: .8; }
+/* Written in: the left edge greens, the way a finished row does. */
+.sub.written .pad-area { border-left: 3px solid var(--ok); }
 
 /* ===== Item rows ===== */
 .row {
@@ -542,6 +570,19 @@ body.dragging iframe { pointer-events: none; }
 .btn.small { padding: 4px 9px; font-size: 12px; }
 .btn.danger { color: var(--bad); border-color: var(--bad-line); }
 
+/* An exercise the app holds no key for at all — nothing to check, nothing to
+   reveal. The printed page is the only place its answers exist, so the button
+   that opens it is filled red rather than left grey among the small buttons.
+   --cta, not --bad: red here means "this is the way in", not "wrong". */
+.btn.key-only {
+  color: #fff;
+  background: var(--cta);
+  border-color: var(--cta);
+  font-weight: 650;
+}
+.btn.key-only:hover { background: var(--cta-hi); border-color: var(--cta-hi); filter: none; }
+.btn.key-only:active { transform: translateY(1px); }
+
 .feedback { margin-top: 7px; font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .key { color: var(--muted); overflow-wrap: anywhere; }
 .key b { color: var(--text); font-weight: 600; }
@@ -597,6 +638,28 @@ body.dragging iframe { pointer-events: none; }
   border: 1px solid var(--line);
 }
 .opt b { color: var(--accent); font-weight: 700; margin-right: 2px; }
+/* Reordering and sentence-matching exercises print their choices as whole
+   sentences: laid out as pills they wrap into an unreadable wall, so they
+   stack, one line each, and read as the list the book prints. */
+.options.long { display: block; }
+.options.long .opt {
+  display: block;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 5px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+/* An option already written against a question: struck through and faded, the
+   way it would be crossed off on paper. It stays readable — the answer may yet
+   be moved to another line. */
+.opt.used {
+  text-decoration: line-through;
+  color: var(--muted);
+  opacity: .55;
+  background: transparent;
+}
+.opt.used b { color: var(--muted); }
 
 .raw {
   white-space: pre-wrap;
@@ -1217,21 +1280,26 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
 }
 :root[data-theme="dark"] .cal-tip { background: #313a47; }
 :root[data-theme="dark"] .cal-tip::after { border-top-color: #313a47; }
-/* blue heat scale: light blue = few answers, deep blue = many */
-.cal-l0 { background: var(--line-soft); }
-.cal-l1 { background: #cfe0fd; color: #123a7a; }
-.cal-l2 { background: #7fb0f6; color: #0b2c5e; }
-.cal-l3 { background: #3f83ee; color: #eef4ff; }
-.cal-l4 { background: #1e50b8; color: #eef4ff; }
+/* Blue heat scale: light blue = few answers, deep blue = many. A day's cell
+   carries --h, the mix between the two ends — one step per 25 answers, so the
+   darkest end is only reached at 1000 answers in a single day. */
+.cal-cell {
+  --cal-lo: #cfe0fd;
+  --cal-hi: #1e50b8;
+  --h: 0%;
+  background: var(--cal-lo);
+  background: color-mix(in srgb, var(--cal-hi) var(--h), var(--cal-lo));
+  color: #123a7a;
+}
+.cal-cell.cal-hot { color: #eef4ff; }
+.cal-l0 { background: var(--line-soft); color: var(--muted); }
 .cal-cell.today { box-shadow: 0 0 0 2px var(--accent); }
 .cal-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cal-foot { margin-top: 10px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-:root[data-theme="dark"] .cal-l0 { background: #1b2129; }
-:root[data-theme="dark"] .cal-l1 { background: #123056; color: #9cc2f7; }
-:root[data-theme="dark"] .cal-l2 { background: #1e57ad; color: #dbe8ff; }
-:root[data-theme="dark"] .cal-l3 { background: #3f83ee; color: #f2f7ff; }
-:root[data-theme="dark"] .cal-l4 { background: #6ea8ff; color: #06204a; }
+:root[data-theme="dark"] .cal-cell { --cal-lo: #123056; --cal-hi: #6ea8ff; color: #9cc2f7; }
+:root[data-theme="dark"] .cal-cell.cal-hot { color: #06204a; }
+:root[data-theme="dark"] .cal-l0 { background: #1b2129; color: var(--muted); }
 /* in the narrow sidebar the four cards stack two-up; drop to one on phones */
 @media (max-width: 460px) {
   .ov-cards { grid-template-columns: 1fr 1fr; }

@@ -561,10 +561,21 @@ window.I18N = {
     'sub.doInPdf': 'Бұл тапсырманы PDF-тен орында.',
     'sub.checkExercise': 'Тапсырманы тексеру',
 
+    // Тексере алмайтын тапсырманың жазу орны — дәптердің орнына.
+    'pad.label': '✍️ Осында жаз',
+    'pad.ph': 'Жауабыңды осында жаз — дәптерге емес. Жазғаның өзі сақталады.',
+    'pad.aria': '{unit}-юнит, {sub} тапсырмасының жазу орны',
+    'pad.ariaUnit': '{unit}-юниттің жазу орны',
+    'pad.words': '{n} сөз',
+    'pad.written': 'жазылды',
+    'pad.clearConfirm': 'Осы тапсырмаға жазғаның өшеді. Жалғастырамыз ба?',
+
     'unit.exercisePage': '📄 Жаттығу беті',
     'unit.introPage': '📖 Теория беті',
     'unit.answerKey': 'Жауап кілті',
     'unit.answerKeyHint': 'Кітаптың соңындағы жауап кілтін оң жақ панельде ашады — өзің тексеретін немесе түсініксіз жауаптарды тексеруге',
+    // The red button: this exercise has no key in the app at all.
+    'unit.answerKeyOnlyHint': 'Бұл тапсырманың жауабы қосымшада жоқ — жалғыз жауап кітаптың соңындағы кілтте. Оң жақ панельде ашылады.',
     'unit.checkAll': 'Барлығын тексеру',
     'unit.openPdf': '📕 PDF-ті ашу',
     'unit.openPdfHint': 'Кітапты осы юниттің түсініктеме бетінен, оң жақ панельде ашады',
@@ -1337,10 +1348,19 @@ window.I18N = {
     'sub.doInPdf': 'Do this exercise in the PDF.',
     'sub.checkExercise': 'Check this exercise',
 
+    'pad.label': '✍️ Write here',
+    'pad.ph': 'Write your answer here instead of in a notebook. It saves itself.',
+    'pad.aria': 'Writing pad for unit {unit}, exercise {sub}',
+    'pad.ariaUnit': 'Writing pad for unit {unit}',
+    'pad.words': '{n} words',
+    'pad.written': 'written',
+    'pad.clearConfirm': 'This deletes what you wrote for this exercise. Continue?',
+
     'unit.exercisePage': '📄 Exercise page',
     'unit.introPage': '📖 Reference page',
     'unit.answerKey': 'Answer key',
     'unit.answerKeyHint': 'Opens the answer key from the back of the book in the right-hand panel — for self-check or unclear answers',
+    'unit.answerKeyOnlyHint': 'This exercise has no answers in the app — the book’s printed key is the only place they exist. Opens in the right-hand panel.',
     'unit.checkAll': 'Check everything',
     'unit.openPdf': '📕 Open the PDF',
     'unit.openPdfHint': 'Shows the book at this unit’s explanation page, in the panel on the right',
