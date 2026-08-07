@@ -236,6 +236,32 @@ async function run() {
     && (clash.vals || []).filter(v => v === 'BBBBB').length === 1,
     'one record per row, not one shared between them');
 
+  /* ============ paid for, never uploaded ============ */
+
+  /* The failure that actually happened: six of the seven paid books had no row
+     in book_content, and RLS filters rather than refuses, so a live
+     subscription got the same empty array as a stranger. The app read that as
+     "you have not paid" and drew the paywall at people who had — which is both
+     the wrong thing to say and the reason nobody could tell it apart from a
+     working lock. A live subscription plus no row is now an error, not a
+     price. */
+  r.head('a subscriber whose book was never uploaded');
+  s = await signedIn(conn, { access: LIVE, missing: [PAID_BOOK] });
+  await goto(s, BASE + '#/b/' + PAID_BOOK);
+  await until(s, `!!document.querySelector('.empty-state')`);
+  const gone = await s.eval(`(() => ({
+    text: document.getElementById('main').textContent,
+    offer: !!document.querySelector('.offer-card'),
+    units: document.querySelectorAll('#unitList li').length,
+    sample: !!document.querySelector('.sample-bar') }))()`);
+  r.ok('no lock and no price is asked of somebody who already paid',
+    !gone.offer && !/🔒/.test(gone.text), JSON.stringify({ offer: gone.offer }));
+  r.ok('it says the subscription is fine and the content is not there',
+    /жазылым/i.test(gone.text) || /subscription is fine/i.test(gone.text),
+    gone.text.slice(0, 200));
+  r.ok('and it does not quietly hand over the sample instead',
+    !gone.sample && gone.units === 0, JSON.stringify({ sample: gone.sample, units: gone.units }));
+
   /* ============ the subscription that ran out ============ */
   r.head('a subscription that has lapsed');
   s = await signedIn(conn, { access: LAPSED });

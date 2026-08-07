@@ -71,6 +71,7 @@ function bookJson(id) {
      rpc      404 | 403 → how admin_list_users fails, if it should
      roster   rows for admin_list_users (default ROSTER)
      access   null | {plan, expires_at, active} → what my_access() answers
+     missing  [book id] → book_content has no row for these, subscription or not
      onGrant  (body) => row — called for admin_grant, defaults to a sane row  */
 function mock(s, opts) {
   opts = opts || {};
@@ -158,6 +159,10 @@ function mock(s, opts) {
         // This is the row-level policy, in miniature: without a live
         // subscription the row is not refused, it is simply not there.
         if (!(access && access.active)) return reply(200, []);
+        // A book that was built but never uploaded answers the same empty
+        // array as a reader with no subscription — which is how six of the
+        // seven paid books once sat locked for people who had paid.
+        if ((opts.missing || []).indexOf(id) > -1) return reply(200, []);
         const raw = bookJson(id);
         if (!raw) return reply(200, []);
         return send(200, '[{"data":' + raw + '}]');
