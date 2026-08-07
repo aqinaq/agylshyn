@@ -97,7 +97,7 @@ window.HELP = {
       icon: '🎧',
       title: 'IELTS: Writing, Speaking және диктант',
       list: [
-        'Юниттің басындағы «✍ Writing / Speaking» — тапсырманың өзі, емтихандағы уақыт, сөз санағышы, өзі сақталатын жоба; Speaking-те таймер мен дауыс жазу.',
+        'Юниттер тізіміндегі W1 мен S1 (L1, R1-дің қасында) — емтихандағы уақыт, сөз санағышы, өзі сақталатын жоба; Speaking-те таймер мен дауыс жазу.',
         'Аудионың астындағы «Мәтін / диктант» — жазбаның мәтінін оқисың немесе әр үшінші сөзі жасырылған диктант істейсің.',
         'Ойнатқышта ↺5 секунд пен 0.75× бар. Емтихан режимінде екеуі де жабық — бұл жаттығу құралы.'
       ]
@@ -224,7 +224,7 @@ window.HELP = {
       icon: '🎧',
       title: 'IELTS: Writing, Speaking and dictation',
       list: [
-        '"✍ Writing / Speaking" on a unit: the task itself, the exam timing, a word counter, a draft that saves itself, and for Speaking a cue-card clock and a recording.',
+        'W1 and S1 in the unit list, beside L1 and R1: the exam timing, a word counter, a draft that saves itself, and for Speaking a cue-card clock and a recording.',
         '"Transcript / dictation" under a recording: read along, or fill in every third word as you hear it.',
         'The player has back-five-seconds and 0.75×. Both, and the transcript, are gone under exam conditions.'
       ]

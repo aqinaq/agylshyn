@@ -181,15 +181,28 @@ window.ENTITLE = (function () {
                 { noStore: true })
       .then(function (rows) {
         // RLS does not refuse — it filters. No subscription therefore looks
-        // exactly like no such book, and both come back as an empty array. The
-        // difference matters to nobody here: either way there is nothing to
-        // open, and the reader is told what to do about the case they can fix.
+        // exactly like no such book, and both come back as an empty array. Two
+        // very different problems arrive here as the same answer, so ask who
+        // the reader is before deciding which one to draw. Asking again rather
+        // than trusting the cached answer also covers the two ways it goes
+        // stale mid-session: having just paid, and having just lapsed.
         if (!rows || !rows.length) {
-          // The usual way to arrive here twice is having just paid, so re-ask
-          // in the background: a stale "no subscription" is the likeliest
-          // reason a book that should be open is not.
-          refresh().catch(function () {});
-          throw locked('paid');
+          return refresh().then(
+            function (a) {
+              // A live subscription and no row means the row is genuinely not
+              // there — a book that was built but never uploaded (see
+              // site/tools/upload_content.py). Telling somebody who has paid
+              // to pay is both wrong and the thing that hides the real cause,
+              // so this takes the ordinary error screen instead.
+              if (a && a.active) {
+                var miss = new Error('book_content has no row for ' + id);
+                miss.missing = true;      // app.js says so in the reader's language
+                throw miss;
+              }
+              throw locked('paid');
+            },
+            function () { throw locked('paid'); }
+          );
         }
         return rows[0].data;
       })

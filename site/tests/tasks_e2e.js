@@ -327,8 +327,11 @@ async function run() {
     tags: [...document.querySelectorAll('#unitList .u-num')].map(e => e.textContent),
     tasks: [...document.querySelectorAll('.task-link')].map(e => e.getAttribute('href'))
   })`);
-  r.ok('the Listening page points at the tasks of the same test',
-    entry.chip.indexOf('#/b/ielts-21/tasks/1') > -1, JSON.stringify(entry.chip));
+  // The rail is the way across to the other skills, and the only one. A chip in
+  // the head of a Listening page saying "Writing / Speaking" made them look like
+  // an errand this page was sending the reader on.
+  r.eq('the head of a Listening page carries exam mode and nothing else',
+    entry.chip.join(' '), '#/b/ielts-21/unit/1/exam');
   // The four skills of a test, in the order a candidate sits them.
   r.eq('the unit list reads L1 R1 W1 S1', entry.tags.slice(0, 4).join(' '), 'L1 R1 W1 S1');
   r.eq('with a Writing and a Speaking entry per test', entry.tasks.length, 8);

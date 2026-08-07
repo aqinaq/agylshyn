@@ -1033,7 +1033,9 @@
         // one retry: a dropped connection should not strand the reader.
         // A locked book is a settled answer, not a flaky one — retrying it just
         // doubles the requests and delays the unlock screen by another round trip.
-        if (e && e.locked) throw e;
+        // Same for a book with no row in Supabase: the server answered, and it
+        // will answer the same way in 400 ms.
+        if (e && (e.locked || e.missing)) throw e;
         return new Promise(function (res) { setTimeout(res, 400); }).then(function () {
           return fetchBook(id);
         });
@@ -4914,19 +4916,16 @@
 
     // A test section can be sat rather than practised. The chip is only on the
     // books where that means something — a grammar unit is not a timed paper.
+    //
+    // Nothing here points across to Writing or Speaking. Every page of the book
+    // carries L1 R1 W1 S1 in the rail, so the other skills of this test are
+    // already one click away, and a chip saying so in the head of a Listening
+    // page only makes them look like an errand this page is sending you on.
     if (EXAM.isExamUnit(book.meta, u)) {
       var ex = el('a', 'chip chip-btn exam-chip', '⏱ ' + t('exam.chip'));
       ex.href = '#/b/' + book.id + '/unit/' + u.unit + '/exam';
       ex.title = t('exam.chipHint', { m: Math.round(EXAM.limitFor(u.skill) / 60) });
       chips.appendChild(ex);
-
-      // The other two skills of the same test, where the book carries them.
-      var testNo = EXAM.testOf(u);
-      if (hasTasks() && promptTests().indexOf(testNo) > -1) {
-        var tc = el('a', 'chip chip-btn', '✍ ' + t('task.chip'));
-        tc.href = '#/b/' + book.id + '/tasks/' + testNo;
-        chips.appendChild(tc);
-      }
     }
     head.appendChild(chips);
 
@@ -7300,7 +7299,11 @@
     var s = el('div', 'empty-state');
     s.appendChild(el('span', 'big', '⚠️'));
     s.appendChild(el('div', null, t('load.failed', { id: (meta && meta.title) || id })));
-    s.appendChild(el('div', 'instructions', String((e && e.message) || e)));
+    // A paying reader whose book has no row in Supabase gets an explanation
+    // rather than the raw message: nothing they can do fixes it, and "try
+    // again" would otherwise look like the answer. See entitle.js fetchBook.
+    s.appendChild(el('div', 'instructions',
+      (e && e.missing) ? t('load.missing') : String((e && e.message) || e)));
 
     var row = el('div', 'sub-actions');
     row.style.justifyContent = 'center';

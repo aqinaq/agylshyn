@@ -513,8 +513,6 @@ window.I18N = {
     // Writing / Speaking. Бағаланбайды — эссені машина тексере алмайды, ал
     // сөз санынан «band» ойлап шығару — жоқтан да жаман. Сондықтан бұл жерде
     // тапсырма, сағат, сөз саны, жоба және жазба бар; баға жоқ.
-    'task.chip': 'Writing / Speaking',
-    'task.sidebar': 'Writing / Speaking',
     // Бір ғана дағды көрсетілсе — тақырып та, тізімдегі аты да бірдей болсын.
     'task.h1': '{n}-тест — Writing және Speaking',
     'task.writingUnit': 'Test {n} — Writing',
@@ -739,6 +737,8 @@ window.I18N = {
 
     'load.loading': 'Жүктелуде…',
     'load.failed': 'Кітап жүктелмеді: {id}',
+    'load.missing': 'Жазылымың жарамды, бірақ бұл кітаптың мазмұны серверде әлі жоқ. ' +
+      'Кінә сенде емес — жазып қой, қоямын.',
     'load.retry': 'Қайта көру',
     'pdf.loading': 'Кітап жүктелуде… Файл үлкен, біраз уақыт алуы мүмкін.',
     'load.back': '← Кітапханаға',
@@ -1290,8 +1290,6 @@ window.I18N = {
     'err.toDeckHint': 'Each becomes a card: the question on the front, the answer on the back. This list empties as soon as you get one right; a card comes back a week later.',
     'err.toDeckDone': '✓ {n} cards added',
 
-    'task.chip': 'Writing / Speaking',
-    'task.sidebar': 'Writing / Speaking',
     'task.h1': 'Test {n} — Writing and Speaking',
     'task.writingUnit': 'Test {n} — Writing',
     'task.speakingUnit': 'Test {n} — Speaking',
@@ -1510,6 +1508,8 @@ window.I18N = {
 
     'load.loading': 'Loading…',
     'load.failed': 'Could not load the book: {id}',
+    'load.missing': 'Your subscription is fine — this book’s content is not on the ' +
+      'server yet. Nothing you did; tell me and I will put it there.',
     'load.retry': 'Try again',
     'pdf.loading': 'Loading the book… the file is large, this can take a while.',
     'load.back': '← Back to library',
