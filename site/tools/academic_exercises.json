@@ -212,38 +212,80 @@
      "number": "2.3",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "scope of your research."
+      },
+      {
+       "letter": "b",
+       "text": "awareness of the problem."
+      },
+      {
+       "letter": "c",
+       "text": "issues facing the world today."
+      },
+      {
+       "letter": "d",
+       "text": "into the environmental eff ects of nanoparticles."
+      },
+      {
+       "letter": "e",
+       "text": "approach to their theme."
+      },
+      {
+       "letter": "f",
+       "text": "aspect of modern society."
+      },
+      {
+       "letter": "g",
+       "text": "pattern of changes in temperature."
+      },
+      {
+       "letter": "h",
+       "text": "case for restructuring parliament."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "g"
+       "answer": "g",
+       "question": "The study revealed a regular"
       },
       {
        "n": 2,
-       "answer": "f"
+       "answer": "f",
+       "question": "The research focuses on one particular"
       },
       {
        "n": 3,
-       "answer": "h"
+       "answer": "h",
+       "question": "The writer makes a powerful"
       },
       {
        "n": 4,
-       "answer": "e"
+       "answer": "e",
+       "question": "The writers take an original"
       },
       {
        "n": 5,
-       "answer": "b"
+       "answer": "b",
+       "question": "Until recently there was little"
       },
       {
        "n": 6,
-       "answer": "a"
+       "answer": "a",
+       "question": "I think you should broaden the"
       },
       {
        "n": 7,
-       "answer": "d"
+       "answer": "d",
+       "question": "To date, there has been little research"
       },
       {
        "n": 8,
-       "answer": "c"
+       "answer": "c",
+       "question": "There are many important"
       }
      ]
     },
@@ -922,30 +964,62 @@
      "number": "6.3",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "forward a convincing theory with regard to this question."
+      },
+      {
+       "letter": "b",
+       "text": "up the flaws in the school’s testing methods."
+      },
+      {
+       "letter": "c",
+       "text": "out the solution to the algebra problem."
+      },
+      {
+       "letter": "d",
+       "text": "out a lot of basic information about all the world’s countries."
+      },
+      {
+       "letter": "e",
+       "text": "against what she had found in her earlier studies."
+      },
+      {
+       "letter": "f",
+       "text": "up of clearly defined classes of people."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "f"
+       "answer": "f",
+       "question": "Feudal society was made"
       },
       {
        "n": 2,
-       "answer": "a"
+       "answer": "a",
+       "question": "Carlson was the first to put"
       },
       {
        "n": 3,
-       "answer": "e"
+       "answer": "e",
+       "question": "Her results appear to go"
       },
       {
        "n": 4,
-       "answer": "b"
+       "answer": "b",
+       "question": "The investigation pointed"
       },
       {
        "n": 5,
-       "answer": "c"
+       "answer": "c",
+       "question": "It took him a long time to work"
       },
       {
        "n": 6,
-       "answer": "d"
+       "answer": "d",
+       "question": "The geography book sets"
       }
      ]
     },
@@ -1489,42 +1563,89 @@
      "number": "10.3",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "surrounding the issue of global warming."
+      },
+      {
+       "letter": "b",
+       "text": "a blood sample for analysis."
+      },
+      {
+       "letter": "c",
+       "text": "the role of project leader."
+      },
+      {
+       "letter": "d",
+       "text": "to the debate on cloning."
+      },
+      {
+       "letter": "e",
+       "text": "off contact with colleagues abroad."
+      },
+      {
+       "letter": "f",
+       "text": "seems to be emerging."
+      },
+      {
+       "letter": "g",
+       "text": "the key elements in a graph."
+      },
+      {
+       "letter": "h",
+       "text": "a way to solve their problem."
+      },
+      {
+       "letter": "i",
+       "text": "the results of our experiments."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "h"
+       "answer": "h",
+       "question": "It took the team a long time to devise"
       },
       {
        "n": 2,
-       "answer": "e"
+       "answer": "e",
+       "question": "During the war we had to break"
       },
       {
        "n": 3,
-       "answer": "a"
+       "answer": "a",
+       "question": "There has been a lot of heated debate"
       },
       {
        "n": 4,
-       "answer": "c"
+       "answer": "c",
+       "question": "Ian Hartmann was invited to take on"
       },
       {
        "n": 5,
-       "answer": "i"
+       "answer": "i",
+       "question": "Part of my role was to collate"
       },
       {
        "n": 6,
-       "answer": "b"
+       "answer": "b",
+       "question": "The doctor wanted me to provide"
       },
       {
        "n": 7,
-       "answer": "d"
+       "answer": "d",
+       "question": "Scientists all over the world contributed"
       },
       {
        "n": 8,
-       "answer": "f"
+       "answer": "f",
+       "question": "A new and unexpected phenomenon"
       },
       {
        "n": 9,
-       "answer": "g"
+       "answer": "g",
+       "question": "Using shading helps to differentiate"
       }
      ]
     },
@@ -2462,19 +2583,23 @@
       },
       {
        "n": 2,
-       "answer": "C"
+       "answer": "C",
+       "question": "There is some evidence of an improvement in the economy but, …, there is"
       },
       {
        "n": 3,
-       "answer": "B"
+       "answer": "B",
+       "question": "I’d like to consider education … industry."
       },
       {
        "n": 4,
-       "answer": "B"
+       "answer": "B",
+       "question": "I’m not sure … you agree with Qian’s theory."
       },
       {
        "n": 5,
-       "answer": "C"
+       "answer": "C",
+       "question": "We will now discuss the development of the Surrealist Movement …."
       }
      ]
     },
@@ -2651,39 +2776,48 @@
      "items": [
       {
        "n": 1,
-       "answer": "g"
+       "answer": "g",
+       "question": "personal"
       },
       {
        "n": 2,
-       "answer": "f"
+       "answer": "f",
+       "question": "financial"
       },
       {
        "n": 3,
-       "answer": "h"
+       "answer": "h",
+       "question": "seek"
       },
       {
        "n": 4,
-       "answer": "i"
+       "answer": "i",
+       "question": "student"
       },
       {
        "n": 5,
-       "answer": "a"
+       "answer": "a",
+       "question": "equal"
       },
       {
        "n": 6,
-       "answer": "c"
+       "answer": "c",
+       "question": "mature"
       },
       {
        "n": 7,
-       "answer": "e"
+       "answer": "e",
+       "question": "application"
       },
       {
        "n": 8,
-       "answer": "d"
+       "answer": "d",
+       "question": "first"
       },
       {
        "n": 9,
-       "answer": "b"
+       "answer": "b",
+       "question": "minimum"
       }
      ]
     },
@@ -4240,30 +4374,62 @@
      "number": "27.1",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "study, which focuses on metals only."
+      },
+      {
+       "letter": "b",
+       "text": "body of the book; they are in the appendix."
+      },
+      {
+       "letter": "c",
+       "text": "the literature on intellectual property rights."
+      },
+      {
+       "letter": "d",
+       "text": "literature exists on human to animal"
+      },
+      {
+       "letter": "e",
+       "text": "source for the period 1980-1985."
+      },
+      {
+       "letter": "f",
+       "text": "resource for the study of the poet’s life."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "f"
+       "answer": "f",
+       "question": "The letters proved to be a valuable"
       },
       {
        "n": 2,
-       "answer": "d"
+       "answer": "d",
+       "question": "An extensive body of"
       },
       {
        "n": 3,
-       "answer": "e"
+       "answer": "e",
+       "question": "Newspapers are a good primary"
       },
       {
        "n": 4,
-       "answer": "b"
+       "answer": "b",
+       "question": "The data are not given in the main"
       },
       {
        "n": 5,
-       "answer": "a"
+       "answer": "a",
+       "question": "Plastics are not dealt with in the present … communication."
       },
       {
        "n": 6,
-       "answer": "c"
+       "answer": "c",
+       "question": "The thesis begins with a review of"
       }
      ]
     },
@@ -4642,34 +4808,71 @@
      "number": "29.3",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "on the role of the United Nations in times of war."
+      },
+      {
+       "letter": "b",
+       "text": "on gender and language use very clear."
+      },
+      {
+       "letter": "c",
+       "text": "of dark matter to explain certain observations."
+      },
+      {
+       "letter": "d",
+       "text": "that intelligence is connected to race."
+      },
+      {
+       "letter": "e",
+       "text": "of family healthcare which changed everything."
+      },
+      {
+       "letter": "f",
+       "text": "of what low price and high quality mean."
+      },
+      {
+       "letter": "g",
+       "text": "framework is an important stage in any research."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "d"
+       "answer": "d",
+       "question": "We must never accept the notion"
       },
       {
        "n": 2,
-       "answer": "g"
+       "answer": "g",
+       "question": "The task of choosing an analytical"
       },
       {
        "n": 3,
-       "answer": "a"
+       "answer": "a",
+       "question": "The book expresses his viewpoint"
       },
       {
        "n": 4,
-       "answer": "b"
+       "answer": "b",
+       "question": "Tannen has always made her stance"
       },
       {
        "n": 5,
-       "answer": "f"
+       "answer": "f",
+       "question": "Consumers have different perceptions"
       },
       {
        "n": 6,
-       "answer": "e"
+       "answer": "e",
+       "question": "The report laid out a new model"
       },
       {
        "n": 7,
-       "answer": "c"
+       "answer": "c",
+       "question": "Physicists developed the concept"
       }
      ]
     },
@@ -5896,30 +6099,62 @@
      "number": "37.2",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "major consequences for larger families."
+      },
+      {
+       "letter": "b",
+       "text": "precedents for his decision."
+      },
+      {
+       "letter": "c",
+       "text": "rise to a widespread sense of disillusionment."
+      },
+      {
+       "letter": "d",
+       "text": "of the concept of democracy."
+      },
+      {
+       "letter": "e",
+       "text": "reaction, causing massive damage."
+      },
+      {
+       "letter": "f",
+       "text": "from a lack of communication."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "d"
+       "answer": "d",
+       "question": "The article explores the origins"
       },
       {
        "n": 2,
-       "answer": "e"
+       "answer": "e",
+       "question": "One small explosion set off a chain"
       },
       {
        "n": 3,
-       "answer": "f"
+       "answer": "f",
+       "question": "The confusion probably stemmed"
       },
       {
        "n": 4,
-       "answer": "a"
+       "answer": "a",
+       "question": "The proposed new tax could have"
       },
       {
        "n": 5,
-       "answer": "c"
+       "answer": "c",
+       "question": "The disastrous events of 2003 gave"
       },
       {
        "n": 6,
-       "answer": "b"
+       "answer": "b",
+       "question": "The judge explained that there were"
       }
      ]
     },
@@ -6282,35 +6517,43 @@
      "items": [
       {
        "n": 1,
-       "answer": "B"
+       "answer": "B",
+       "question": "She wrote an excellent essay, … with a certain amount of help."
       },
       {
        "n": 2,
-       "answer": "C"
+       "answer": "C",
+       "question": "A … point must also now be made against a change in law."
       },
       {
        "n": 3,
-       "answer": "A"
+       "answer": "A",
+       "question": "He is an important poet, … his work has had a great influence on other writers."
       },
       {
        "n": 4,
-       "answer": "B"
+       "answer": "B",
+       "question": "Prices have continued to rise … costs have been falling."
       },
       {
        "n": 5,
-       "answer": "C"
+       "answer": "C",
+       "question": "The riots resulted in much damage. …, we should not ignore the fact that the disorder"
       },
       {
        "n": 6,
-       "answer": "B"
+       "answer": "B",
+       "question": "But there is a negative side to new technology. … the advantages, we also need to"
       },
       {
        "n": 7,
-       "answer": "B"
+       "answer": "B",
+       "question": "The internet has provided immense benefits, but, …, it has enabled criminals and"
       },
       {
        "n": 8,
-       "answer": "B"
+       "answer": "B",
+       "question": "Bangladesh is one of the world’s most densely populated countries, … smaller states"
       }
      ]
     }
@@ -7042,38 +7285,80 @@
      "number": "44.1",
      "type": "items",
      "instructions": "Match the beginnings and endings of the sentences. Use the words in A opposite to help you.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "surrounding the President."
+      },
+      {
+       "letter": "b",
+       "text": "apparent."
+      },
+      {
+       "letter": "c",
+       "text": "some important questions for the Party."
+      },
+      {
+       "letter": "d",
+       "text": "many difficulties."
+      },
+      {
+       "letter": "e",
+       "text": "arose fairly recently."
+      },
+      {
+       "letter": "f",
+       "text": "in remembering this formula."
+      },
+      {
+       "letter": "g",
+       "text": "a number of inconsistencies."
+      },
+      {
+       "letter": "h",
+       "text": "considerable challenges for scientists."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "f"
+       "answer": "f",
+       "question": "Students always seem to have difficulty"
       },
       {
        "n": 2,
-       "answer": "g"
+       "answer": "g",
+       "question": "Ford pointed out that the methodology had"
       },
       {
        "n": 3,
-       "answer": "h"
+       "answer": "h",
+       "question": "The need to find replacement fuels poses"
       },
       {
        "n": 4,
-       "answer": "a"
+       "answer": "a",
+       "question": "The media continue to focus on the controversy"
       },
       {
        "n": 5,
-       "answer": "b"
+       "answer": "b",
+       "question": "In the figures he presented several errors were"
       },
       {
        "n": 6,
-       "answer": "d"
+       "answer": "d",
+       "question": "On their way across Antarctica they experienced"
       },
       {
        "n": 7,
-       "answer": "c"
+       "answer": "c",
+       "question": "The results of the opinion poll raise"
       },
       {
        "n": 8,
-       "answer": "e"
+       "answer": "e",
+       "question": "Problems caused by pollution in this area"
       }
      ]
     },

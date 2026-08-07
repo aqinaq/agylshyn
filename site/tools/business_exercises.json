@@ -123,6 +123,32 @@
      "number": "2.1",
      "type": "items",
      "instructions": "Look at the six expressions (a–f) from A opposite. Which person (1–6) is most likely to do each",
+     "options": [
+      {
+       "letter": "a",
+       "text": "work in shifts"
+      },
+      {
+       "letter": "b",
+       "text": "work under a flexitime system"
+      },
+      {
+       "letter": "c",
+       "text": "telecommute"
+      },
+      {
+       "letter": "d",
+       "text": "commute to work"
+      },
+      {
+       "letter": "e",
+       "text": "clock in and out at the same time every day"
+      },
+      {
+       "letter": "f",
+       "text": "work overtime"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -160,27 +186,53 @@
      "number": "2.2",
      "type": "items",
      "instructions": "Look at the words and expressions in B and C opposite. Five people describe their jobs. Match",
+     "options": [
+      {
+       "letter": "a",
+       "text": "‘Obviously, my work involves …  (travel) a lot. It can be quite physically (demand), but I enjoy …  (deal) with customers, except when they become tired and anxious about arriving. This doesn’t happen often, but it can be very frustrating for us and the other passengers.’"
+      },
+      {
+       "letter": "b",
+       "text": "‘I love my job. It’s very …  (stimulate) and not at all …  (repeat): no two days are the same. The children are fine: you see them learn and develop. The parents can be more of a problem.’"
+      },
+      {
+       "letter": "c",
+       "text": "‘I was good at maths at school and I like …  (work) with figures. But my job is much less …  (bore) and routine than people think. The work (involve) a lot of human contact and teamwork, working with other managers.’"
+      },
+      {
+       "letter": "d",
+       "text": "‘You’ve got to think in a very logical way. There’s a lot of teamwork between the developers. The work can be mentally …  (tire), but it’s very satisfying to write a program that works.’"
+      },
+      {
+       "letter": "e",
+       "text": "‘Of course, it involves getting up quite early in the morning. But I like …  (be) out in the open air. And you get a lot of exercise. I walk two or three miles every day.’"
+      }
+     ],
      "items": [
       {
        "n": 1,
        "answer": "c working, boring, involves",
-       "question": "accountant 2 postwoman 3 flight attendant 4 software developer 5 teacher"
+       "question": "accountant"
       },
       {
        "n": 2,
-       "answer": "e being / to be"
+       "answer": "e being / to be",
+       "question": "postwoman"
       },
       {
        "n": 3,
-       "answer": "a travelling, demanding, dealing"
+       "answer": "a travelling, demanding, dealing",
+       "question": "flight attendant"
       },
       {
        "n": 4,
-       "answer": "d tiring"
+       "answer": "d tiring",
+       "question": "software developer"
       },
       {
        "n": 5,
-       "answer": "b stimulating, repetitive"
+       "answer": "b stimulating, repetitive",
+       "question": "teacher"
       }
      ]
     }
@@ -648,6 +700,28 @@
      "number": "7.2",
      "type": "items",
      "instructions": "Match the sentence beginnings (1–5) with the correct endings (a–e). The sentences all contain",
+     "options": [
+      {
+       "letter": "a",
+       "text": "and that they will be replaced by temporary workers, or made redundant by technology."
+      },
+      {
+       "letter": "b",
+       "text": "take care of us for life any more. We have to take care of ourselves."
+      },
+      {
+       "letter": "c",
+       "text": "but now we outsource it."
+      },
+      {
+       "letter": "d",
+       "text": "factory worker to factory manager."
+      },
+      {
+       "letter": "e",
+       "text": "reducing the number of management levels in the company hierarchy from five to three."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -949,6 +1023,32 @@
      "number": "11.1",
      "type": "items",
      "instructions": "Match the two parts of these sentences containing expressions from A opposite.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "image by showing environmental leadership."
+      },
+      {
+       "letter": "b",
+       "text": "logo in view was the Haagen Dazs name on three table umbrellas."
+      },
+      {
+       "letter": "c",
+       "text": "profits, capital gains taxes and slow job growth."
+      },
+      {
+       "letter": "d",
+       "text": "ladder may demand the same thing from their employees."
+      },
+      {
+       "letter": "e",
+       "text": "culture at Lowe’s, and managers use a variety of methods to ensure that it’s happening."
+      },
+      {
+       "letter": "f",
+       "text": "headquarters to set their own hours and work outside the office."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -1134,6 +1234,28 @@
      "number": "12.3",
      "type": "items",
      "instructions": "Match the sentence beginnings (1–5) with the correct endings (a–e). The sentences all contain",
+     "options": [
+      {
+       "letter": "a",
+       "text": "with loss-making companies!"
+      },
+      {
+       "letter": "b",
+       "text": "and many volunteer to give their skills too."
+      },
+      {
+       "letter": "c",
+       "text": "parties for the charity."
+      },
+      {
+       "letter": "d",
+       "text": "when they are helping people in their own social class."
+      },
+      {
+       "letter": "e",
+       "text": "less than they would in the private sector."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -1564,6 +1686,40 @@
      "number": "16.2",
      "type": "items",
      "instructions": "Look at B opposite. Rearrange these sections of a short",
+     "options": [
+      {
+       "letter": "a",
+       "text": "work. Of course, we still have a large number of assembly-"
+      },
+      {
+       "letter": "b",
+       "text": "plant producing TVs in Singapore. We have two production"
+      },
+      {
+       "letter": "c",
+       "text": "My name’s George Chien, and I’m director of a manufacturing"
+      },
+      {
+       "letter": "d",
+       "text": "lines working 24 hours a day. CAD/"
+      },
+      {
+       "letter": "e",
+       "text": "intensive. But with the help of computer-"
+      },
+      {
+       "letter": "f",
+       "text": "line workers, so it’s quite labour-"
+      },
+      {
+       "letter": "g",
+       "text": "CAM and robots do some of the assembly"
+      },
+      {
+       "letter": "h",
+       "text": "assisted design and automation, productivity is increasing."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -1786,30 +1942,62 @@
      "number": "18.2",
      "type": "items",
      "instructions": "Match the sentence beginnings (1–6) with the correct endings (a–f). The sentences all contain",
+     "options": [
+      {
+       "letter": "a",
+       "text": "at peer collaboration as a way of coping with a new learning environment."
+      },
+      {
+       "letter": "b",
+       "text": "Specifically, thousands of programmers contribute to Linux and over 75,000 people are writing and editing articles on Wikipedia."
+      },
+      {
+       "letter": "c",
+       "text": "will naturally become the producers of the commodities which they want to produce."
+      },
+      {
+       "letter": "d",
+       "text": "from consumers and the new stress on value creation with consumers."
+      },
+      {
+       "letter": "e",
+       "text": "is being transformed by allowing more people to put their intellectual muscle to the wheel."
+      },
+      {
+       "letter": "f",
+       "text": "it is a universal tendency, like gravity, that exerts a pull on everything."
+      }
+     ],
      "items": [
       {
        "n": 1,
-       "answer": "e"
+       "answer": "e",
+       "question": "Wikinomics describes a scenario"
       },
       {
        "n": 2,
-       "answer": "a"
+       "answer": "a",
+       "question": "Students are enthusiastic and positive"
       },
       {
        "n": 3,
-       "answer": "d"
+       "answer": "d",
+       "question": "One goal of co-creation is to find a"
       },
       {
        "n": 4,
-       "answer": "b"
+       "answer": "b",
+       "question": "Linux, Wikipedia, YouTube and"
       },
       {
        "n": 5,
-       "answer": "f"
+       "answer": "f",
+       "question": "It would be a mistake to think"
       },
       {
        "n": 6,
-       "answer": "c"
+       "answer": "c",
+       "question": "In the prosumer society we can"
       }
      ]
     },
@@ -1860,6 +2048,32 @@
      "number": "19.1",
      "type": "items",
      "instructions": "Match each beginning (1–6) with its continuation to make true statements containing",
+     "options": [
+      {
+       "letter": "a",
+       "text": "one day after increasing its customers’ gas bills by a record 35 per cent."
+      },
+      {
+       "letter": "b",
+       "text": "Spanish Airports Authority, for example."
+      },
+      {
+       "letter": "c",
+       "text": "an upmarket clientele."
+      },
+      {
+       "letter": "d",
+       "text": "bringing its customer base to 8.98 million."
+      },
+      {
+       "letter": "e",
+       "text": "and also to major manufacturers, such as Dell and HP."
+      },
+      {
+       "letter": "f",
+       "text": "to 245.1m, from the end of June last year to the same time this year."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -2142,6 +2356,36 @@
      "number": "21.2",
      "type": "items",
      "instructions": "Match the sentence beginnings (1–7) with the correct endings (a–g). The sentences all contain",
+     "options": [
+      {
+       "letter": "a",
+       "text": "in several markets at once."
+      },
+      {
+       "letter": "b",
+       "text": "and replaced state planning with a market- oriented system."
+      },
+      {
+       "letter": "c",
+       "text": "– where a common spirit improves the work – are not easy to make or keep going in our market-driven society."
+      },
+      {
+       "letter": "d",
+       "text": "approach to economics."
+      },
+      {
+       "letter": "e",
+       "text": "left the companies with falling sales and profits."
+      },
+      {
+       "letter": "f",
+       "text": "farms with less dependence on government money."
+      },
+      {
+       "letter": "g",
+       "text": "and the audience has decided the direction it takes."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -2236,23 +2480,27 @@
       {
        "n": 1,
        "answer": "consumer durables",
-       "question": "microwave ovens 2 cotton 3 cars 4 hamburgers 5 soap powder"
+       "question": "microwave ovens"
       },
       {
        "n": 2,
-       "answer": "raw materials"
+       "answer": "raw materials",
+       "question": "cotton"
       },
       {
        "n": 3,
-       "answer": "consumer durables"
+       "answer": "consumer durables",
+       "question": "cars"
       },
       {
        "n": 4,
-       "answer": "fast-moving consumer goods"
+       "answer": "fast-moving consumer goods",
+       "question": "hamburgers"
       },
       {
        "n": 5,
-       "answer": "fast-moving consumer goods"
+       "answer": "fast-moving consumer goods",
+       "question": "soap powder"
       }
      ]
     },
@@ -2260,6 +2508,40 @@
      "number": "22.3",
      "type": "items",
      "instructions": "Match the sentence beginnings (1–8) with the correct endings. The sentences all contain expressions",
+     "options": [
+      {
+       "letter": "a",
+       "text": "brand packaged food."
+      },
+      {
+       "letter": "b",
+       "text": "identity in terms of green or non-green energy."
+      },
+      {
+       "letter": "c",
+       "text": "name of Slub would stand little chance of success."
+      },
+      {
+       "letter": "d",
+       "text": "manager, retail manager, and advertising planner."
+      },
+      {
+       "letter": "e",
+       "text": "awareness, so as media habits change, advertising approaches need to evolve too."
+      },
+      {
+       "letter": "f",
+       "text": "products are cheap for a reason."
+      },
+      {
+       "letter": "g",
+       "text": "category for more than 30 years."
+      },
+      {
+       "letter": "h",
+       "text": "products while providing incentives for drug companies to discover new products."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -2779,6 +3061,32 @@
      "number": "27.1",
      "type": "items",
      "instructions": "Match the expressions (1–7) from A opposite with their definitions (a–f). Two expressions have the",
+     "options": [
+      {
+       "letter": "a",
+       "text": "the money received from sales (2 expressions)"
+      },
+      {
+       "letter": "b",
+       "text": "sales hoped for in a particular period"
+      },
+      {
+       "letter": "c",
+       "text": "the amount of sales, either in terms of money or the"
+      },
+      {
+       "letter": "d",
+       "text": "increase in sales"
+      },
+      {
+       "letter": "e",
+       "text": "statistics showing the amount sold, perhaps over time"
+      },
+      {
+       "letter": "f",
+       "text": "sales expected in a particular period"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -3039,6 +3347,32 @@
      "number": "29.1",
      "type": "items",
      "instructions": "Look at A opposite and rearrange these events involving two companies into a logical order.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "Superinc eventually settled the invoice."
+      },
+      {
+       "letter": "b",
+       "text": "Superinc ordered goods from Messco, which dispatched them to Superinc."
+      },
+      {
+       "letter": "c",
+       "text": "Superinc then received the invoice but did not pay it on time."
+      },
+      {
+       "letter": "d",
+       "text": "Two weeks later, Superinc had still not received an invoice from Messco and began to think that Messco’s invoicing was not very efficient."
+      },
+      {
+       "letter": "e",
+       "text": "Someone in the accounts department at Messco chased the invoice by phoning the accounts department at Superinc."
+      },
+      {
+       "letter": "f",
+       "text": "After the goods were shipped, someone in the accounts department at Superinc noticed that they had not received an invoice for them and asked Messco to issue one."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -3371,6 +3705,28 @@
      "number": "32.1",
      "type": "items",
      "instructions": "Look at A and B opposite. Then read the article and match the figures with the things to which",
+     "options": [
+      {
+       "letter": "a",
+       "text": "BofA’s profit in the latest period"
+      },
+      {
+       "letter": "b",
+       "text": "the amount of capital that BofA wants to raise"
+      },
+      {
+       "letter": "c",
+       "text": "the amount per share of its latest dividend"
+      },
+      {
+       "letter": "d",
+       "text": "the number of years that BofA’s CEO has worked in the banking industry"
+      },
+      {
+       "letter": "e",
+       "text": "the amount of extra capital that BofA will have in each three-month period following the reduction in its dividend"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -3445,6 +3801,32 @@
      "number": "33.1",
      "type": "items",
      "instructions": "Match the sentence beginnings (1–6) with the correct endings (a–f). The sentences all contain",
+     "options": [
+      {
+       "letter": "a",
+       "text": "pile for several years, without making any additional investments either in refining or production."
+      },
+      {
+       "letter": "b",
+       "text": "mountain of $36 billion, and he has chosen to place more than one-third of the cash in foreign currencies."
+      },
+      {
+       "letter": "c",
+       "text": "earnings is 12.6 per cent."
+      },
+      {
+       "letter": "d",
+       "text": "of MedImmune Inc., the biotechnology company, makes AstraZeneca a clear leader in the industry."
+      },
+      {
+       "letter": "e",
+       "text": "earnings, but ultimately these will become exhausted and the business will become bankrupt."
+      },
+      {
+       "letter": "f",
+       "text": "reserves have been a competitive advantage in the tech industry, where companies often need to make rapid investments."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -3560,6 +3942,28 @@
      "number": "34.1",
      "type": "items",
      "instructions": "Match the two parts of these sentences containing expressions from A and B opposite.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "venture company in which China will have a 46 per cent stake, Airbus 39 per cent and Singapore Technologies 15 per cent."
+      },
+      {
+       "letter": "b",
+       "text": "and keep a 55 per cent controlling stake."
+      },
+      {
+       "letter": "c",
+       "text": "interest in the successful satellite channel UK Gold."
+      },
+      {
+       "letter": "d",
+       "text": "holding of the company’s common shares."
+      },
+      {
+       "letter": "e",
+       "text": "in a US airline so that they can work out a marketing alliance."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -4463,6 +4867,28 @@
      "number": "43.1",
      "type": "items",
      "instructions": "Rearrange these sentences containing expressions from A and B opposite into a logical order.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "and stimulating. I felt pleasantly stretched. But then the pressure got to be too much and I felt overworked"
+      },
+      {
+       "letter": "b",
+       "text": "and under a lot of stress: I found the travelling very tiring and stressful. I had the feeling of being overwhelmed by my work. I started getting very bad headaches, and I’m sure they were stress-induced."
+      },
+      {
+       "letter": "c",
+       "text": "challenging to change professions in this way, but now I can feel the stress building up again! I must do something to avoid complete breakdown and burnout."
+      },
+      {
+       "letter": "d",
+       "text": "Hi, my name’s Piet. I’m an engineer, at least I was. For twenty years I worked for a Dutch multinational. I was based here in Holland, but my work involved a lot of travelling, visiting our factories, and at first I liked my job: technically it was very rewarding"
+      },
+      {
+       "letter": "e",
+       "text": "So, when I was 45, I made a big change. I started a little wine shop in Amsterdam, working on my own. But now, after five years, I have 15 employees. At first it was"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -5174,6 +5600,52 @@
      "number": "50.1",
      "type": "items",
      "instructions": "Annelise Schmidt (AS) phones James Cassidy (JC) and arranges to meet him. Reorder their conversation,",
+     "options": [
+      {
+       "letter": "a",
+       "text": "AS:   Fine thanks. I’m going to be in London on Tuesday and Wednesday next week. How about meeting up to discuss how Penguin and Sprenger might work together?"
+      },
+      {
+       "letter": "b",
+       "text": "AS:   Hello. This is Annelise Schmidt. You remember we met at the Frankfurt Book Fair last month?"
+      },
+      {
+       "letter": "c",
+       "text": "AS:  Look forward to seeing you then. Bye."
+      },
+      {
+       "letter": "d",
+       "text": "AS:  Sounds good. Shall I meet you at your office? I’ve got the address."
+      },
+      {
+       "letter": "e",
+       "text": "AS:  Yes, that’s fine."
+      },
+      {
+       "letter": "f",
+       "text": "JC:  James Cassidy speaking."
+      },
+      {
+       "letter": "g",
+       "text": "JC:  Goodbye."
+      },
+      {
+       "letter": "h",
+       "text": "JC:   I’ll just check my diary. I won’t be able to make Tuesday. I’ve got to go to Manchester. Would Wednesday suit you? How about lunch?"
+      },
+      {
+       "letter": "i",
+       "text": "JC:  OK. See you on Wednesday at 12.30, then."
+      },
+      {
+       "letter": "j",
+       "text": "JC:  Yes, how are you?"
+      },
+      {
+       "letter": "k",
+       "text": "JC:   Yes. Why don’t you come round here at about 12.30? Ask for me at reception and I’ll come down."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -5760,6 +6232,32 @@
      "number": "55.3",
      "type": "items",
      "instructions": "A management consultant is talking about meetings, using expressions from C opposite. Put what",
+     "options": [
+      {
+       "letter": "a",
+       "text": "point and rambling. And then there are those who want to show"
+      },
+      {
+       "letter": "b",
+       "text": "moving. If they do this, it’s amazing how much ground you can cover."
+      },
+      {
+       "letter": "c",
+       "text": "Of course, everyone wants meetings to be productive and achieve results. But from personal experience, we know that a lot of them are a waste of"
+      },
+      {
+       "letter": "d",
+       "text": "off – to show how important and clever they are. The chair should keep things"
+      },
+      {
+       "letter": "e",
+       "text": "the point. We’ve all seen those annoying people who keep wandering off the"
+      },
+      {
+       "letter": "f",
+       "text": "time, and nothing is achieved. In order for discussion to be useful, people should stick to"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -5903,6 +6401,28 @@
      "number": "57.2",
      "type": "items",
      "instructions": "Match the two parts of the expressions from the continuation of the discussion in B opposite.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "I think that the prizes we win help us to attract and keep the"
+      },
+      {
+       "letter": "b",
+       "text": "as if the design people think of themselves as living on another planet."
+      },
+      {
+       "letter": "c",
+       "text": "I see it, you should be looking at what we produce, not at the time of day"
+      },
+      {
+       "letter": "d",
+       "text": "opinion, we have to think of the needs of each department."
+      },
+      {
+       "letter": "e",
+       "text": "me that they set a very bad example to the other departments."
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -6817,6 +7337,40 @@
      "number": "66.3",
      "type": "items",
      "instructions": "The EPA–LT negotiations are ending. Arrange the phrases that Frederica Ramos uses to close the",
+     "options": [
+      {
+       "letter": "a",
+       "text": "I’ll just run over the main points. On the issue of the numbers of planes we wish to order,"
+      },
+      {
+       "letter": "b",
+       "text": "I think that covers everything. That’s it for today."
+      },
+      {
+       "letter": "c",
+       "text": "If we agree to the proposal, you’ll draw up a contract based on those points."
+      },
+      {
+       "letter": "d",
+       "text": "payment to settle, and there is also still the outstanding issue of documentation."
+      },
+      {
+       "letter": "e",
+       "text": "we agreed that you would install the most economical Rolls-Royce engines now available."
+      },
+      {
+       "letter": "f",
+       "text": "we agreed that you would supply us with 120 planes over four years. As far as fuel economy is concerned,"
+      },
+      {
+       "letter": "g",
+       "text": "We still have the question of the currency for"
+      },
+      {
+       "letter": "h",
+       "text": "You agreed to send us a written proposal on these last two issues."
+      }
+     ],
      "items": [
       {
        "n": 1,

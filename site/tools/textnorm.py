@@ -52,7 +52,12 @@ def expand_runs(sub):
             out.append(it)
             continue
         changed = True
-        out.append({'n': it['n'], 'answer': m.group(1)})
+        # The run carries the whole exercise's answers but only the first row's
+        # question, and that question is still that row's: keep it, or a
+        # matching exercise that parsed perfectly ends up with no prompts at all.
+        first = dict(it)
+        first['answer'] = m.group(1)
+        out.append(first)
         for n, a in re.findall(r'(\d{1,2})\s+(\S{1,3})', m.group(2)):
             out.append({'n': int(n), 'answer': a})
     if changed:

@@ -14,7 +14,7 @@ import re
 
 import fitz
 
-from textnorm import clean_unit
+from textnorm import clean_unit, expand_runs
 
 SUB_RE = re.compile(r'^(\d{1,2}\.\d{1,2})$')
 SUB_HEAD = re.compile(r'^(\d{1,2}\.\d{1,2})(?:\s+(\D.*))?$')
@@ -201,16 +201,159 @@ def parse_exercises(page, run_head, stitch=False):
         m = SUB_HEAD.match(t) if l['x'] < 120 else None
         if m:
             cur = m.group(1)
-            subs[cur] = {'instructions': (m.group(2) or '').strip(), 'lines': []}
+            subs[cur] = {'instructions': (m.group(2) or '').strip(),
+                         'lines': [], 'frags': []}
             continue
         if cur is None:
             continue
+        subs[cur]['frags'].append(l)
         m = ITEM_RE.match(l['text']) or ITEM_RE2.match(t)
         if not subs[cur]['instructions'] and not m and len(t) > 12:
             subs[cur]['instructions'] = t
         else:
             subs[cur]['lines'].append(l['text'])
     return subs
+
+
+# "a work in shifts" — a lettered choice. Two spaces are common ("a  AS: …"),
+# and the letter is always followed by real text, never by another label.
+LETTER_LABEL = re.compile(r'^([a-l])[ \t]+(\S.*)$')
+# A number opens the *other* column of a matching exercise, so it never
+# continues the lettered one.
+NUM_START = re.compile(r'^\s*\d{1,2}[\s\t]')
+
+
+def letter_options(frags):
+    """The a/b/c choices printed inside one sub-exercise -> [(letter, text)].
+
+    A matching or reordering exercise prints its choices as a lettered list and
+    its key as bare letters, so without this list the app can only say "see the
+    question in the PDF" and then ask the learner to type a letter they have
+    never been shown. The list is nearly always in the exercise itself; it is
+    set as its own column, every label at the same x, so the column is what
+    identifies it — a stray "a lot of" mid-sentence is never at that x.
+
+    Frags must come from a stitched pass, so a choice broken by an answer blank
+    ("a 'Obviously, my work involves … (travel) a lot.") arrives as one line.
+    """
+    # candidate labels, grouped by the column they start in
+    cols = {}
+    for i, f in enumerate(frags):
+        m = LETTER_LABEL.match(f['text'].strip())
+        # "a … c" is two columns of a table that stitched into one line, not a
+        # choice; a real one is a phrase.
+        if m and len(m.group(2)) >= 8:
+            cols.setdefault(round(f['x'] / 4), []).append((i, m.group(1), m.group(2)))
+
+    best = None
+    for _, got in cols.items():
+        letters = [g[1] for g in got]
+        # a run from 'a', in order, no repeats — anything else is a coincidence
+        want = [chr(ord('a') + i) for i in range(len(letters))]
+        if len(letters) >= 3 and letters == want:
+            if best is None or len(letters) > len(best):
+                best = got
+    if not best:
+        return []
+
+    label_x = frags[best[0][0]]['x']
+    right = neighbour_column(frags, label_x)
+    # "Match the beginnings (1–6) with the endings (a–f)" prints the letters in
+    # the right-hand column, so the numbers wrap on our left as well as our
+    # right; both are somebody else's text.
+    left = label_x - 4
+    starts = [g[0] for g in best]
+    out = []
+    for j, (i, letter, text) in enumerate(best):
+        end = starts[j + 1] if j + 1 < len(starts) else len(frags)
+        parts = [text]
+        for f in frags[i + 1:end]:
+            t = f['text'].strip()
+            # The two halves of a matching exercise share baselines, so the
+            # other column's lines are interleaved with ours: step over them
+            # rather than stopping, or every choice ends at its first neighbour.
+            if f['x'] < left or f['x'] >= right or NUM_START.match(f['text']):
+                continue
+            # a wrapped line of the same choice is indented under the label;
+            # a line back at the label's own margin has left the list
+            if f['x'] < label_x + 4 or t.lower().startswith('over to you'):
+                break
+            parts.append(t)
+        out.append((letter, ' '.join(parts).strip()))
+    return out
+
+
+# A wrapped line is indented a few points under its label; a second column of
+# the exercise starts much further across. Anything past this is the wrap of a
+# neighbour, never our own.
+COLUMN_GAP = 60
+
+
+def neighbour_column(frags, label_x):
+    """x of the column printed to the right of `label_x`, or infinity.
+
+    A matching exercise sets its two halves side by side, so the lettered
+    column's lines and the numbered column's lines share baselines. Both wrap,
+    and a wrap carries no label to tell them apart — only the left edge does.
+    A real column has several lines starting at the same x; a wrap that happens
+    to begin far across (after a long answer blank) has one.
+    """
+    counts = {}
+    for f in frags:
+        x = round(f['x'])
+        if x > label_x + COLUMN_GAP:
+            counts[x] = counts.get(x, 0) + 1
+    edges = [x for x, c in counts.items() if c >= 3]
+    return min(edges) if edges else float('inf')
+
+
+# "1 accountant 2 postwoman 3 flight attendant" — a whole numbered list set on
+# one line, which otherwise parses as question 1 with the rest of the list
+# glued to it and leaves questions 2..n blank.
+INLINE_RUN = re.compile(r'\s(\d{1,2})\s+(?=[^\s\d])')
+
+
+def split_inline_items(qlines):
+    """Break a one-line numbered list into a question per number, in place."""
+    for n in list(qlines):
+        text = qlines[n]
+        cuts = [(m.start(), int(m.group(1)), m.end()) for m in
+                INLINE_RUN.finditer(text)]
+        # only a genuine list: 2, 3, 4 … following on from this line's own
+        # number, with nothing else already parsed under those numbers
+        wanted = list(range(n + 1, n + 1 + len(cuts)))
+        if len(cuts) < 2 or [c[1] for c in cuts] != wanted:
+            continue
+        if any(w in qlines for w in wanted):
+            continue
+        parts, prev = [], 0
+        for start, num, end in cuts:
+            parts.append(text[prev:start].strip())
+            prev = end
+        parts.append(text[prev:].strip())
+        if any(len(p) < 2 for p in parts):
+            continue
+        for num, part in zip([n] + wanted, parts):
+            qlines[num] = part
+
+
+def match_options(items, frags):
+    """The lettered choices for a matching/reordering exercise, or [].
+
+    Attached only when the printed key really is those letters — every answer
+    opening with one of them. That is what makes the list the thing the learner
+    picks from, rather than an unrelated a/b/c list somewhere on the page.
+    """
+    if len(items) < 2 or not frags:
+        return []
+    firsts = [str(i.get('answer', '')).split(' ')[0].strip('.,;)') for i in items]
+    if not all(len(f) == 1 and 'a' <= f <= 'l' for f in firsts):
+        return []
+    opts = letter_options(frags)
+    got = {l for l, _ in opts}
+    if not got or not set(firsts) <= got:
+        return []
+    return opts
 
 
 def unit_title(page, bk):
@@ -224,12 +367,16 @@ def unit_title(page, bk):
 def build(bk):
     doc = fitz.open(bk.src)
     key = parse_key(doc, bk)
-    st = {'items': 0, 'with_q': 0, 'open': 0, 'subs': 0}
+    st = {'items': 0, 'with_q': 0, 'open': 0, 'subs': 0, 'opts': 0}
     out_units = []
 
     for u in bk.units:
         ex = bk.ex_index(u)
         qsubs = parse_exercises(doc[ex], bk.run_head, bk.stitch)
+        # The lettered choices only read correctly off a stitched page, whether
+        # or not this book's question text wants stitching.
+        osubs = (qsubs if bk.stitch
+                 else parse_exercises(doc[ex], bk.run_head, stitch=True))
         subs_out = []
         for sub in sorted(key.get(u, {}), key=lambda s: int(s.split('.')[1])):
             k = key[u][sub]
@@ -239,21 +386,30 @@ def build(bk):
                 m = ITEM_RE.match(ln) or ITEM_RE2.match(ln.strip())
                 if m and len(m.group(2)) > 3:
                     qlines.setdefault(int(m.group(1)), m.group(2).strip())
+            split_inline_items(qlines)
 
-            items = []
-            for n in sorted(k['items']):
-                it = {'n': n, 'answer': k['items'][n]}
-                if n in qlines:
-                    it['question'] = qlines[n]
+            # Expand a one-line run of answers ("1 c 2 d 3 e") before the
+            # questions are attached, not after: the rows it splits into are
+            # rows the page prints questions for, and clean_unit runs too late
+            # to give them any.
+            items = expand_runs({'items': [{'n': n, 'answer': k['items'][n]}
+                                           for n in sorted(k['items'])]})['items']
+            for it in items:
+                if it['n'] in qlines:
+                    it['question'] = qlines[it['n']]
                     st['with_q'] += 1
-                items.append(it)
             st['items'] += len(items)
             st['subs'] += 1
+
+            opts = match_options(items, osubs.get(sub, {}).get('frags', []))
+            if opts:
+                st['opts'] += 1
 
             o = {'number': sub,
                  'type': 'open' if (k['open'] and not items) else
                          ('items' if items else 'freeform'),
                  'instructions': q.get('instructions', ''),
+                 'options': [{'letter': l, 'text': tx} for l, tx in opts],
                  'items': items}
             if k['open']:
                 o['note'] = 'Possible answers — not auto-checked.'
@@ -275,5 +431,6 @@ def main(bk, out_path):
     data, st = build(bk)
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
-    print("units=%d subs=%d items=%d with_question=%d open_subs=%d"
-          % (len(data['units']), st['subs'], st['items'], st['with_q'], st['open']))
+    print("units=%d subs=%d items=%d with_question=%d open_subs=%d with_options=%d"
+          % (len(data['units']), st['subs'], st['items'], st['with_q'],
+             st['open'], st['opts']))

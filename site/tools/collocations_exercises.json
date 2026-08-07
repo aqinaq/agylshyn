@@ -1637,15 +1637,17 @@
       {
        "n": 1,
        "answer": "a bright future [a future that is looking happy and successful] a bright child [an intelligent child]",
-       "question": "bright 2 warm 3 cold"
+       "question": "bright"
       },
       {
        "n": 2,
-       "answer": "a warm welcome [a friendly welcome] a warm smile [a friendly smile]"
+       "answer": "a warm welcome [a friendly welcome] a warm smile [a friendly smile]",
+       "question": "warm"
       },
       {
        "n": 3,
-       "answer": "cold eyes [unfriendly eyes] a cold stare [an unfriendly stare]"
+       "answer": "cold eyes [unfriendly eyes] a cold stare [an unfriendly stare]",
+       "question": "cold"
       }
      ],
      "note": "Possible answers — not auto-checked."
@@ -4206,6 +4208,32 @@
      "number": "31.2",
      "type": "items",
      "instructions": "Match the newspaper headlines 1–6 with the topics of the stories a–f.",
+     "options": [
+      {
+       "letter": "a",
+       "text": "a company wins a promising new contract"
+      },
+      {
+       "letter": "b",
+       "text": "a rival company is causing problems"
+      },
+      {
+       "letter": "c",
+       "text": "a firm is going to sell shares for the first time"
+      },
+      {
+       "letter": "d",
+       "text": "a company has ceased trading"
+      },
+      {
+       "letter": "e",
+       "text": "a company may go out of business"
+      },
+      {
+       "letter": "f",
+       "text": "local companies’ sales figures are looking good"
+      }
+     ],
      "items": [
       {
        "n": 1,
@@ -8293,39 +8321,48 @@
      "items": [
       {
        "n": 1,
-       "answer": "–"
+       "answer": "–",
+       "question": "I have no sympathy for anyone who takes such foolish risks."
       },
       {
        "n": 2,
-       "answer": "+"
+       "answer": "+",
+       "question": "Jane Austen is my all-time favourite writer."
       },
       {
        "n": 3,
-       "answer": "+"
+       "answer": "+",
+       "question": "I’m a dedicated fan of Robin Williams."
       },
       {
        "n": 4,
-       "answer": "–"
+       "answer": "–",
+       "question": "I don’t relish the thought of a holiday with all my cousins."
       },
       {
        "n": 5,
-       "answer": "–"
+       "answer": "–",
+       "question": "It gives me no pleasure to have to say this to you."
       },
       {
        "n": 6,
-       "answer": "+"
+       "answer": "+",
+       "question": "I take pride in doing my work as neatly as I can."
       },
       {
        "n": 7,
-       "answer": "–"
+       "answer": "–",
+       "question": "I must say I rather took offence at what she said to me."
       },
       {
        "n": 8,
-       "answer": "+"
+       "answer": "+",
+       "question": "I’m a great lover of the open air life."
       },
       {
        "n": 9,
-       "answer": "+"
+       "answer": "+",
+       "question": "I’ve always been a keen admirer of Nelson Mandela."
       }
      ]
     },
