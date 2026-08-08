@@ -4,115 +4,6 @@
  "unitsOf": 66,
  "units": [
   {
-   "unit": 1,
-   "title": "Work and jobs",
-   "pdfIntroPage": 12,
-   "pdfExercisePage": 13,
-   "pdfPages": [
-    13
-   ],
-   "subExercises": [
-    {
-     "number": "1.1",
-     "type": "items",
-     "instructions": "Look at A opposite. Margaux is talking about her work. Correct the expressions in italics.",
-     "items": [
-      {
-       "n": 1,
-       "answer": "I work on"
-      },
-      {
-       "n": 2,
-       "answer": "In fact, I run"
-      },
-      {
-       "n": 3,
-       "answer": "I manage"
-      },
-      {
-       "n": 4,
-       "answer": "One of my main responsibilities"
-      },
-      {
-       "n": 5,
-       "answer": "I’m also in charge of"
-      },
-      {
-       "n": 6,
-       "answer": "I deal with"
-      },
-      {
-       "n": 7,
-       "answer": "I’m responsible for"
-      },
-      {
-       "n": 8,
-       "answer": "I work closely with"
-      }
-     ]
-    },
-    {
-     "number": "1.2",
-     "type": "items",
-     "instructions": "Complete each gap in the text with one of the prepositions from B opposite.",
-     "items": [
-      {
-       "n": 1,
-       "answer": "to"
-      },
-      {
-       "n": 2,
-       "answer": "to"
-      },
-      {
-       "n": 3,
-       "answer": "at"
-      },
-      {
-       "n": 4,
-       "answer": "off"
-      },
-      {
-       "n": 5,
-       "answer": "in"
-      },
-      {
-       "n": 6,
-       "answer": "out"
-      }
-     ]
-    },
-    {
-     "number": "1.3",
-     "type": "items",
-     "instructions": "What is being advertised in each of these job advertisements (1–6)? Use an expression from C",
-     "items": [
-      {
-       "n": 2,
-       "answer": "full-time work"
-      },
-      {
-       "n": 3,
-       "answer": "part-time work"
-      },
-      {
-       "n": 4,
-       "answer": "a temporary job",
-       "question": "weeks holiday per year. (job) …"
-      },
-      {
-       "n": 5,
-       "answer": "permanent work"
-      },
-      {
-       "n": 6,
-       "answer": "a permanent job"
-      }
-     ]
-    }
-   ]
-  },
-  {
    "unit": 2,
    "title": "Ways of working",
    "pdfIntroPage": 14,
@@ -235,6 +126,118 @@
        "n": 5,
        "answer": "b stimulating, repetitive",
        "question": "teacher"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "unit": 4,
+   "title": "Skills and qualifications",
+   "pdfIntroPage": 18,
+   "pdfExercisePage": 19,
+   "pdfPages": [
+    19
+   ],
+   "subExercises": [
+    {
+     "number": "4.1",
+     "type": "items",
+     "instructions": "Look at A opposite. Complete each sentence with the correct",
+     "items": [
+      {
+       "n": 1,
+       "answer": "from, with, in",
+       "question": "Ravi graduated …"
+      },
+      {
+       "n": 2,
+       "answer": "in, as",
+       "question": "He taught for a while, but didn’t like it. He wanted to get a …"
+      },
+      {
+       "n": 3,
+       "answer": "as",
+       "question": "He qualified …"
+      },
+      {
+       "n": 4,
+       "answer": "on, in",
+       "question": "After he had acquired some experience, he went …"
+      }
+     ]
+    },
+    {
+     "number": "4.2",
+     "type": "items",
+     "instructions": "Look at B opposite. Are these jobs generally considered to",
+     "items": [
+      {
+       "n": 1,
+       "answer": "skilled",
+       "question": "teacher …"
+      },
+      {
+       "n": 2,
+       "answer": "highly skilled",
+       "question": "software engineer …"
+      },
+      {
+       "n": 3,
+       "answer": "semi-skilled",
+       "question": "car worker on a production line …"
+      },
+      {
+       "n": 4,
+       "answer": "unskilled",
+       "question": "cleaner …"
+      },
+      {
+       "n": 5,
+       "answer": "unskilled",
+       "question": "office cleaner …"
+      },
+      {
+       "n": 6,
+       "answer": "highly skilled",
+       "question": "airline pilot …"
+      },
+      {
+       "n": 7,
+       "answer": "semi-skilled",
+       "question": "bus driver …"
+      },
+      {
+       "n": 8,
+       "answer": "skilled",
+       "question": "office manager …"
+      }
+     ]
+    },
+    {
+     "number": "4.3",
+     "type": "items",
+     "instructions": "Complete these extracts from job advertisements using words from C opposite.",
+     "items": [
+      {
+       "n": 1,
+       "answer": "computer-literate, proactive, self-starter, team-player"
+      },
+      {
+       "n": 2,
+       "answer": "numerate"
+      },
+      {
+       "n": 3,
+       "answer": "motivated, driven"
+      },
+      {
+       "n": 4,
+       "answer": "self-starter, methodical, systematic, organized"
+      },
+      {
+       "n": 5,
+       "answer": "talented, motivated"
       }
      ]
     }

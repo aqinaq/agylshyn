@@ -52,15 +52,45 @@ def units_for(book_id, cfg):
         return DEFAULT_UNITS
 
 
+def shows_its_work(unit):
+    """Can this unit be worked on the site, or only read out of the PDF?
+
+    Not every unit's questions came off the page.  Business unit 1 is nineteen
+    rows and eighteen of them say "look this one up in the book" — which, as
+    the first thing a reader sees of a book they are being asked to pay for,
+    advertises the opposite of what is being sold.  A unit earns its place in
+    the sample by holding the questions it asks.
+    """
+    rows = [it for s in unit.get('subExercises') or []
+            for it in s.get('items') or [] if not it.get('isExample')]
+    if not rows:
+        return False
+    printed = sum(1 for it in rows if (it.get('question') or '').strip())
+    return printed * 2 >= len(rows)
+
+
+def sample_units(book, take):
+    """The first `take` units worth giving away.
+
+    Order is kept, so the sample is still the front of the book wherever the
+    front of the book is usable.  A book whose every unit is an answer sheet —
+    the IELTS collections, by design — has nothing to choose between, and falls
+    back to its first units rather than giving away nothing at all.
+    """
+    units = list(book.get('units') or [])
+    workable = [u for u in units if shows_its_work(u)]
+    return (workable or units)[:take]
+
+
 def sample_of(book, take):
-    """The first `take` units, plus what the app needs to say so.
+    """The sample units, plus what the app needs to say so.
 
     `unitsOf` is the whole book's unit count: the banner says "2 of 145", and a
     sample that could not say what it is a sample of would read as a broken
     book.  Writing and Speaking prompts are left out — they belong to tests
     that are not in the sample.
     """
-    units = list(book.get('units') or [])[:take]
+    units = sample_units(book, take)
     return {'id': book['id'], 'sample': True, 'unitsOf': len(book.get('units') or []),
             'units': units}
 
