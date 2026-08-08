@@ -98,6 +98,11 @@ window.I18N = {
     'plc.track.advanced': 'Жоғары деңгей: нәзік айырмашылықтар, стиль реңктері мен күрделі құрылымдар.',
     'warn.badge': 'ескерту бар',
     'warn.openPdf': '📕 Кітаптың PDF-ін ашу',
+    // IELTS кітаптары — жауап парағы: сұрақтар кітаптың өзінде қалады. Мұны
+    // айтпасақ, бет 40 бос қорап болып көрінеді.
+    'sheet.title': 'Бұл — жауап парағы',
+    'sheet.text': 'Сұрақтар кітаптың өзінде: оларды PDF-тен оқисың да, жауабын осындағы ' +
+                  'нөмірі бойынша жазасың. Нағыз емтихандағыдай. PDF қатар ашылады.',
     'help.h1': 'Нұсқаулық',
 
     'nav.units': 'Units',
@@ -207,6 +212,9 @@ window.I18N = {
     'row.selfWhy.key': 'Бұл жолдың жауап кілті PDF-тен шығарғанда бүлінген. Дұрысын кітаптың жауап кілтінен қара — «📗 Жауап кілті» түймесі осында.',
     'row.selfWhy.open': 'Ашық сұрақ: бір ғана дұрыс жауабы жоқ. Өз жауабыңды жазып, дұрыс па екенін өзің шеш.',
     'row.placeholder': 'Жауабың…',
+    // Сәйкестендіру жаттығуында жауап — әріп. Мұны айтпасақ, оқушы сөйлемнің
+    // өзін жазады да, дұрыс тапқан тапсырмасы «қате» болып шығады.
+    'row.phLetter': 'Әріп ({range})',
     'row.aria': 'Unit {unit}, {sub} тапсырма, №{n} сұрақтың жауабы',
     'row.lastTime': 'өткен жолы: ',
     'row.mastered': '★ меңгерілді',
@@ -560,6 +568,8 @@ window.I18N = {
     'sub.crossword': '🧩 Бұл кроссворд — торды PDF-тен шеш.',
     'sub.doInPdf': 'Бұл тапсырманы PDF-тен орында.',
     'sub.checkExercise': 'Тапсырманы тексеру',
+    // Бос тапсырмада бұл түйме бұрын мүлдем үнсіз еді — бұзылған сияқты.
+    'sub.checkNothing': 'Алдымен бір жауап жаз — әзірге тексеретін ештеңе жоқ.',
 
     // Тексере алмайтын тапсырманың жазу орны — дәптердің орнына.
     'pad.label': '✍️ Осында жаз',
@@ -885,6 +895,12 @@ window.I18N = {
     'plc.track.advanced': 'Advanced: fine distinctions, shades of register and more complex structures.',
     'warn.badge': 'please read',
     'warn.openPdf': '📕 Open the book’s PDF',
+    // The IELTS books are answer sheets: the questions stay in the paper.
+    // Unsaid, the page reads as forty empty boxes.
+    'sheet.title': 'This is an answer sheet',
+    'sheet.text': 'The questions stay in the book: you read them from the PDF and write ' +
+                  'each answer against its number here — the way the real exam works. ' +
+                  'The PDF opens alongside.',
     'help.h1': 'How to use this site',
 
     'nav.units': 'Units',
@@ -994,6 +1010,9 @@ window.I18N = {
     'row.selfWhy.key': 'This row’s printed key did not survive extraction. Check the book’s answer key instead — the "📗 Answer key" button opens it.',
     'row.selfWhy.open': 'An open question: there is no single right answer. Write yours and decide for yourself.',
     'row.placeholder': 'Your answer…',
+    // A matching exercise is answered with a letter. Unsaid, a reader writes
+    // out the ending they correctly chose and is told they got it wrong.
+    'row.phLetter': 'Letter ({range})',
     'row.aria': 'Answer for Unit {unit}, exercise {sub}, question {n}',
     'row.lastTime': 'last time: ',
     'row.mastered': '★ mastered',
@@ -1347,6 +1366,8 @@ window.I18N = {
     'sub.crossword': '🧩 This is a crossword — solve the grid in the PDF.',
     'sub.doInPdf': 'Do this exercise in the PDF.',
     'sub.checkExercise': 'Check this exercise',
+    // With nothing filled in, this button used to do nothing at all.
+    'sub.checkNothing': 'Write an answer first — there is nothing to check yet.',
 
     'pad.label': '✍️ Write here',
     'pad.ph': 'Write your answer here instead of in a notebook. It saves itself.',

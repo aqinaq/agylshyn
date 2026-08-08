@@ -885,7 +885,7 @@
      "go", because Enter is what checks the answer.
      `aria` names the question for a screen reader, which would otherwise hear
      only the placeholder and not know which box it belongs to (AUDIT §У9). */
-  function answerInput(aria) {
+  function answerInput(aria, placeholder) {
     var input = el('input');
     input.type = 'text';
     input.autocomplete = 'off';
@@ -893,7 +893,7 @@
     input.spellcheck = false;
     input.setAttribute('autocorrect', 'off');
     input.setAttribute('enterkeyhint', 'go');
-    input.placeholder = t('row.placeholder');
+    input.placeholder = placeholder || t('row.placeholder');
     input.setAttribute('aria-label', aria);
     return input;
   }
@@ -2810,7 +2810,13 @@
     clearTimeout(pdfWatch);
     pdfPane.classList.remove('loading');
     pdfFallback.hidden = true;
-    if (remember !== false) state.ui.pdfOpen = false;
+    if (remember !== false) {
+      state.ui.pdfOpen = false;
+      // Which book the reader was in when they said so. A preference formed in
+      // a book that prints its questions must not follow them into one that
+      // does not — see the auto-open in renderUnit.
+      state.ui.pdfBook = book ? book.id : null;
+    }
     save();
     applyWidths();
   }
@@ -2931,7 +2937,8 @@
 
     /* --- input + buttons --- */
     var line = el('div', 'answer-line');
-    var input = answerInput(t('row.aria', { unit: unitNo, sub: sub.number, n: it.n }));
+    var input = answerInput(t('row.aria', { unit: unitNo, sub: sub.number, n: it.n }),
+                            letterPlaceholder(sub, it));
     var r0 = rec(key);
     // On the Mistakes page start from a clean box; the old wrong answer is shown
     // separately as "last time: …" rather than left sitting in the field.
@@ -3003,10 +3010,12 @@
       if (it.answer) {
         var k = el('span', 'key');
         k.appendChild(document.createTextNode(t('row.bookKey')));
-        var kb = el('b'); kb.textContent = it.answer;
+        var kb = el('b'); kb.textContent = letterKey(sub, it.answer);
         k.appendChild(kb);
-        // Hearing the right answer is half the point of getting it wrong.
-        var kSay = speakBtn(function () { return hintBase(it.answer) || it.answer; });
+        // Hearing the right answer is half the point of getting it wrong — and
+        // a letter read aloud is not an answer, so a matching row speaks the
+        // choice the letter stands for.
+        var kSay = speakBtn(function () { return hintBase(letterKey(sub, it.answer)) || it.answer; });
         if (kSay) k.appendChild(kSay);
         feedback.appendChild(k);
       }
@@ -3058,12 +3067,16 @@
 
     // Returns true when a check actually ran.
     function check() {
-      if (!input.value.trim()) { input.focus(); return false; }
+      if (!input.value.trim()) return false;
       if (isManual(it)) return false;      // needs a manual verdict
       mark(isMatch(input.value, it), false);
       return true;
     }
     row._check = check;
+    // A row "Check the exercise" could have graded, had anything been typed in
+    // it. Used to send the reader to the first of them rather than leave the
+    // button looking dead.
+    row._blank = function () { return !input.value.trim() && !isManual(it); };
 
     var hintBtn = null;
     if (exam) {
@@ -3120,10 +3133,42 @@
     }
   }
 
+  /* Grade every filled row in `scope`; returns how many were graded.
+
+     Nothing filled in used to mean nothing at all: the button ran, every row
+     declined, and the page did not move — a dead control, on the one press a
+     reader makes when they are not sure what the button does. The caller says
+     so instead, and the cursor goes to the first row that was waiting for an
+     answer. */
   function checkAllIn(scope) {
+    var ran = 0, first = null;
     [].forEach.call(scope.querySelectorAll('.row'), function (r) {
-      if (r._check) r._check();
+      if (!r._check) return;
+      if (r._check()) ran++;
+      else if (!first && r._blank && r._blank()) first = r;
     });
+    if (!ran && first) {
+      var box = first.querySelector('input');
+      if (box) box.focus();
+    }
+    return ran;
+  }
+
+  /* A "check everything here" button, and the answer when there is nothing to
+     check. Returns the note to place beside it. */
+  function wireCheckAll(btn, scope) {
+    var note = el('span', 'check-note');
+    note.setAttribute('aria-live', 'polite');
+    note.hidden = true;
+    var timer = null;
+    btn.addEventListener('click', function () {
+      if (checkAllIn(scope)) { note.hidden = true; return; }
+      note.textContent = t('sub.checkNothing');
+      note.hidden = false;
+      clearTimeout(timer);
+      timer = setTimeout(function () { note.hidden = true; }, 4000);
+    });
+    return note;
   }
 
   /* ================= sub-exercise block ================= */
@@ -3171,6 +3216,68 @@
   // key really is one letter per question qualify — an exercise where the same
   // option can answer several questions ("tick the sentences which are true")
   // would be crossing out choices that are still live.
+  /* "a–h" for an exercise answered by choosing from a lettered list.
+
+     A matching exercise prints its choices and expects one letter back, and
+     the row said none of that: the box read "Your answer…", so writing out the
+     ending you had correctly chosen was marked wrong. Only the rows whose own
+     key is a single letter get the prompt — the same exercise can hold a row
+     that wants a word. */
+  function letterRange(sub) {
+    var opts = sub.options || [];
+    var first = opts.length ? optLetter(opts[0].letter) : '';
+    var last = opts.length ? optLetter(opts[opts.length - 1].letter) : '';
+    return first && last && first !== last ? first + '–' + last : '';
+  }
+
+  function letterPlaceholder(sub, it) {
+    if (!optLetter(it.answer)) return null;
+    var range = letterRange(sub);
+    return range ? t('row.phLetter', { range: range }) : null;
+  }
+
+  /* "c" spelled out as "c — It's starting to rain."
+
+     A bare letter is the whole answer a matching exercise stores, and on every
+     screen away from the exercise itself — a session card's verdict, the list
+     of what was missed, the Mistakes page — that letter is shown with nothing
+     to read it against. "The book: c" tells a reader who has just got it wrong
+     precisely nothing. */
+  /* The a/b/c choices, listed once, as `{ el, chips }` — or null.
+
+     A choice is a word ("telecommute") in a matching exercise and a whole
+     sentence in a reordering one. Pills work for the first and are unusable for
+     the second, so anything long is stacked one per line instead. `chips` is
+     for the caller that crosses used letters out; a screen that only needs the
+     list can ignore it. */
+  function optionList(sub, max) {
+    var opts = (sub && sub.options) || [];
+    if (!opts.length || (max && opts.length > max)) return null;
+    var wordy = opts.some(function (o) { return String(o.text || '').length > 42; });
+    var box = el('div', 'options' + (wordy ? ' long' : ''));
+    var chips = [];
+    opts.forEach(function (o) {
+      var chip = el('span', 'opt');
+      chip.appendChild(el('b', null, o.letter));
+      chip.appendChild(document.createTextNode(' ' + o.text));
+      box.appendChild(chip);
+      chips.push({ chip: chip, letter: optLetter(o.letter) });
+    });
+    return { el: box, chips: chips };
+  }
+
+  function letterKey(sub, value) {
+    var L = optLetter(value);
+    var opts = (sub && sub.options) || [];
+    if (!L || !opts.length) return String(value == null ? '' : value);
+    for (var i = 0; i < opts.length; i++) {
+      if (optLetter(opts[i].letter) === L && opts[i].text) {
+        return opts[i].letter + ' — ' + opts[i].text;
+      }
+    }
+    return String(value);
+  }
+
   function oneToOneLetters(sub) {
     var seen = {}, n = 0;
     var items = sub.items || [];
@@ -3318,25 +3425,9 @@
     }
 
     // matching exercises: the a/b/c choices, listed once
-    var optChips = null;
-    if (sub.options && sub.options.length) {
-      // A choice is a word ("telecommute") in a matching exercise and a whole
-      // sentence in a reordering one. Pills work for the first and are unusable
-      // for the second, so anything long is stacked one per line instead.
-      var wordy = sub.options.some(function (o) {
-        return String(o.text || '').length > 42;
-      });
-      var ol = el('div', 'options' + (wordy ? ' long' : ''));
-      optChips = [];
-      sub.options.forEach(function (o) {
-        var chip = el('span', 'opt');
-        chip.appendChild(el('b', null, o.letter));
-        chip.appendChild(document.createTextNode(' ' + o.text));
-        ol.appendChild(chip);
-        optChips.push({ chip: chip, letter: optLetter(o.letter) });
-      });
-      box.appendChild(ol);
-    }
+    var choices = optionList(sub);
+    var optChips = choices && choices.chips;
+    if (choices) box.appendChild(choices.el);
 
     if (sub.type === 'freeform') {
       if (sub.rawQuestion) box.appendChild(el('div', 'raw', sub.rawQuestion));
@@ -3433,8 +3524,8 @@
     var actions = el('div', 'sub-actions');
     if (hasCheckable) {
       var btn = el('button', 'btn small', t('sub.checkExercise'));
-      btn.addEventListener('click', function () { checkAllIn(box); });
       actions.appendChild(btn);
+      actions.appendChild(wireCheckAll(btn, box));
     }
 
     // Whenever the exercise holds any item the app can't grade — an open/personal
@@ -3549,6 +3640,25 @@
       link.addEventListener('click', function () { showPdf(null); });
       box.appendChild(link);
     }
+    return box;
+  }
+
+  /* An answer sheet says so.
+
+     The IELTS books are answer sheets by design: the questions stay in the
+     paper, and a row is its number and a box. Walked cold, that page is forty
+     empty boxes and not one word about where the questions are — Essential
+     Grammar, which is in the same position, has explained itself since the
+     day it shipped, and these three never did. One line, and the button that
+     puts the paper on the screen beside them. */
+  function buildSheetNote() {
+    if (!book.meta || !book.meta.answerSheet || !book.meta.pdf) return null;
+    var box = el('div', 'warn sheet-note');
+    box.appendChild(el('div', 'warn-head', '📄 ' + t('sheet.title')));
+    box.appendChild(el('p', null, t('sheet.text')));
+    var link = el('button', 'btn small', t('warn.openPdf'));
+    link.addEventListener('click', function () { showPdf(null); });
+    box.appendChild(link);
     return box;
   }
 
@@ -5085,12 +5195,27 @@
       // units) is the layout, and a first-time reader should be handed it rather
       // than have to discover the button. Narrow screens keep it shut: there the
       // pane covers the whole page. `hidePdf` records the choice either way.
-      if (state.ui.pdfOpen == null && window.innerWidth >= 1000) {
+      //
+      // The preference is one value for the whole site, and that is right for
+      // the books that print their questions — but closing the pane in Grammar,
+      // where the exercises read perfectly well without it, then left an IELTS
+      // paper as forty numbered boxes with nothing to answer and no clue why.
+      // In a book with no question text of its own the pane IS the page, so a
+      // "closed" made in some other book does not count here.
+      var elsewhere = book.meta.needsPdf && state.ui.pdfBook !== book.id;
+      var pref = state.ui.pdfOpen;
+      if ((pref == null || elsewhere) && window.innerWidth >= 1000) {
         state.ui.pdfOpen = true;
       }
 
       // reopen where they left off, and follow along as units change
       if (pdfOpen() || state.ui.pdfOpen) showPdf(startPage);
+      // Opening it because this book cannot be read without it is the app's
+      // decision, not the reader changing their mind — so their own answer goes
+      // back, and closing the pane in Grammar still means closed in Grammar
+      // after a trip through an IELTS paper. Closing it *here* overwrites it
+      // again, through hidePdf, which is the reader speaking.
+      if (elsewhere && pref != null) { state.ui.pdfOpen = pref; save(); }
       toggle.sync(); // the chip was built before that, so bring it back in step
     }
 
@@ -5130,7 +5255,7 @@
     head.appendChild(prog);
     main.appendChild(head);
 
-    var warn = buildWarning();
+    var warn = buildWarning() || buildSheetNote();
     if (warn) main.appendChild(warn);
 
     // The Kazakh explanation of this unit, if one has been written. The slot is
@@ -5178,8 +5303,8 @@
     foot.appendChild(score);
 
     var allBtn = el('button', 'btn primary', t('unit.checkAll'));
-    allBtn.addEventListener('click', function () { checkAllIn(main); });
     foot.appendChild(allBtn);
+    foot.appendChild(wireCheckAll(allBtn, main));
 
     var nav = el('div', 'nav-links');
     var prev = el('span');
@@ -5332,6 +5457,11 @@
         if (e.sub !== lastSub) {
           box.appendChild(el('div', 'instructions',
             e.sub.number + (e.sub.instructions ? ' · ' + e.sub.instructions : '')));
+          // The choices come with the instruction. Without them a matching
+          // question cannot be re-answered here at all: the page asks for a
+          // letter and never says which letters there are.
+          var errChoices = optionList(e.sub, 12);
+          if (errChoices) box.appendChild(errChoices.el);
           lastSub = e.sub;
         }
         box.appendChild(buildRow(g.unit.unit, e.sub, e.item,
@@ -6735,18 +6865,8 @@
       bank.forEach(function (w) { wb.appendChild(el('span', 'wb', w)); });
       box.appendChild(wb);
     }
-    if (c.sub.options && c.sub.options.length && c.sub.options.length <= 12) {
-      var ol = el('div', 'options' + (c.sub.options.some(function (o) {
-        return String(o.text || '').length > 42;
-      }) ? ' long' : ''));
-      c.sub.options.forEach(function (o) {
-        var chip = el('span', 'opt');
-        chip.appendChild(el('b', null, o.letter));
-        chip.appendChild(document.createTextNode(' ' + o.text));
-        ol.appendChild(chip);
-      });
-      box.appendChild(ol);
-    }
+    var cardChoices = optionList(c.sub, 12);
+    if (cardChoices) box.appendChild(cardChoices.el);
 
     var q = el('div', 'dc-q');
     q.textContent = it.question;
@@ -6756,7 +6876,8 @@
 
     /* --- answer --- */
     var line = el('div', 'answer-line');
-    var input = answerInput(t('row.aria', { unit: c.unit.unit, sub: c.sub.number, n: it.n }));
+    var input = answerInput(t('row.aria', { unit: c.unit.unit, sub: c.sub.number, n: it.n }),
+                            letterPlaceholder(c.sub, it));
     line.appendChild(input);
 
     var chk = el('button', 'btn primary', t('btn.check'));
@@ -6819,8 +6940,8 @@
 
       var k = el('div', 'dc-key');
       k.appendChild(document.createTextNode(t('row.bookKey')));
-      k.appendChild(el('b', null, it.answer));
-      var kSay = speakBtn(function () { return hintBase(it.answer) || it.answer; });
+      k.appendChild(el('b', null, letterKey(c.sub, it.answer)));
+      var kSay = speakBtn(function () { return hintBase(letterKey(c.sub, it.answer)) || it.answer; });
       if (kSay) k.appendChild(kSay);
       feedback.appendChild(k);
 
@@ -6968,7 +7089,7 @@
         }
         var k = el('div', 'de-key');
         k.appendChild(document.createTextNode(t('row.bookKey')));
-        k.appendChild(el('b', null, c.item.answer));
+        k.appendChild(el('b', null, letterKey(c.sub, c.item.answer)));
         row.appendChild(k);
         var go = el('a', 'de-go', t('drill.openUnit'));
         go.href = '#/b/' + c.bookId + '/unit/' + c.unit.unit;

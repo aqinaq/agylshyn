@@ -682,6 +682,12 @@ body.dragging iframe { pointer-events: none; }
 }
 
 .sub-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+/* What "check the exercise" says when there is nothing in it to check. */
+.check-note {
+  align-self: center;
+  font-size: 13px;
+  color: var(--muted);
+}
 
 /* ===== Unit footer ===== */
 .unit-foot {
