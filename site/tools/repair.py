@@ -280,6 +280,45 @@ def _settle_gaps(fixed, it):
     return fixed
 
 
+# Not every page can spell its own text out. Upper-intermediate sets its
+# exercise prompts in a face with no space glyph, so PyMuPDF hands back a whole
+# printed line as one "word" and the reconstruction reads "aneighbour",
+# "Ifyouarrangetomeetat". Every letter is in place and in order, so the
+# invariant in regap_book() is satisfied and the damage ships — 1,466 of
+# Upper-intermediate's 2,790 questions, against a source file that had the
+# spaces all along.
+#
+# Spaces are the thing to count — spaces, not letter runs: a list glued into
+# "sunshade,shady,shadow,shade" keeps a run per item and only loses the spaces
+# between them. Restoring a blank inserts a marker rather than a word, so it
+# does not move this number, while joining a split word ("c auses") removes
+# exactly one. One is therefore the whole budget. A page that wants to take six
+# spaces away is not spelling this question better than the file already does.
+_JOIN_BUDGET = 1
+
+# With nothing to compare against — a row recovered from a page that never had
+# any text of its own — the run itself has to say it. The longest word any of
+# these books prints is "de-industrialisation".
+_MAX_WORD = 24
+
+
+def _longest_run(s):
+    return max((len(w) for w in re.findall(r'[A-Za-z]+', s)), default=0)
+
+
+def _words(s):
+    """How many separately printed words the string holds.
+
+    The blank marker is not one of them: a restored gap must not read as a word
+    the page put back."""
+    return sum(1 for w in s.split() if re.search(r'[A-Za-z]', w))
+
+
+def _spacing_lost(fixed, cur):
+    """Did the page's rendering give up word boundaries the source had?"""
+    return _words(fixed) < _words(cur) - _JOIN_BUDGET
+
+
 def regap_book(units, doc, pages_of):
     """Realign every question in `units` against the book's own pages.
 
@@ -298,6 +337,8 @@ def regap_book(units, doc, pages_of):
                 if not cur:
                     continue
                 fixed = index.find(cur)
+                if fixed and _spacing_lost(fixed, cur):
+                    continue
                 # Instructions have no gaps to restore; they are realigned only
                 # for the split words, so a marker here would be noise.
                 if fixed and fixed.replace(GAP, '').split() != cur.split():
@@ -316,6 +357,8 @@ def regap_book(units, doc, pages_of):
                 # the one it replaces. Spacing and punctuation may move; a word
                 # may never change. Anything else is a bug, and is dropped.
                 if _letters(fixed) != _letters(cur):
+                    continue
+                if _spacing_lost(fixed, cur):
                     continue
                 if fixed == cur:
                     continue
@@ -532,6 +575,11 @@ def _fill_run(run, strip, column, numbers):
             piece = _tidy(piece[:cut + len(GAP)])
         if not _WORD.search(piece) or len(piece) > _RECOVER_MAX:
             return 0
+        # A row read back off a page that cannot space its own text is not a
+        # recovery — "Whichwordcanbeusedtodescribe…" is less use to a reader
+        # than the empty row's honest "look this one up in the book".
+        if _longest_run(piece) >= _MAX_WORD:
+            return 0
         piece = _settle_gaps(piece, it)
         # A scrap is only replaced by the line of page it came off: whatever was
         # there has to still be there afterwards, blanks included. A row that
@@ -578,6 +626,14 @@ _STUB = 3        # one side of a real split is nearly always this short or short
 # the only reason for this exception.
 _LIGATURE_TAIL = re.compile(r'(?:ffi|ffl|ff|fi|fl|ft)$', re.I)
 
+# The second case where the vocabulary lies, and the one that was leaving 139
+# of English Grammar in Use's answers reading "c auses", "t ake", "t oday".
+# Every one of these books prints bare letters — the a/b/c of a matching
+# exercise, "the w is silent" — so every letter of the alphabet is in the
+# vocabulary, and the "a left part the book prints is a word" test therefore
+# vetoed every single-letter split there is. Only two letters are words.
+_REAL_LETTER_WORDS = {'a', 'i'}
+
 
 def book_vocabulary(doc, max_pages=None):
     words = set()
@@ -602,13 +658,24 @@ def _split_token(tok):
     return m.groups() if m else None
 
 
-def _should_join(a, b, vocab):
-    """Are these two tokens one word the extractor cut in half?"""
+def _should_join(a, b, vocab, damaged=False):
+    """Are these two tokens one word the extractor cut in half?
+
+    `damaged` says the left token is itself the result of a join, so the
+    vocabulary has nothing to say about it — see fix_split_words.
+    """
     # One side has to be a stub. Two full-length words beside each other are a
     # phrase, however well they would read joined up.
     if len(a) > _STUB and len(b) > _STUB:
         return False
     if (a + b).lower() not in vocab:
+        return False
+    # A break falls after the capital, never before it: every split there is
+    # reads "Ther e", "T oday", "Y ou". So a right half that opens upper case is
+    # a word of its own, whatever the two would spell joined up — which is what
+    # keeps the lettered halves of an Advanced Grammar answer ("a … b It
+    # probably …") from collapsing into "bIt".
+    if b[:1].isupper():
         return False
     # The decisive test: a left part that is itself a word the book prints is a
     # word, not half of one. "in form" and "no one" stop here; "Ther e" does
@@ -616,7 +683,8 @@ def _should_join(a, b, vocab):
     # is exempt, for the reason given at _LIGATURE_TAIL — and it is still only
     # joined when the result is a word the book prints, which is what keeps
     # "the cliff is" and "a gift for" out.
-    if a.lower() in vocab and not _LIGATURE_TAIL.search(a):
+    if (a.lower() in vocab and not _LIGATURE_TAIL.search(a) and not damaged
+            and not (len(a) == 1 and a.lower() not in _REAL_LETTER_WORDS)):
         return False
     # A right part long enough to be a word of its own needs the same doubt; a
     # one- or two-letter tail ("e", "ce", "ws") does not. After a ligature the
@@ -637,16 +705,21 @@ def fix_split_words(text, vocab):
     if not text or ' ' not in text:
         return text
     parts = re.split(r'(\s+)', text)          # word, gap, word, gap, ...
-    out, i = [], 0
+    out, i, mended = [], 0, set()
     while i + 2 < len(parts):
         left, right = _split_token(parts[i]), _split_token(parts[i + 2])
         # Nothing may stand between the halves: a full stop after the first, or
         # an opening quote before the second, means these are two words. Without
         # this "from the offi ce." never joins, because "ce." is not a bare word.
         if (parts[i + 1] == ' ' and left and right and not left[2] and not right[0]
-                and _should_join(left[1], right[1], vocab)):
+                and _should_join(left[1], right[1], vocab, i in mended)):
             parts[i + 2] = left[0] + left[1] + right[1] + right[2]
-            i += 2                                  # allow a three-way split
+            # A word cut in three ("s t arts") is joined a pair at a time, and
+            # the halfway result is a fragment: asking the vocabulary whether
+            # "st" is a word gets a yes, because the book prints "St Petersburg"
+            # — and the repair would stop one join short.
+            mended.add(i + 2)
+            i += 2
             continue
         out.append(parts[i])
         i += 1
