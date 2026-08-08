@@ -856,11 +856,31 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
     overflow: hidden;
   }
   /* An equal sixth each left "Mistakes" clipped to "listakes" while ⚡ 🔎 ?
-     sat in a third of the bar doing nothing with the room. The three icons
-     take exactly the width a thumb needs; the words share what is left. */
+     sat in a third of the bar doing nothing with the room. The icons take
+     exactly the width a thumb needs; the words share what is left.
+     🗂 was left out of this list when it was added and went on drawing a
+     word tab's width for one glyph, which on a 390px phone was still enough
+     to clip "Статистика" to "Статистик". It is an icon like the others. */
   .tabs .tab-drill,
+  .tabs .tab-srs,
   .tabs .tab-find,
   .tabs .tab-help { flex: 0 0 44px; padding: 9px 0; font-size: 15px; }
+  /* The badge rides the icon, so the tab does not have to make room for it. */
+  .tabs .tab-srs { position: relative; }
+  .tabs .tab-srs .badge { position: absolute; top: 2px; right: 2px; }
+  /* And the words are not the same length. Sharing the rest equally gave
+     "Units" more room than it needs and "Статистика" less than it takes, so
+     the longest label was the one that got cut. Each takes its own width and
+     they share what is over. */
+  .tabs #tabUnits,
+  .tabs #tabErrors,
+  .tabs #tabStats { flex: 1 1 auto; }
+}
+
+/* The narrowest phones still in use cannot fit three words and four icons at
+   12px. Losing a point of type is better than losing a letter. */
+@media (max-width: 360px) {
+  .tabs .tab { font-size: 11px; padding-left: 2px; padding-right: 2px; }
 }
 
 /* ===================================================================
@@ -2633,6 +2653,9 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
   color: var(--accent);
 }
 .ia-head .muted { color: var(--muted); font-size: 12.5px; }
+/* Why the player reads 0:00 / 0:00 before it is pressed. Sits at the far end
+   of the head and disappears the moment the recording reports its length. */
+.ia-wait { margin-left: auto; color: var(--muted); font-size: 12.5px; }
 .ielts-audio audio { width: 100%; height: 34px; }
 .ielts-audio .note { margin-top: 8px; }
 

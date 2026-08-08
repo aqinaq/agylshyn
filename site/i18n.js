@@ -87,6 +87,8 @@ window.I18N = {
     // Бұл кітапта сұрақтың мәтіні жоқ. Ұсыныс картасында бірден айтылады —
     // әйтпесе жаңа оқырман кітапты ашып қана біледі.
     'plc.needsPdf': '📕 Кітап қасыңда болуы керек: сұрақтардың мәтіні жоқ, оларды PDF-тен оқисың (PDF қатар ашылады).',
+    // Ұсынылған кітап ақылы болуы мүмкін — мұны басар алдында айтқан дұрыс.
+    'plc.locked': '🔒 Бұл кітаптың жаттығулары жазылыммен. Алғашқы юниттері тегін ашық.',
     'plc.goalsH': 'Нақты мақсатың бар ма?',
     'plc.goal.ielts': 'IELTS-ке дайындық',
     'plc.goal.business': 'Жұмыс / бизнес тілі',
@@ -384,6 +386,9 @@ window.I18N = {
     'ielts.audio': 'Аудио',
     'ielts.part': '{n}-бөлім',
     'ielts.questions': '{a}–{b} сұрақ',
+    // Жазба ▶ басқанша жүктелмейді (әрқайсысы ~8 МБ), сол уақытта ойнатқыш
+    // «0:00 / 0:00» деп тұрады — бұзылған сияқты көрінбеуі үшін.
+    'ielts.audioWait': '▶ басқанда жүктеледі',
     'ielts.noAudio': 'Аудио қолжетімсіз — файл site/audio ішінде жоқ немесе AUDIO_BASE бапталмаған',
     'ielts.passage': '{n}-мәтін',
     'ielts.passageHide': 'Мәтінді жасыру',
@@ -884,6 +889,8 @@ window.I18N = {
     // This book carries no question text. Said on the recommendation card
     // itself — otherwise a new reader only finds out by opening it.
     'plc.needsPdf': '📕 Keep the book to hand: the questions themselves are not on the site, you read them from the PDF (it opens alongside).',
+    // A recommended book may be a paid one — better said before it is pressed.
+    'plc.locked': '🔒 This book’s exercises need a subscription. Its first units are free.',
     'plc.goalsH': 'Aiming at something specific?',
     'plc.goal.ielts': 'Prep for IELTS',
     'plc.goal.business': 'Work / business English',
@@ -1195,6 +1202,9 @@ window.I18N = {
     'ielts.audio': 'Audio',
     'ielts.part': 'Part {n}',
     'ielts.questions': 'Questions {a}–{b}',
+    // Nothing is fetched until play is pressed (~8 MB each), and until then
+    // the native control reads "0:00 / 0:00" — which looks broken.
+    'ielts.audioWait': 'loads when you press ▶',
     'ielts.noAudio': 'Audio unavailable — the file is not in site/audio, or AUDIO_BASE is unset',
     'ielts.passage': 'Passage {n}',
     'ielts.passageHide': 'Hide the passage',

@@ -1305,6 +1305,16 @@
 
   /* ================= library ================= */
 
+  /* Is this book locked for whoever is reading, right now?
+
+     A lock only once the answer is in. While my_access is still in flight the
+     card stays plain: showing a lock and then removing it half a second later
+     tells a paying reader their subscription vanished, every single reload. */
+  function lockedNow(b) {
+    return !!(b && window.ENTITLE && ENTITLE.isPaid(b.id) &&
+              ENTITLE.known() && !ENTITLE.canOpen(b.id));
+  }
+
   function bookCard(b) {
     var st = roughBookStats(b.id);
     var pct = st.total ? Math.round(st.correct / st.total * 100) : 0;
@@ -1322,7 +1332,7 @@
     // A lock only once the answer is in. While my_access is still in flight the
     // card stays plain: showing a lock and then removing it half a second later
     // tells a paying reader their subscription vanished, every single reload.
-    if (window.ENTITLE && ENTITLE.isPaid(b.id) && ENTITLE.known() && !ENTITLE.canOpen(b.id)) {
+    if (lockedNow(b)) {
       var lock = el('span', 'bc-lock', '🔒');
       lock.title = t('lock.badge');
       top.appendChild(lock);
@@ -1618,6 +1628,7 @@
     // able to work from a scan was the one finding that out by opening it.
     // Say it here, where the recommendation is made.
     if (b.needsPdf) a.appendChild(el('span', 'plc-rec-warn', t('plc.needsPdf')));
+    if (lockedNow(b)) a.appendChild(el('span', 'plc-rec-warn', t('plc.locked')));
     a.appendChild(el('span', 'plc-rec-go', t('plc.openBook')));
     a.addEventListener('click', closePlaceModal);
     return a;
@@ -1652,7 +1663,12 @@
         a.href = '#/b/' + b.id;
         a.style.setProperty('--hue', b.hue);
         a.appendChild(el('b', null, t('plc.goal.' + g.id)));
-        a.appendChild(el('span', null, b.title + ' · ' + b.level));
+        // All three goals point at paid books. Sending a first-time visitor
+        // from "what do you want this for?" straight into a payment screen,
+        // with nothing in between to say so, is the one place on the site
+        // where a promise is made and not kept.
+        a.appendChild(el('span', null, b.title + ' · ' + b.level +
+                                       (lockedNow(b) ? ' 🔒' : '')));
         a.addEventListener('click', closePlaceModal);
         grow.appendChild(a);
       });
@@ -3709,7 +3725,15 @@
     var at = 0;
     var audio = document.createElement('audio');
     audio.controls = true;
+    // A Listening page carries four of these and each recording is 7–8 MB, so
+    // nothing is fetched until the reader asks for it. The cost is that the
+    // native control sits at "0:00 / 0:00" until then, which reads as a player
+    // that has failed rather than one that is waiting — so the head says so,
+    // and stops saying it once the recording knows how long it is.
     audio.preload = 'none';
+    var wait = el('span', 'ia-wait', t('ielts.audioWait'));
+    head.appendChild(wait);
+    audio.addEventListener('loadedmetadata', function () { wait.hidden = true; });
     audio.src = audioUrl(p.files[0]);
     audio.addEventListener('ended', function () {
       if (at + 1 >= p.files.length) return;
