@@ -1117,7 +1117,9 @@
   // In memory only, on purpose — see the filter bar in renderHome().
   var libBand = null;
 
-  function renderHome() {
+  // keepScroll: this is the same page being redrawn in place (a band chip),
+  // not an arrival at it. Only an arrival starts at the top.
+  function renderHome(keepScroll) {
     setView('home');
     var units = 0, items = 0;
     for (var id in INDEX) { units += INDEX[id].units; items += INDEX[id].tracked; }
@@ -1270,8 +1272,17 @@
         c.type = 'button';
         c.setAttribute('aria-pressed', libBand === lv ? 'true' : 'false');
         c.addEventListener('click', function () {
+          // Where the chips sit on screen at the moment of the click. The whole
+          // page is redrawn to change a band, and jumping to the top afterwards
+          // meant a reader who had scrolled down the A1 shelf to reach these
+          // chips was thrown back up to the hero the instant they pressed A2 —
+          // and had to scroll all the way down again to see what they picked.
+          // The new shelf opens under the same chips, still where they were.
+          var before = bar.getBoundingClientRect().top;
           libBand = libBand === lv ? null : lv;
-          renderHome();
+          renderHome(true);
+          var barNow = bookGrid.querySelector('.lib-filter');
+          if (barNow) window.scrollBy(0, barNow.getBoundingClientRect().top - before);
         });
         return c;
       };
@@ -1300,7 +1311,7 @@
     });
     if (!shelf.length) bookGrid.appendChild(el('div', 'find-note', t('lib.filterNone')));
     paintStartBand();
-    window.scrollTo(0, 0);
+    if (!keepScroll) window.scrollTo(0, 0);
   }
 
   /* ================= library ================= */
