@@ -610,6 +610,12 @@ def refine(bid, units):
         if fixed:
             log.append('%d keys respelled' % fixed)
 
+    # No PDF needed: a contraction is a closed class, so this runs for every
+    # book, including the two that are extracted without a page to compare to.
+    mended = repair.fix_contractions_book(units)
+    if mended:
+        log.append('%d contractions mended' % mended)
+
     dropped = repair.drop_garbled(units)
     if dropped:
         log.append('%d garbled dropped' % dropped)

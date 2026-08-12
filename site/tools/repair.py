@@ -695,6 +695,79 @@ def _should_join(a, b, vocab, damaged=False):
     return True
 
 
+# ---------------------------------------------------------------------------
+# contractions the scan pulled apart
+# ---------------------------------------------------------------------------
+
+# _should_join() will not touch these, for two reasons that are both right in
+# general. "The y’re crossing" survives because "the" is a word the book prints,
+# and the rule that a word-shaped left half is a word — not half of one — is
+# what keeps "in form" and "no one" apart. "I’ m glad" survives because a token
+# with trailing punctuation is not half a word, which is what makes "from the
+# offi ce." join correctly.
+#
+# A contraction is a closed class, so it can be repaired on its own terms:
+# no vocabulary, no page to compare against. Both shapes below are strings
+# English never writes, so there is nothing to weigh up.
+#
+#   "I’ m", "It’ s", "don’ t"   — a space after the apostrophe
+#   "The y’re", "we ’ve"        — the stem cut away from its clitic
+#
+# It matters because the answer is what a reader is shown after getting a
+# question wrong, and the model answer read "The y’re crossing". Marking was
+# never affected — the matcher throws spacing away — which is exactly why this
+# lasted so long.
+
+_CLITICS = 'll|re|ve|s|t|d|m'
+
+_CONTRACTIONS = set("""
+i'm i've i'd i'll we're we've we'd we'll you're you've you'd you'll
+they're they've they'd they'll he's he'd he'll she's she'd she'll
+it's it'd it'll that's that'd that'll there's there'd there'll here's
+what's what're who's where's when's how's let's one's
+don't doesn't didn't isn't aren't wasn't weren't haven't hasn't hadn't
+won't wouldn't can't couldn't shouldn't mustn't needn't shan't oughtn't
+""".split())
+
+_APOS = '’‘'
+
+
+def _norm_apos(s):
+    for ch in _APOS:
+        s = s.replace(ch, "'")
+    return s.lower()
+
+
+# "I’ m", "Anna’ s" — the apostrophe stayed with the stem, the clitic drifted.
+# The whole stem is captured, not just its last letter, so the membership test
+# below sees the real token: "don’ t" is only mendable because "don't" is.
+_SPACED_CLITIC = re.compile(r"\b([A-Za-z]+)([%s'])\s+(%s)\b" % (_APOS, _CLITICS))
+
+# "The y’re" — the apostrophe went with the tail and took a letter or two of the
+# stem along. Three or more letters on the right is a word in its own right.
+_CUT_CLITIC = re.compile(r"\b([A-Za-z]+)\s+([A-Za-z]{0,2})([%s'])(%s)\b" % (_APOS, _CLITICS))
+
+
+def fix_contractions(text):
+    """Put "The y’re" and "I’ m" back together. Returns the mended string."""
+    if not text or ' ' not in text:
+        return text
+
+    def spaced(m):
+        joined = m.group(1) + m.group(2) + m.group(3)
+        # A possessive is always one word; anything else has to be a
+        # contraction English actually writes.
+        if m.group(3).lower() == 's' or _norm_apos(joined) in _CONTRACTIONS:
+            return joined
+        return m.group(0)
+
+    def cut(m):
+        joined = m.group(1) + m.group(2) + m.group(3) + m.group(4)
+        return joined if _norm_apos(joined) in _CONTRACTIONS else m.group(0)
+
+    return _CUT_CLITIC.sub(cut, _SPACED_CLITIC.sub(spaced, text))
+
+
 def fix_split_words(text, vocab):
     """Rejoin "ne ws" -> "news", leaving "no one" and "in form" alone.
 
@@ -724,6 +797,30 @@ def fix_split_words(text, vocab):
         out.append(parts[i])
         i += 1
     return ''.join(out + parts[i:])
+
+
+def fix_contractions_book(units):
+    """Mend split contractions everywhere text is shown. Returns how many changed.
+
+    Runs without the PDF, unlike its neighbour: the rule is about English, not
+    about this page."""
+    n = 0
+    for u in units:
+        for s in u.get('subExercises', []) or []:
+            for field in ('rawAnswer', 'instructions', 'note', 'passage'):
+                if s.get(field):
+                    fixed = fix_contractions(s[field])
+                    if fixed != s[field]:
+                        s[field] = fixed
+                        n += 1
+            for it in s.get('items', []) or []:
+                for field in ('answer', 'blank', 'question'):
+                    if it.get(field):
+                        fixed = fix_contractions(it[field])
+                        if fixed != it[field]:
+                            it[field] = fixed
+                            n += 1
+    return n
 
 
 def fix_answer_words(units, vocab):
