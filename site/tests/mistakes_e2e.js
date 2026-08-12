@@ -11,11 +11,17 @@ const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
 const UNIT = '#/b/grammar/unit/1';
 
-// Answer every box in the open unit wrongly, then check them all.
-const answerAllWrong = `(() => {
+/* Answer every box in the open unit wrongly, then check them all.
+
+   The wrong answer carries a pass number, because a row now refuses to grade
+   the same text twice: pressing "check" again over an answer that already has
+   a verdict is not a second attempt, and counting it as one is what used to
+   turn a single slip into the two that make a card. A real second attempt
+   means different text in the box. */
+const wrongPass = n => `(() => {
   const boxes = [...document.querySelectorAll('.answer-line input')];
   boxes.forEach(b => {
-    b.value = 'definitely wrong';
+    b.value = 'definitely wrong ${n}';
     b.dispatchEvent(new Event('input', { bubbles: true }));
   });
   [...document.querySelectorAll('.row')].forEach(r => r._check && r._check());
@@ -36,7 +42,7 @@ async function run() {
   r.head('one mistake');
   await goto(s, BASE + UNIT);
   await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
-  const n = await s.eval(answerAllWrong);
+  const n = await s.eval(wrongPass(1));
   r.ok('the unit has answers to get wrong', n > 3, String(n));
   await sleep(400);
   const afterOne = await s.eval(`(${deck}).length`);
@@ -44,7 +50,12 @@ async function run() {
 
   /* ================= twice does it ================= */
   r.head('the same mistake twice');
-  await s.eval(answerAllWrong);
+  // Pressing check again over the same answer is not a second attempt.
+  await s.eval(wrongPass(1));
+  await sleep(400);
+  r.eq('re-checking the same answer does not count as a second miss',
+    await s.eval(`(${deck}).length`), 0);
+  await s.eval(wrongPass(2));
   await sleep(500);
   const cards = await s.eval(`(() => {
     const c = ${deck};
@@ -69,10 +80,56 @@ async function run() {
   r.ok('and it is due straight away', cards.due);
 
   // A third wrong answer must not add the same question again.
-  await s.eval(answerAllWrong);
+  await s.eval(wrongPass(3));
   await sleep(500);
   const again = await s.eval(`(${deck}).length`);
   r.eq('a third miss adds nothing new', again, cards.n);
+
+  /* ================= the card is answerable =================
+
+     A card whose only control is "show me" tests recognition, not recall — and
+     a gap card lifted out of an exercise ("… the road.") cannot even be
+     recognised without the instruction it came with. Both belong on the front. */
+  r.head('reviewing the card');
+  await goto(s, BASE + '#/srs/review');
+  await until(s, `!!document.querySelector('.srs-card')`);
+  const face = await s.eval(`(() => {
+    const box = document.querySelector('.srs-answer');
+    return {
+      box: !!box,
+      enabled: box ? !box.disabled : false,
+      prompt: (document.querySelector('.srs-prompt') || {}).textContent || '',
+      word: (document.querySelector('.srs-word') || {}).textContent || ''
+    };
+  })()`);
+  r.ok('the card has somewhere to write', face.box);
+  r.ok('and the box is ready to type in', face.enabled);
+  r.ok('the exercise instruction is on the front', face.prompt.length > 10, face.prompt);
+  r.ok('and so is the sentence', face.word.length > 3, face.word);
+
+  const compared = await s.eval(`(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const back = document.querySelector('.srs-translation').textContent;
+    const box = document.querySelector('.srs-answer');
+    box.value = String(back).split(' / ')[0];
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    [...document.querySelectorAll('button')]
+      .find(b => b.offsetParent && /show/i.test(b.className + ' ' + b.textContent)).click();
+    await wait(400);
+    const mine = document.querySelector('.srs-mine');
+    return {
+      shown: !!mine && !mine.hidden,
+      hit: !!mine && mine.classList.contains('hit'),
+      locked: document.querySelector('.srs-answer').disabled,
+      text: mine ? mine.textContent : ''
+    };
+  })()`);
+  r.ok('what was typed is set against the answer', compared.shown, compared.text);
+  r.ok('and typing the key counts as a hit', compared.hit, compared.text);
+  r.ok('the box is closed once the card is turned', compared.locked);
+
+  await goto(s, BASE + UNIT);
+  await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
 
   /* ================= getting it right ================= */
   r.head('answering it right');
@@ -96,7 +153,7 @@ async function run() {
   r.head('the Mistakes page');
   await goto(s, BASE + '#/b/grammar/unit/2');
   await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
-  await s.eval(answerAllWrong);
+  await s.eval(wrongPass(1));
   await sleep(400);
 
   await goto(s, BASE + '#/b/grammar/errors');
@@ -135,8 +192,8 @@ async function run() {
   r.head('an answer sheet has nothing to give');
   await goto(s, BASE + '#/b/ielts-19/unit/1');
   await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
-  await s.eval(answerAllWrong);
-  await s.eval(answerAllWrong);
+  await s.eval(wrongPass(1));
+  await s.eval(wrongPass(2));
   await sleep(500);
   const sheet = await s.eval(`(() => {
     const c = ${deck};
@@ -167,8 +224,8 @@ async function run() {
 
   await goto(s, BASE + '#/b/vocab-preint/unit/1');
   await until(s, `document.querySelectorAll('.answer-line input').length > 0`);
-  await s.eval(answerAllWrong);
-  await s.eval(answerAllWrong);
+  await s.eval(wrongPass(1));
+  await s.eval(wrongPass(2));
   await sleep(500);
   const off = await s.eval(`${deck}.filter(c => (c.srcKey||'').indexOf('vocab-preint') === 0).length`);
   r.eq('with it off, nothing is added on its own', off, 0);

@@ -208,6 +208,40 @@
     });
   }
 
+  /* English wants "1 question" and "3 questions"; Kazakh does not inflect after
+     a numeral at all. A key ending in '.1' is the singular and exists only in
+     the languages that need one — everywhere else this falls through to the
+     plain key, so no table has to carry dead entries. Same rule as srs.js. */
+  function tn(key, n, vars) {
+    var dict = I18N[state.lang] || I18N.kk;
+    var one = key + '.1';
+    return t(n === 1 && (dict[one] != null || I18N.kk[one] != null) ? one : key, vars);
+  }
+
+  /* Dates are assembled from i18n, not from the platform. Chrome's ICU lists
+     `kk` as a supported locale but carries no Kazakh month names for it, so
+     toLocaleDateString('kk', { month: 'long' }) answers "M08" — which is what
+     the activity calendar, the exam history and the account panel all showed.
+     Node's ICU gets it right, so no test that formats a date in node can catch
+     this; it has to be read in a browser. */
+  function monthName(i, short) {
+    var list = String(t(short ? 'date.monthsShort' : 'date.months')).split(',');
+    return list[i] || String(i + 1);
+  }
+
+  function fmtDate(d, style) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
+    var y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    if (style === 'monthYear') {
+      var mn = monthName(m);
+      return t('date.monthYear', { month: mn.charAt(0).toUpperCase() + mn.slice(1), year: y });
+    }
+    if (style === 'dayMonth') return t('date.dayMonth', { day: day, month: monthName(m) });
+    if (style === 'short') return t('date.short', { day: day, month: monthName(m, true), year: y });
+    return t('date.numeric', { d: pad(day), m: pad(m + 1), y: y });
+  }
+
   function num(n) {
     try { return Number(n).toLocaleString(t('locale')); }
     catch (e) { return String(n); }
@@ -675,6 +709,12 @@
     var today = todayKey(now);
     if (opts.val != null) r.val = opts.val;
     r.self = !!opts.self;
+    // A practice session can only deal a question it can print and mark on its
+    // own. Marking the record here is what lets the library page promise a
+    // number it can actually hand over, without loading a single data file.
+    // Only the negative is stored, so records written before this keep their
+    // size and are assumed dealable.
+    if (opts.drillable === false) r.nd = 1; else if (r.nd) delete r.nd;
     r.ts = now;                                   // when this answer happened
     r.hist = (r.hist || '').slice(-9) + (correct ? '1' : '0');   // last 10 tries
     if (correct && opts.hinted) {
@@ -762,6 +802,7 @@
             wrong: r.wrong,
             front: it.question,
             back: it.answer,
+            prompt: sub.instructions || '',
             source: ((bk.meta && bk.meta.title) || bk.id) + ' · Unit ' + u.unit,
             src: { book: bk.id, unit: u.unit }
           });
@@ -943,6 +984,8 @@
   // Every exercise lands inside #main, so one mark covers the whole book view.
   // dict.js reads the current language through APP_LANG for its own labels.
   window.APP_LANG = function () { return state.lang; };
+  // srs.js draws dates too, and the platform cannot be trusted with Kazakh ones.
+  window.APP_DATE = fmtDate;
   if (window.WordLookup) window.WordLookup.attach(main);
 
   function setView(name) {
@@ -1674,12 +1717,13 @@
         a.href = '#/b/' + b.id;
         a.style.setProperty('--hue', b.hue);
         a.appendChild(el('b', null, t('plc.goal.' + g.id)));
-        // All three goals point at paid books. Sending a first-time visitor
-        // from "what do you want this for?" straight into a payment screen,
-        // with nothing in between to say so, is the one place on the site
-        // where a promise is made and not kept.
-        a.appendChild(el('span', null, b.title + ' · ' + b.level +
-                                       (lockedNow(b) ? ' 🔒' : '')));
+        // Sending a first-time visitor from "what do you want this for?"
+        // straight into a payment screen, with nothing in between to say so,
+        // is the one place on the site where a promise is made and not kept.
+        // The IELTS chip now goes to the free collection, and the two that are
+        // still paid say what a reader does get for nothing.
+        a.appendChild(el('span', null, b.title + ' · ' + b.level));
+        if (lockedNow(b)) a.appendChild(el('span', 'plc-goal-free', t('plc.goalFree')));
         a.addEventListener('click', closePlaceModal);
         grow.appendChild(a);
       });
@@ -1982,7 +2026,7 @@
     if (u.name) whoText.appendChild(el('div', 'auth-who-k', mail));
     if (u.createdAt) {
       whoText.appendChild(el('div', 'auth-who-k',
-        t('auth.since', { date: new Date(u.createdAt).toLocaleDateString(t('locale')) })));
+        t('auth.since', { date: fmtDate(new Date(u.createdAt), 'short') })));
     }
     who.appendChild(whoText);
     authBody.appendChild(who);
@@ -2201,13 +2245,7 @@
 
   function authDate(iso) {
     if (!iso) return '—';
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '—';
-    try {
-      return d.toLocaleDateString(t('locale'), { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (e) {
-      return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-    }
+    return fmtDate(new Date(iso), 'short');
   }
 
   // This was a bare ○/◉ glyph at first, and it was effectively invisible: a
@@ -3082,9 +3120,20 @@
       }
     }
 
+    /* The text the verdict now on screen was given for. A row rebuilt from
+       storage already carries one, so it starts from the record rather than
+       from null — otherwise the first "Check this exercise" after a reload
+       would grade every answer in the unit a second time. */
+    var graded = (!exam && !review && r0 && r0.last && r0.val != null && r0.val === input.value)
+      ? input.value : null;
+
     function mark(correct, self) {
       reveal = true;                 // an answer was given — feedback may show
-      applyAnswer(key, correct, { val: input.value, self: self, hinted: hintLevel > 0 });
+      graded = input.value;
+      applyAnswer(key, correct, {
+        val: input.value, self: self, hinted: hintLevel > 0,
+        drillable: !!(it.question && String(it.question).trim()) && isAuto(it)
+      });
       hintLevel = 0;
       hintBox.hidden = true;
       if (hintBtn) hintBtn.textContent = t('hint.btn');
@@ -3092,14 +3141,26 @@
       afterChange();
     }
 
-    // Returns true when a check actually ran.
-    function check() {
+    // Returns true when a check actually ran. `bulk` is "Check this exercise"
+    // sweeping the whole sub rather than the reader pressing this row.
+    function check(bulk) {
       if (!input.value.trim()) return false;
       if (isManual(it)) return false;      // needs a manual verdict
+      // Judged already, and nothing retyped since. Marking it again would
+      // record a second answer for one attempt: that is what used to undo
+      // "I was right", turn a single mistake into the two that make a word
+      // card, and count one answer several times towards the day and the
+      // streak. The reader still gets the verdict back, just not a new one.
+      if (graded !== null && graded === input.value) {
+        if (!bulk) { reveal = true; paint(); }
+        return false;
+      }
       mark(isMatch(input.value, it), false);
       return true;
     }
     row._check = check;
+    // Already answered, and the box still holds that answer.
+    row._done = function () { return graded !== null && graded === input.value; };
     // A row "Check the exercise" could have graded, had anything been typed in
     // it. Used to send the reader to the first of them rather than leave the
     // button looking dead.
@@ -3168,17 +3229,20 @@
      so instead, and the cursor goes to the first row that was waiting for an
      answer. */
   function checkAllIn(scope) {
-    var ran = 0, first = null;
+    var ran = 0, done = 0, first = null;
     [].forEach.call(scope.querySelectorAll('.row'), function (r) {
       if (!r._check) return;
-      if (r._check()) ran++;
+      if (r._check(true)) ran++;
+      // Rows that were already answered are not "nothing to check" — saying so
+      // would be a lie, and grading them again would double the answer.
+      else if (r._done && r._done()) done++;
       else if (!first && r._blank && r._blank()) first = r;
     });
-    if (!ran && first) {
+    if (!ran && !done && first) {
       var box = first.querySelector('input');
       if (box) box.focus();
     }
-    return ran;
+    return { graded: ran, done: done };
   }
 
   /* A "check everything here" button, and the answer when there is nothing to
@@ -3189,8 +3253,9 @@
     note.hidden = true;
     var timer = null;
     btn.addEventListener('click', function () {
-      if (checkAllIn(scope)) { note.hidden = true; return; }
-      note.textContent = t('sub.checkNothing');
+      var r = checkAllIn(scope);
+      if (r.graded) { note.hidden = true; return; }
+      note.textContent = t(r.done ? 'sub.checkDone' : 'sub.checkNothing');
       note.hidden = false;
       clearTimeout(timer);
       timer = setTimeout(function () { note.hidden = true; }, 4000);
@@ -3682,7 +3747,9 @@
     if (!book.meta || !book.meta.answerSheet || !book.meta.pdf) return null;
     var box = el('div', 'warn sheet-note');
     box.appendChild(el('div', 'warn-head', '📄 ' + t('sheet.title')));
-    box.appendChild(el('p', null, t('sheet.text')));
+    // "opens alongside" is a desk sentence. On a phone there is no alongside:
+    // the book takes the whole screen and the reader taps back and forth.
+    box.appendChild(el('p', null, t(isNarrow() ? 'sheet.textNarrow' : 'sheet.text')));
     var link = el('button', 'btn small', t('warn.openPdf'));
     link.addEventListener('click', function () { showPdf(null); });
     box.appendChild(link);
@@ -5479,7 +5546,7 @@
       h.appendChild(h2);
       var meta = '📄 ' +
         (g.unit.pdfExercisePage != null ? t('err.metaPage', { n: g.unit.pdfExercisePage }) : '') +
-        t('err.metaCount', { n: g.list.length });
+        tn('err.metaCount', g.list.length, { n: g.list.length });
       h.appendChild(el('span', 'meta', meta));
       box.appendChild(h);
 
@@ -5712,10 +5779,7 @@
     return Math.min(CAL_STEPS, Math.ceil(v / CAL_STEP));
   }
 
-  function monthLabel(d) {
-    try { return d.toLocaleDateString(t('locale'), { month: 'long', year: 'numeric' }); }
-    catch (e) { return (d.getMonth() + 1) + '/' + d.getFullYear(); }
-  }
+  function monthLabel(d) { return fmtDate(d, 'monthYear'); }
 
   // One month of activity as a calendar heat-map. Arrows or a horizontal swipe
   // move between months; the future is blocked past the current month.
@@ -5765,10 +5829,7 @@
       tip.hidden = true;
       var hoverTimer = null;
       function dayText(ddate, dv) {
-        var label;
-        try { label = ddate.toLocaleDateString(t('locale'), { day: 'numeric', month: 'long' }); }
-        catch (e) { label = String(ddate.getDate()); }
-        return t('cal.dayCount', { date: label, n: dv });
+        return t('cal.dayCount', { date: fmtDate(ddate, 'dayMonth'), n: dv });
       }
       function showTip(dcell, ddate, dv) {
         tip.textContent = dayText(ddate, dv);
@@ -5968,7 +6029,13 @@
       // Records outlive the catalogue: a book that has been dropped leaves its
       // rows in storage, and counting them would promise cards the session
       // cannot deal.
-      if (!bookMeta(k.slice(0, k.indexOf('|')))) continue;
+      var meta = bookMeta(k.slice(0, k.indexOf('|')));
+      if (!meta) continue;
+      // Neither can a question the session cannot deal: a book that keeps its
+      // questions in the PDF has nothing to print on a card, and `nd` marks the
+      // odd row elsewhere whose text never came off the scan. Counting those
+      // was how the library came to promise 18 and the session to offer 3.
+      if (meta.needsPdf || r.nd) continue;
       if ((r.wrong > 0 && !r.mastered) || (r.due != null && r.due <= now)) n++;
     }
     return n;
@@ -6767,6 +6834,11 @@
 
     var box = el('div', 'drill-setup');
     box.appendChild(el('div', 'ds-label', t('drill.size')));
+    // These three buttons ARE the start button — there is no fourth one. Read
+    // as a size picker with 20 already highlighted, the page looked like it was
+    // waiting for a "begin" that does not exist, so both the label and the
+    // buttons now say that pressing one starts the run.
+    box.appendChild(el('div', 'ds-hint', t('drill.sizeHint')));
     var row = el('div', 'ds-sizes');
     DRILL_SIZES.forEach(function (n) {
       var b = el('button', 'btn' + (n === 20 ? ' primary' : ''), t('drill.sizeN', { n: n }));
@@ -7143,7 +7215,13 @@
   // device loses everything. A plain JSON file closes that risk (AUDIT §5.6).
   function exportProgress() {
     try {
-      var blob = new Blob([JSON.stringify(state)], { type: 'application/json' });
+      // The word deck lives in a key of its own, so "save my progress" used to
+      // hand back a file with every answer in it and not one of the words the
+      // reader had collected. It is progress too.
+      var payload = {};
+      for (var k in state) payload[k] = state[k];
+      if (window.SRS && SRS.snapshot) payload.words = SRS.snapshot();
+      var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -7177,9 +7255,18 @@
             try {
               mergeInto(state, incoming);  // newest answer per question wins
               state.books = {};            // force a recount from merged items
+              // Files written before the deck was carried simply have no
+              // `words`, and older ones are none the worse for it.
+              var added = 0;
+              if (incoming.words && window.SRS && SRS.restoreData) {
+                added = SRS.restoreData(incoming.words);
+                if (added < 0) added = 0;
+              }
               flush();
               route();
-              ASK.tell(t('stats.importOk'));
+              ASK.tell(added
+                ? t('stats.importOk') + ' ' + t('stats.importWords', { n: num(added) })
+                : t('stats.importOk'));
             } catch (e) { ASK.tell(t('stats.importBad')); }
           });
       };
@@ -7199,6 +7286,7 @@
   var findFoot = document.getElementById('findFoot');
   var findScope = 'book';         // 'all' searches every book, once loaded
   var findLoading = false;
+  var findLoadDone = 0;           // books in, while the whole shelf is loading
   var findReturnFocus = null;
   var findTimer = null;
   var pendingFocus = null;        // row key to jump to once a unit is rendered
@@ -7289,9 +7377,14 @@
     clear(findFoot);
     var q = (findInput.value || '').trim().toLowerCase();
 
+    // While the shelf is coming in, say how far along it is and keep searching
+    // what has already landed. Thirteen files take a few seconds on a phone,
+    // and one motionless line for that long reads as a search that is broken
+    // rather than one that is working.
     if (findLoading) {
-      findResults.appendChild(el('div', 'find-note', t('find.loading')));
-      return;
+      findResults.appendChild(el('div', 'find-note',
+        t('find.loadingN', { n: findLoadDone, of: BOOKS.length })));
+      if (q.length < 2 || !findBooks().length) return;
     }
     if (q.length < 2) {
       findResults.appendChild(el('div', 'find-note', t('find.hint')));
@@ -7334,14 +7427,20 @@
   function findSetScope(scope) {
     if (scope === 'all' && !findAllLoaded()) {
       findLoading = true;
+      findLoadDone = 0;
       findScope = 'all';
       findPaintScope();
       findRender();
-      Promise.all(BOOKS.map(function (b) { return loadBook(b.id).catch(function () { return null; }); }))
-        .then(function () {
-          findLoading = false;
-          if (!findModal.hidden) { findPaintScope(); findRender(); }
+      Promise.all(BOOKS.map(function (b) {
+        return loadBook(b.id).catch(function () { return null; }).then(function (r) {
+          findLoadDone++;
+          if (!findModal.hidden && findLoading) findRender();
+          return r;
         });
+      })).then(function () {
+        findLoading = false;
+        if (!findModal.hidden) { findPaintScope(); findRender(); }
+      });
       return;
     }
     findScope = scope;

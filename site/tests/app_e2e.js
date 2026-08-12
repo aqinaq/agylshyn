@@ -144,6 +144,23 @@ async function run() {
   const kkH1 = await s.eval(`document.querySelector('.home-hero h1').textContent`);
   r.ok('KK switches it back', /[әғқңөұүһі]/i.test(kkH1), kkH1);
 
+  /* Chrome's ICU lists `kk` as a supported locale and then has no Kazakh month
+     names for it, so every date on the site read "2026 M08". Node's ICU gets it
+     right, which is why this has to be asserted in a browser. */
+  const dates = await s.eval(`(() => {
+    const d = new Date(2026, 7, 10);
+    return {
+      platform: d.toLocaleDateString('kk-KZ', { month: 'long', year: 'numeric' }),
+      months: (window.I18N.kk['date.months'] || '').split(','),
+      monthYear: window.I18N.kk['date.monthYear'],
+      calendar: (document.querySelector('.cal-month, .cal-head b, .cal-title') || {}).textContent || ''
+    };
+  })()`);
+  r.eq('Kazakh has twelve month names of its own', dates.months.length, 12);
+  r.ok('the eighth is Kazakh, not "M08"',
+    dates.months[7] === 'тамыз' && /M\d\d/.test(dates.platform), dates.months[7] + ' vs ' + dates.platform);
+  r.ok('and no date on the page falls back to it', !/M\d\d/.test(dates.calendar), dates.calendar);
+
   /* ================= a book, and an answer ================= */
   r.head('a book, and an answer');
   await goto(s, BASE + '#/b/grammar');
@@ -192,6 +209,73 @@ async function run() {
   // The "two rows, one number" regression (Advanced Grammar 17.2) lives in
   // tests/paywall_e2e.js now: that book is paid, so opening it needs a
   // subscription, and this pass is deliberately signed out.
+
+  /* ================= one attempt, one answer =================
+
+     "Check this exercise" used to grade every row that had text in it, whether
+     or not that text already had a verdict. One attempt plus two presses of the
+     button wrote four answers into the record: it took back "I was right",
+     turned a single slip into the two that make a word card, and counted the
+     same answer several times towards the day and the mastery streak. */
+  r.head('checking twice');
+  const twice = await s.eval(`(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const st = () => JSON.parse(localStorage.getItem('agylshyn_v1') || '{}');
+    // The last answerable row, so this pass's earlier wrong answer (which
+    // landed on the first one) does not add to the count checked here.
+    const inputs = [...document.querySelectorAll('#main .row:not(.example) .answer-line input')];
+    const row = inputs[inputs.length - 1].closest('.row');
+    const key = row.getAttribute('data-key');
+    const box = row.querySelector('input');
+    box.value = 'clearly not the answer';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    row.querySelector('.answer-line .btn.primary').click();
+    await wait(250);
+    const first = st().items[key].hist;
+    // This row was already answered once further up the pass, so the count to
+    // hold steady is the one after this attempt, not 1.
+    const wrong0 = st().items[key].wrong;
+    const day0 = st().daily[Object.keys(st().daily).pop()];
+
+    // The reader decides they were right after all.
+    row.querySelector('.feedback .btn.ok').click();
+    await wait(250);
+    const owned = st().items[key];
+
+    // Now sweep the exercise, then the whole unit, then press the row again.
+    const sub = row.closest('.sub');
+    [...sub.querySelectorAll('button')].find(b => b.classList.contains('btn') &&
+      b.parentElement.classList.contains('sub-actions')).click();
+    await wait(300);
+    [...document.querySelectorAll('#main .unit-foot button, #main button')]
+      .filter(b => b.classList.contains('primary') && b.closest('.unit-foot')).forEach(b => b.click());
+    await wait(300);
+    row.querySelector('.answer-line .btn.primary').click();
+    await wait(300);
+    const after = st().items[key];
+
+    // A genuinely new attempt still counts. The book's own key, so this row
+    // does not end the pass as a second mistake and quietly become a word card.
+    box.value = row.querySelector('.feedback .key b').textContent.split(' / ')[0];
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    row.querySelector('.answer-line .btn.primary').click();
+    await wait(300);
+    return {
+      first, wrong0, owned: { hist: owned.hist, last: owned.last, self: owned.self },
+      after: { hist: after.hist, last: after.last, wrong: after.wrong },
+      retried: st().items[key].hist,
+      day0, day1: st().daily[Object.keys(st().daily).pop()]
+    };
+  })()`);
+  r.eq('a wrong answer is one answer', twice.first.slice(-1), '0');
+  r.eq('"I was right" turns it round', twice.owned.last, 'correct');
+  r.ok('and it is marked as the reader\'s own call', twice.owned.self);
+  r.eq('sweeping the exercise and the unit leaves it alone',
+    twice.after.hist, twice.owned.hist, twice.after.hist);
+  r.eq('so the verdict still stands', twice.after.last, 'correct');
+  r.eq('and it was not counted wrong again', twice.after.wrong, twice.wrong0);
+  r.eq('a new answer in the box is graded', twice.retried, twice.owned.hist + '1');
+  r.eq('and the day counted three answers, not six', twice.day1 - twice.day0, 2);
 
   /* ================= the writing pad =================
 

@@ -214,6 +214,25 @@ window.SRS = (function () {
     return Math.round(card.interval * card.ease);
   }
 
+  /* Does what the reader typed match the back of the card? Deliberately the
+     same shape as app.js's matcher — punctuation, case and spacing are noise,
+     and a key printed as "He's tying / He is tying" offers two right answers —
+     but this only decorates the card. Nothing is recorded from it, so it may be
+     the simpler cousin rather than a second copy of the real thing. */
+  function normAns(s) {
+    return String(s == null ? '' : s).toLowerCase()
+      .replace(/[‘’‚‛′´`]/g, "'").replace(/[“”„″]/g, '"')
+      .replace(/[^\p{L}\p{N}]+/gu, '');
+  }
+
+  function sameAnswer(input, answer) {
+    var got = normAns(input);
+    if (!got) return false;
+    var parts = String(answer == null ? '' : answer).split(/\s*\/\s*|\s+or\s+/i);
+    for (var i = 0; i < parts.length; i++) if (normAns(parts[i]) === got) return true;
+    return normAns(answer) === got;
+  }
+
   function newCard(fields) {
     var now = Date.now();
     return {
@@ -226,6 +245,11 @@ window.SRS = (function () {
       // card is a 'gap' — the sentence is the question, and translating it
       // would be answering something nobody asked.
       kind: fields.kind === 'gap' ? 'gap' : 'word',
+      // What the exercise asked. A gap card's front is one sentence out of an
+      // exercise, and without its instruction ("Choose from these verbs: cross
+      // hide scratch…") there is nothing to recall from — the reader can only
+      // press "show". Cards made before this field existed simply have none.
+      prompt: (fields.prompt || '').trim(),
       // The answer record this card came from ('book|unit|sub|n'), so the same
       // mistake cannot be added twice — by the automatic path and the button on
       // the Mistakes page both.
@@ -544,7 +568,9 @@ window.SRS = (function () {
       var d = new Date(Date.now() - i * DAY);
       var r = (data.history[dayKey(d.getTime())] || {}).reviewed || 0;
       var cell = el('span', 'srs-heat-cell heat-' + heatLevel(r));
-      cell.title = d.toLocaleDateString(t('locale')) + ' · ' + tn('srs.heatDay', r, { n: r });
+      // app.js owns date formatting: the platform has no Kazakh month names.
+      var dl = window.APP_DATE ? window.APP_DATE(d, 'short') : d.toLocaleDateString(t('locale'));
+      cell.title = dl + ' · ' + tn('srs.heatDay', r, { n: r });
       row.appendChild(cell);
     }
     box.appendChild(row);
@@ -719,6 +745,7 @@ window.SRS = (function () {
       if (session.flipped) return;
       session.flipped = true;
       var card2 = box.firstChild;
+      if (card2.showTyped) card2.showTyped();
       card2.classList.add('flipped');
       if (card2.setFaces) card2.setFaces(true);
       attachSwipe(card2);
@@ -752,12 +779,61 @@ window.SRS = (function () {
     var inner = el('div', 'srs-card-inner');
 
     var front = el('div', 'srs-face srs-front');
+    // A gap card is one sentence lifted out of an exercise; on its own it is
+    // unanswerable ("… the road."). The instruction it came with is what makes
+    // it a question again.
+    if (card.kind === 'gap' && card.prompt) front.appendChild(el('p', 'srs-prompt', card.prompt));
     front.appendChild(el('span', 'srs-word', card.word));
     if (card.repetition === 0) front.appendChild(el('span', 'srs-badge', t('srs.badgeNew')));
+
+    /* Somewhere to write. Without it the only move on a card is "show me", and
+       recognising an answer is not recalling one — which is the whole point of
+       the deck. What is typed is not graded: the reader still chooses the
+       grade, but now with their own attempt in front of them. */
+    var typed = el('input', 'srs-answer');
+    typed.type = 'text';
+    typed.setAttribute('autocomplete', 'off');
+    typed.setAttribute('autocapitalize', 'off');
+    typed.setAttribute('autocorrect', 'off');
+    typed.setAttribute('spellcheck', 'false');
+    typed.setAttribute('enterkeyhint', 'go');
+    typed.placeholder = t('srs.review.yourAnswer');
+    typed.setAttribute('aria-label', t('srs.review.yourAnswer'));
+    // Typing in the box must not count as tapping the card, or the first
+    // keystroke would flip it.
+    ['click', 'pointerdown', 'mousedown'].forEach(function (ev) {
+      typed.addEventListener(ev, function (e) { e.stopPropagation(); });
+    });
+    typed.addEventListener('keydown', function (e) {
+      e.stopPropagation();            // 1–4 and Space are session shortcuts
+      if (e.key === 'Enter' && session.reveal) { e.preventDefault(); session.reveal(); }
+    });
+    front.appendChild(typed);
+    box.typedValue = function () { return typed.value; };
+
     front.appendChild(el('span', 'srs-face-hint', t('srs.review.tap')));
 
     var back = el('div', 'srs-face srs-back');
     back.appendChild(el('span', 'srs-translation', card.translation));
+    // What the reader wrote, set against the answer. Not a grade — the four
+    // buttons stay theirs — just their own attempt, kept in view.
+    var mine = el('div', 'srs-mine');
+    mine.hidden = true;
+    back.appendChild(mine);
+    box.showTyped = function () {
+      var v = String(box.typedValue ? box.typedValue() : '').trim();
+      // The turned-away face is hidden by a 3-D transform, which does not stop
+      // Tab reaching the box behind the card.
+      typed.disabled = true;
+      clear(mine);
+      if (!v) { mine.hidden = true; return; }
+      mine.hidden = false;
+      var hit = sameAnswer(v, card.translation);
+      mine.className = 'srs-mine ' + (hit ? 'hit' : 'miss');
+      mine.appendChild(el('span', 'srs-mine-mark', hit ? '✓' : '✗'));
+      mine.appendChild(el('span', 'srs-mine-lab', t('srs.review.yours')));
+      mine.appendChild(el('span', 'srs-mine-val', v));
+    };
     if (card.example) back.appendChild(el('p', 'srs-example', card.example));
     [['collocations', 'srs.f.colloc'], ['synonyms', 'srs.f.syn'], ['antonyms', 'srs.f.ant']]
       .forEach(function (f) {
@@ -1195,14 +1271,7 @@ window.SRS = (function () {
   }
 
   function exportFile() {
-    var payload = {
-      v: 1,
-      exportedAt: new Date().toISOString(),
-      settings: data.settings,
-      history: data.history,
-      // Tombstones are an internal detail; a backup carries real cards only.
-      cards: live()
-    };
+    var payload = snapshot();
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -1218,20 +1287,35 @@ window.SRS = (function () {
   // server (ISO dates, `easeFactor`/`dueDate` names). Restoring adds to the
   // deck rather than replacing it — losing a deck to a mis-clicked file would
   // be far worse than a few duplicates, which are skipped anyway.
-  function restore(text, out) {
-    var parsed;
-    try { parsed = JSON.parse(text); }
-    catch (e) { out.appendChild(el('span', 'bad', t('srs.import.badJson'))); return; }
-    if (!parsed || !Array.isArray(parsed.cards)) {
-      out.appendChild(el('span', 'bad', t('srs.import.badFile')));
-      return;
-    }
+  /* One backup payload, used by the deck's own "download" button and by the
+     progress backup on the statistics page — the deck is progress too, and a
+     reader who saves their progress and then clears the browser should not
+     find every word they collected gone. */
+  function snapshot() {
+    return {
+      v: 1,
+      exportedAt: new Date().toISOString(),
+      settings: data.settings,
+      history: data.history,
+      // Tombstones are an internal detail; a backup carries real cards only.
+      cards: live()
+    };
+  }
+
+  /* Returns how many cards were added, or -1 when the payload is not a deck. */
+  function restoreData(parsed) {
+    if (!parsed || !Array.isArray(parsed.cards)) return -1;
     var n = 0;
     parsed.cards.forEach(function (raw) {
       if (!raw || !raw.word || !raw.translation) return;
-      if (findWord(raw.word)) return;
+      // A mistake card is identified by the question it came from; a looked-up
+      // word by the word itself. Restoring used to compare words only, so a
+      // restored mistake card lost its link to the question and the automatic
+      // sweep could add the very same one again.
+      if (raw.srcKey ? findSrc(raw.srcKey) : findWord(raw.word)) return;
       var c = newCard({
         word: raw.word, translation: raw.translation, example: raw.example,
+        kind: raw.kind, prompt: raw.prompt, srcKey: raw.srcKey, src: raw.src,
         collocations: raw.collocations, synonyms: raw.synonyms, antonyms: raw.antonyms
       });
       c.repetition = raw.repetition || 0;
@@ -1252,6 +1336,15 @@ window.SRS = (function () {
       data.history[d].reviewed = Math.max(data.history[d].reviewed, h[d].reviewed || 0);
     }
     if (n) save();
+    return n;
+  }
+
+  function restore(text, out) {
+    var parsed;
+    try { parsed = JSON.parse(text); }
+    catch (e) { out.appendChild(el('span', 'bad', t('srs.import.badJson'))); return; }
+    var n = restoreData(parsed);
+    if (n < 0) { out.appendChild(el('span', 'bad', t('srs.import.badFile'))); return; }
     out.appendChild(el('span', 'ok', tn('srs.added', n, { n: num(n) })));
   }
 
@@ -1412,6 +1505,7 @@ window.SRS = (function () {
           word: row.front,
           translation: row.back,
           example: row.source || '',
+          prompt: row.prompt || '',
           srcKey: row.srcKey,
           src: row.src || 'mistake'
         });
@@ -1428,6 +1522,10 @@ window.SRS = (function () {
     // turned off.
     autoMistakes: function () { return data.settings.autoMistakes !== false; },
     hasSrc: function (key) { return !!findSrc(key); },
+
+    // The statistics page's progress backup carries the deck as well.
+    snapshot: snapshot,
+    restoreData: restoreData,
 
     onChange: function (fn) { if (typeof fn === 'function') listeners.push(fn); },
 

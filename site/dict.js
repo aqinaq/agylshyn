@@ -158,7 +158,10 @@
       cb({ word: word, loading: true });
       fetchOnline(word, function (entry) {
         if (entry) remember(word, entry);
-        cb(entry || { word: word, missing: true });
+        // "check your connection" is the wrong thing to say when the connection
+        // is fine and the word simply is not in the offline list — and the
+        // right thing to say when it is not. The two cases read differently now.
+        cb(entry || { word: word, missing: true, offline: !navigator.onLine });
       });
     });
   }
@@ -333,7 +336,9 @@
     if (!entry || entry.loading) {
       p.appendChild(line('wl-loading', T('wl.loading', 'Ізделуде…')));
     } else if (entry.missing) {
-      p.appendChild(line('wl-loading', T('wl.missing', 'Табылмады. Интернет бар ма?')));
+      p.appendChild(line('wl-loading', entry.offline
+        ? T('wl.missingOffline', 'Желі жоқ. Бұл сөз құрылғыдағы сөздікте жоқ.')
+        : T('wl.missing', 'Табылмады.')));
     } else {
       if (entry.kk) p.appendChild(line('wl-kk', entry.kk));
       if (entry.en) p.appendChild(line('wl-en', entry.en));

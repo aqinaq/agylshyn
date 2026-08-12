@@ -128,7 +128,10 @@ window.PLACEMENT = {
   // Goal shortcuts shown under every result, independent of the level score —
   // someone at B1 may still be aiming at IELTS. Book ids must exist in books.js.
   goals: [
-    { id: 'ielts',    book: 'ielts-21' },
+    // The free one of the three IELTS collections. This chip is the first thing
+    // a visitor presses after a free level test, and pointing it at a paid book
+    // turned "what do you want this for?" straight into a payment screen.
+    { id: 'ielts',    book: 'ielts-19' },
     { id: 'business', book: 'business' },
     { id: 'academic', book: 'academic' }
   ]

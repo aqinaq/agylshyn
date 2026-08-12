@@ -2464,7 +2464,9 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-.ds-label { font-size: 12px; color: var(--muted); margin-bottom: 9px; }
+.ds-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.ds-hint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.plc-goal-free { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
 .ds-sizes { display: flex; gap: 8px; flex-wrap: wrap; }
 .ds-sizes .btn { font-size: 14px; padding: 9px 18px; }
 .drill-alt { display: inline-block; margin-top: 14px; }
@@ -3649,6 +3651,52 @@ body.side-min .ue-head { display: none; }
   max-width: 34ch;
 }
 .srs-card.srs-gap .srs-translation { font-size: 26px; }
+
+/* The instruction the sentence came with. Without it "… the road." is not a
+   question, and the only move left on the card is "show me". */
+.srs-prompt {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Somewhere to write on the card itself. 16px is not a taste: anything smaller
+   makes iOS Safari zoom the page on focus and never zoom back. */
+.srs-answer {
+  width: min(100%, 34ch);
+  margin-top: 4px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.srs-answer:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+
+.srs-mine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  max-width: 36ch;
+  padding: 7px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+}
+.srs-mine.hit { background: var(--ok-bg); border-color: var(--ok-line); }
+.srs-mine.miss { background: var(--bad-bg); border-color: var(--bad-line); }
+.srs-mine-mark { font-weight: 700; }
+.srs-mine.hit .srs-mine-mark { color: var(--ok); }
+.srs-mine.miss .srs-mine-mark { color: var(--bad); }
+.srs-mine-lab { color: var(--muted); }
+.srs-mine-val { font-weight: 600; word-break: break-word; }
 
 .srs-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; cursor: pointer; }
 .srs-check input { width: 16px; height: 16px; accent-color: var(--accent); }

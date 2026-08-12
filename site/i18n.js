@@ -6,6 +6,15 @@ window.I18N = {
     'app.title': 'Ағылшын — жаттығулар',
     'html.lang': 'kk',
     'locale': 'kk-KZ',
+    // Chrome's ICU lists `kk` as supported but ships no Kazakh month names for
+    // it — toLocaleDateString('kk',{month:'long'}) answers "M08". Every date on
+    // the site is assembled from these instead. See fmtDate() in app.js.
+    'date.months': 'қаңтар,ақпан,наурыз,сәуір,мамыр,маусым,шілде,тамыз,қыркүйек,қазан,қараша,желтоқсан',
+    'date.monthsShort': 'қаң.,ақп.,нау.,сәу.,мам.,мау.,шіл.,там.,қыр.,қаз.,қар.,жел.',
+    'date.monthYear': '{month} {year}',
+    'date.dayMonth': '{day} {month}',
+    'date.short': '{day} {month} {year} ж.',
+    'date.numeric': '{d}.{m}.{y}',
 
     // Deliberately count-free: the book count lives in the stat tile next to
     // it, so adding a book can never leave this line stale.
@@ -105,6 +114,9 @@ window.I18N = {
     'sheet.title': 'Бұл — жауап парағы',
     'sheet.text': 'Сұрақтар кітаптың өзінде: оларды PDF-тен оқисың да, жауабын осындағы ' +
                   'нөмірі бойынша жазасың. Нағыз емтихандағыдай. PDF қатар ашылады.',
+    'sheet.textNarrow': 'Сұрақтар кітаптың өзінде: оларды PDF-тен оқисың да, жауабын осындағы ' +
+                  'нөмірі бойынша жазасың. Нағыз емтихандағыдай. Телефонда PDF бүкіл ' +
+                  'экранды алады — оқып ал да, ✕ басып осында орал.',
     'help.h1': 'Нұсқаулық',
 
     'nav.units': 'Units',
@@ -160,7 +172,7 @@ window.I18N = {
                    + 'Ағылшынша сөзбен көр — ал қазақша аудармасын жаттығудағы '
                    + 'сөздің үстіне басып қарауға болады.',
     'find.noBooks': 'Алдымен кітапты аш.',
-    'find.loading': 'Кітаптар жүктелуде…',
+    'find.loadingN': 'Кітаптар жүктелуде… {n} / {of}',
     'find.scopeBook': 'Осы кітап',
     'find.scopeAll': 'Барлық кітап',
     'find.inAnswer': 'жауаптан',
@@ -174,8 +186,9 @@ window.I18N = {
     'drill.poolWrong': 'Қате',
     'drill.poolDue': 'Қайталауға дайын',
     'drill.poolNew': 'Жаңа',
-    'drill.size': 'Неше сұрақ?',
-    'drill.sizeN': '{n} сұрақ',
+    'drill.size': 'Қанша сұрақпен бастаймыз?',
+    'drill.sizeHint': 'Біреуін бас — сессия сол сәтте басталады. 20-сы — әдеттегі мөлшер.',
+    'drill.sizeN': '▶ {n} сұрақ',
     'drill.goAll': 'Барлық кітаптан сессия →',
     'drill.startHere': '⚡ Сессия бастау',
     'drill.empty': 'Бұл жерде жаттығуға дайын сұрақ жоқ.',
@@ -236,7 +249,8 @@ window.I18N = {
     'btn.check': 'Тексеру',
 
     'wl.loading': 'Ізделуде…',
-    'wl.missing': 'Табылмады — интернетті тексер.',
+    'wl.missing': 'Табылмады.',
+    'wl.missingOffline': 'Желі жоқ. Бұл сөз құрылғыдағы қысқа сөздікте жоқ — интернет қосылғанда табылады.',
     'wl.online': 'интернеттен · машина аудармасы',
     'wl.hover': 'Меңзегенде шықсын',
     'wl.listen': 'Тыңдау',
@@ -288,6 +302,8 @@ window.I18N = {
     'srs.quit': 'Аяқтау',
     'srs.leech': '«{w}» тым жиі ұмытылды — уақытша тоқтатылды. «Сөздер» бетінен қайта қосасың.',
     'srs.review.show': 'Жауабын көрсету',
+    'srs.review.yourAnswer': 'Жауабыңды осында жаз…',
+    'srs.review.yours': 'сен:',
     'srs.review.tap': 'басып көр',
     'srs.review.hintFront': 'Картаны бас немесе Space — аудармасы шығады',
     'srs.review.hintTapTouch': 'Картаны бас — аудармасы шығады',
@@ -514,6 +530,7 @@ window.I18N = {
     'note.watch': 'Жиі қате:',
     'note.open': 'Қазақша түсіндірме',
 
+    'plc.goalFree': '🔒 жазылыммен — бірінші юниттері тегін',
     'sample.tag': 'ҮЛГІ',
     'sample.body': 'Бұл кітаптың {of} юнитінің {n}-і ашық — қалғаны жазылымда.',
     'sample.unlock': 'Ашу',
@@ -575,6 +592,7 @@ window.I18N = {
     'sub.checkExercise': 'Тапсырманы тексеру',
     // Бос тапсырмада бұл түйме бұрын мүлдем үнсіз еді — бұзылған сияқты.
     'sub.checkNothing': 'Алдымен бір жауап жаз — әзірге тексеретін ештеңе жоқ.',
+    'sub.checkDone': 'Бәрі тексерілген. Жауапты өзгертсең, қайта тексеріледі.',
 
     // Тексере алмайтын тапсырманың жазу орны — дәптердің орнына.
     'pad.label': '✍️ Осында жаз',
@@ -646,6 +664,7 @@ window.I18N = {
     'stats.import': '⭱ Файлдан қалпына келтіру',
     'stats.exportBad': 'Сақтау мүмкін болмады.',
     'stats.importConfirm': 'Файлдағы прогресс қазіргімен біріктіріледі (әр сұрақтың соңғы жауабы қалады). Жалғастырамыз ба?',
+    'stats.importWords': 'Сөздік қорға {n} карта қосылды.',
     'stats.importOk': 'Прогресс қалпына келтірілді.',
     'stats.importBad': 'Файл оқылмады — бұл дұрыс прогресс файлы емес сияқты.',
 
@@ -813,6 +832,12 @@ window.I18N = {
     'app.title': 'English — practice',
     'html.lang': 'en',
     'locale': 'en-US',
+    'date.months': 'January,February,March,April,May,June,July,August,September,October,November,December',
+    'date.monthsShort': 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec',
+    'date.monthYear': '{month} {year}',
+    'date.dayMonth': '{month} {day}',
+    'date.short': '{month} {day}, {year}',
+    'date.numeric': '{m}/{d}/{y}',
 
     'hero.h1': 'Every book, one practice space',
     'hero.p': 'Exercises from the Cambridge coursebooks. Type your answer, check it instantly, and your mistakes collect in their own list.',
@@ -908,6 +933,9 @@ window.I18N = {
     'sheet.text': 'The questions stay in the book: you read them from the PDF and write ' +
                   'each answer against its number here — the way the real exam works. ' +
                   'The PDF opens alongside.',
+    'sheet.textNarrow': 'The questions stay in the book: you read them from the PDF and write ' +
+                  'each answer against its number here — the way the real exam works. ' +
+                  'On a phone the PDF fills the screen — read the questions, then ✕ back to here.',
     'help.h1': 'How to use this site',
 
     'nav.units': 'Units',
@@ -963,7 +991,7 @@ window.I18N = {
                    + 'English. Try an English word — for a translation, tap a '
                    + 'word inside an exercise instead.',
     'find.noBooks': 'Open a book first.',
-    'find.loading': 'Loading books…',
+    'find.loadingN': 'Loading books… {n} / {of}',
     'find.scopeBook': 'This book',
     'find.scopeAll': 'All books',
     'find.inAnswer': 'in the answer',
@@ -978,7 +1006,8 @@ window.I18N = {
     'drill.poolDue': 'Due for review',
     'drill.poolNew': 'New',
     'drill.size': 'How many questions?',
-    'drill.sizeN': '{n} questions',
+    'drill.sizeHint': 'Press one and the session starts. 20 is the usual length.',
+    'drill.sizeN': '▶ {n} questions',
     'drill.goAll': 'Session across all books →',
     'drill.startHere': '⚡ Start a session',
     'drill.empty': 'Nothing here is ready to practise.',
@@ -1039,7 +1068,8 @@ window.I18N = {
     'btn.check': 'Check',
 
     'wl.loading': 'Looking up…',
-    'wl.missing': 'Not found — check your connection.',
+    'wl.missing': 'Not found.',
+    'wl.missingOffline': 'No connection. This word is not in the small offline list — it will be found once you are back online.',
     'wl.online': 'from the internet · machine translation',
     'wl.hover': 'Show on hover',
     'wl.listen': 'Listen',
@@ -1098,6 +1128,8 @@ window.I18N = {
     'srs.quit': 'Finish',
     'srs.leech': '“{w}” has been forgotten too many times and was paused. Bring it back from the Words page.',
     'srs.review.show': 'Show answer',
+    'srs.review.yourAnswer': 'Write your answer here…',
+    'srs.review.yours': 'you:',
     'srs.review.tap': 'tap to reveal',
     'srs.review.hintFront': 'Tap the card or press Space to see the answer',
     'srs.review.hintTapTouch': 'Tap the card to see the answer',
@@ -1322,6 +1354,7 @@ window.I18N = {
     'note.watch': 'Common mistakes:',
     'note.open': 'Explanation in Kazakh',
 
+    'plc.goalFree': '🔒 subscription — but the first units are free',
     'sample.tag': 'SAMPLE',
     'sample.body': '{n} of this book\u2019s {of} units are open — the rest come with a subscription.',
     'sample.unlock': 'Unlock',
@@ -1378,6 +1411,7 @@ window.I18N = {
     'sub.checkExercise': 'Check this exercise',
     // With nothing filled in, this button used to do nothing at all.
     'sub.checkNothing': 'Write an answer first — there is nothing to check yet.',
+    'sub.checkDone': 'All checked. Change an answer and it is marked again.',
 
     'pad.label': '✍️ Write here',
     'pad.ph': 'Write your answer here instead of in a notebook. It saves itself.',
@@ -1420,6 +1454,7 @@ window.I18N = {
     'err.intro': 'Questions you got wrong and have not mastered yet. Answer one correctly {n} times in a row and it leaves this list.',
     'err.metaPage': 'p. {n} · ',
     'err.metaCount': '{n} questions',
+    'err.metaCount.1': '{n} question',
 
     'stats.h1': 'Statistics',
     'stats.total': 'Overall progress',
@@ -1445,6 +1480,7 @@ window.I18N = {
     'stats.import': '⭱ Restore from file',
     'stats.exportBad': 'Could not export.',
     'stats.importConfirm': 'Progress from the file will be merged with what you have now (the latest answer per question wins). Continue?',
+    'stats.importWords': '{n} word cards added.',
     'stats.importOk': 'Progress restored.',
     'stats.importBad': 'Could not read the file — it does not look like a valid progress file.',
 
