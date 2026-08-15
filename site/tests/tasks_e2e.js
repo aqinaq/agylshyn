@@ -9,16 +9,25 @@
 'use strict';
 const { connect, goto, sleep, until, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
-const { signedIn, LIVE } = require('./supamock.js');
+const { signedIn, LIVE, hasBook, NO_BOOK } = require('./supamock.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
 const TASKS = '#/b/ielts-21/tasks/1';
 
+const BOOK = 'ielts-21';
+
 async function run() {
   const r = Report('tasks');
   const conn = await connect(PORT);
   const errors = [];
+
+  // Every scenario in this file opens Cambridge 21, which is paid and therefore
+  // not in a fresh checkout. Nothing here can run without it.
+  if (!hasBook(BOOK)) {
+    r.note(NO_BOOK(BOOK));
+    return r.done();
+  }
 
   const s = await signedIn(conn, { access: LIVE });
   s.on('Runtime.exceptionThrown', p => errors.push(p.exceptionDetails.text));

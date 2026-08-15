@@ -9,7 +9,7 @@
 'use strict';
 const { connect, goto, sleep, until, answerAsk } = require('./cdp.js');
 const { Report } = require('./report.js');
-const { signedIn, LIVE } = require('./supamock.js');
+const { signedIn, LIVE, hasBook, NO_BOOK } = require('./supamock.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
@@ -18,10 +18,19 @@ const UNIT = '#/b/ielts-21/unit/1';
 const openPanel = `[...document.querySelectorAll('.ia-tools .btn')]
   .find(b => b.textContent.indexOf('✍') === 0).click()`;
 
+const BOOK = 'ielts-21';
+
 async function run() {
   const r = Report('dictation');
   const conn = await connect(PORT);
   const errors = [];
+
+  // Cambridge 21 is the only book with audioscripts, and it is paid, so a
+  // checkout without content/ has nothing for this suite to read.
+  if (!hasBook(BOOK)) {
+    r.note(NO_BOOK(BOOK));
+    return r.done();
+  }
 
   const s = await signedIn(conn, { access: LIVE });
   s.on('Runtime.exceptionThrown', p => errors.push(p.exceptionDetails.text));

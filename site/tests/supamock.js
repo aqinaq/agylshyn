@@ -66,6 +66,24 @@ function bookJson(id) {
   return null;
 }
 
+/* Is this book's JSON anywhere a test could serve it from?
+
+   content/ is gitignored — the paid books are not in the repository and are not
+   in the deploy — so on CI and on any fresh clone the answer for a paid book is
+   no, and every scenario that opens one has nothing to open. Those scenarios
+   say so and skip. It is the same rule the static audit follows: a paid book
+   that was never built here is unmeasured, not broken, and a suite that fails
+   for that reason teaches everybody to ignore a red run.
+
+   To see what CI sees, move content/ aside and run the suite. */
+const hasBook = id => bookJson(id) !== null;
+
+// The line a suite prints when it skips for that reason, so the message is the
+// same everywhere and says what to do about it.
+const NO_BOOK = id =>
+  id + ' is not built here (content/ is gitignored) — the scenarios that open '
+  + 'it were skipped. Build it, or run this on a checkout that has it.';
+
 /* opts:
      admin    true → this account is in public.admins
      rpc      404 | 403 → how admin_list_users fails, if it should
@@ -273,4 +291,5 @@ async function signedIn(conn, opts) {
 const LIVE = { plan: 'lifetime', expires_at: null, active: true };
 const LAPSED = { plan: 'monthly', expires_at: '2026-06-01T00:00:00Z', active: false };
 
-module.exports = { USER, ROSTER, PAID, supabaseHost, mock, signedIn, bookJson, LIVE, LAPSED };
+module.exports = { USER, ROSTER, PAID, supabaseHost, mock, signedIn, bookJson,
+  hasBook, NO_BOOK, LIVE, LAPSED };

@@ -164,7 +164,12 @@ async function run() {
   /* ================= a book, and an answer ================= */
   r.head('a book, and an answer');
   await goto(s, BASE + '#/b/grammar');
-  await sleep(800);
+  // Not sleep(): grammar is 145 units of JSON, and under a full suite run —
+  // fourteen other suites, a browser per scenario — 800 ms is sometimes not
+  // enough to fetch and draw it. The suite then reported an empty unit list,
+  // which reads as "the book is broken" rather than "the machine was busy".
+  await until(s, `document.querySelectorAll('#unitList li').length > 0
+    && document.querySelectorAll('#main input[type=text]').length > 0`);
   const book = await s.eval(`(() => ({
     view: document.body.getAttribute('data-view'),
     units: document.querySelectorAll('#unitList li').length,

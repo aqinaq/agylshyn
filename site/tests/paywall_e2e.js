@@ -16,7 +16,7 @@
 'use strict';
 const { connect, newContextPage, goto, sleep } = require('./cdp.js');
 const { Report } = require('./report.js');
-const { PAID, supabaseHost, mock, signedIn, LIVE, LAPSED } = require('./supamock.js');
+const { PAID, supabaseHost, mock, signedIn, LIVE, LAPSED, hasBook, NO_BOOK } = require('./supamock.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 
@@ -51,6 +51,15 @@ async function run() {
     return r.done();
   }
   r.note('paid: ' + PAID_BOOK + '   free: ' + FREE_BOOK);
+
+  /* What this suite is for is the LOCK, and the lock is drawn from index.json,
+     which is always here. Only the handful of assertions that read a paid
+     book's CONTENTS need the book itself, and a fresh checkout does not have it
+     — content/ is gitignored. Those are skipped there and said to be skipped,
+     rather than failing and teaching everybody to ignore a red run. */
+  const withBook = (id, name, cond, detail) => (hasBook(id)
+    ? r.ok(name, cond, detail)
+    : r.warnIf(true, name + ' — skipped, ' + NO_BOOK(id)));
 
   /* ============ nobody signed in ============ */
   r.head('a visitor with no account');
@@ -184,8 +193,8 @@ async function run() {
              units: document.querySelectorAll('#unitList li').length };
   })()`);
   r.eq('no locks anywhere on the shelf', open.locks, 0);
-  r.ok('the paid book opens like any other', open.view === 'book' && open.units > 0,
-    JSON.stringify(open));
+  withBook(PAID_BOOK, 'the paid book opens like any other',
+    open.view === 'book' && open.units > 0, JSON.stringify(open));
   r.ok('and it came from Supabase, not from data/',
     s.mock.calls.content.includes(PAID_BOOK), JSON.stringify(s.mock.calls.content));
 
@@ -202,7 +211,7 @@ async function run() {
     const items = JSON.parse(localStorage.getItem('agylshyn_v1')).items;
     return { typed: true, keys: Object.keys(items).filter(k => k.indexOf('${PAID_BOOK}|') === 0).length };
   })()`);
-  r.ok('an answer inside it is recorded like any other',
+  withBook(PAID_BOOK, 'an answer inside it is recorded like any other',
     answered.typed && answered.keys > 0, JSON.stringify(answered));
 
   /* An exercise that prints the same number twice used to file both rows under
@@ -211,30 +220,34 @@ async function run() {
      paid, so the regression can only be checked from inside a subscription —
      which is why this lives here rather than in app_e2e.js. */
   r.head('two rows, one number (advanced-grammar 17.2)');
-  await goto(s, BASE + '#/b/advanced-grammar/unit/17');
-  await sleep(1600);
-  const clash = await s.eval(`(async () => {
-    const all = [...document.querySelectorAll('#main input')]
-      .filter(i => (i.getAttribute('aria-label')||'').indexOf('17.2') >= 0);
-    const ones = all.filter(i => /(№1 |№1$|question 1$)/.test(i.getAttribute('aria-label')));
-    if (ones.length < 2) return { rows: all.length, ones: ones.length };
-    ones[0].value = 'AAAAA'; ones[0].dispatchEvent(new Event('input',{bubbles:true}));
-    ones[0].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
-    await new Promise(r=>setTimeout(r,300));
-    ones[1].value = 'BBBBB'; ones[1].dispatchEvent(new Event('input',{bubbles:true}));
-    ones[1].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
-    await new Promise(r=>setTimeout(r,400));
-    const items = JSON.parse(localStorage.getItem('agylshyn_v1')).items;
-    const keys = Object.keys(items).filter(k => k.indexOf('advanced-grammar|17|17.2|') === 0).sort();
-    return { rows: all.length, ones: ones.length, keys, vals: keys.map(k => items[k].val),
-             boxes: ones.map(i => i.value) };
-  })()`);
-  r.note(JSON.stringify(clash));
-  r.eq('both rows numbered 1 are there', clash.ones, 2);
-  r.ok('and each keeps its own answer',
-    (clash.vals || []).filter(v => v === 'AAAAA').length === 1
-    && (clash.vals || []).filter(v => v === 'BBBBB').length === 1,
-    'one record per row, not one shared between them');
+  if (!hasBook('advanced-grammar')) {
+    r.note(NO_BOOK('advanced-grammar'));
+  } else {
+    await goto(s, BASE + '#/b/advanced-grammar/unit/17');
+    await sleep(1600);
+    const clash = await s.eval(`(async () => {
+      const all = [...document.querySelectorAll('#main input')]
+        .filter(i => (i.getAttribute('aria-label')||'').indexOf('17.2') >= 0);
+      const ones = all.filter(i => /(№1 |№1$|question 1$)/.test(i.getAttribute('aria-label')));
+      if (ones.length < 2) return { rows: all.length, ones: ones.length };
+      ones[0].value = 'AAAAA'; ones[0].dispatchEvent(new Event('input',{bubbles:true}));
+      ones[0].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+      await new Promise(r=>setTimeout(r,300));
+      ones[1].value = 'BBBBB'; ones[1].dispatchEvent(new Event('input',{bubbles:true}));
+      ones[1].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+      await new Promise(r=>setTimeout(r,400));
+      const items = JSON.parse(localStorage.getItem('agylshyn_v1')).items;
+      const keys = Object.keys(items).filter(k => k.indexOf('advanced-grammar|17|17.2|') === 0).sort();
+      return { rows: all.length, ones: ones.length, keys, vals: keys.map(k => items[k].val),
+               boxes: ones.map(i => i.value) };
+    })()`);
+    r.note(JSON.stringify(clash));
+    r.eq('both rows numbered 1 are there', clash.ones, 2);
+    r.ok('and each keeps its own answer',
+      (clash.vals || []).filter(v => v === 'AAAAA').length === 1
+      && (clash.vals || []).filter(v => v === 'BBBBB').length === 1,
+      'one record per row, not one shared between them');
+  }
 
   /* ============ paid for, never uploaded ============ */
 
@@ -305,8 +318,8 @@ async function run() {
              units: document.querySelectorAll('#unitList .unit-link').length };
   })()`);
   r.ok('"check again" is on the lock screen', recheck.found);
-  r.ok('and it opens the whole book without a reload', recheck.units > 2,
-    JSON.stringify(recheck));
+  withBook(PAID_BOOK, 'and it opens the whole book without a reload',
+    recheck.units > 2, JSON.stringify(recheck));
 
   /* ============ the flag flipped in devtools ============ */
   r.head('a forged answer in the console');

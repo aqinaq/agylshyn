@@ -9,7 +9,7 @@
 'use strict';
 const { connect, newContextPage, goto, sleep } = require('./cdp.js');
 const { Report } = require('./report.js');
-const { signedIn, LIVE } = require('./supamock.js');
+const { signedIn, LIVE, hasBook, NO_BOOK } = require('./supamock.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
@@ -115,52 +115,56 @@ async function run() {
   // handing the book over. Everything after that is the same test it always
   // was — the answer sheet is not supposed to know which road the book took.
   r.head('IELTS answer sheet');
-  s = await signedIn(conn, { access: LIVE });
-  await goto(s, BASE + '#/b/ielts-20/unit/1');
-  await sleep(1800);
-  const listening = await s.eval(`(() => {
-    const a = [...document.querySelectorAll('audio')];
-    return { players: a.length,
-             src: a.length ? (a[0].currentSrc || a[0].src || (a[0].querySelector('source')||{}).src) : null,
-             boxes: document.querySelectorAll('#main input[type=text]').length };
-  })()`);
-  r.ok('the Listening part comes with its recording', listening.players > 0, JSON.stringify(listening));
-  r.eq('forty numbered boxes', listening.boxes, 40);
+  if (!hasBook('ielts-20')) {
+    r.note(NO_BOOK('ielts-20'));
+  } else {
+    s = await signedIn(conn, { access: LIVE });
+    await goto(s, BASE + '#/b/ielts-20/unit/1');
+    await sleep(1800);
+    const listening = await s.eval(`(() => {
+      const a = [...document.querySelectorAll('audio')];
+      return { players: a.length,
+               src: a.length ? (a[0].currentSrc || a[0].src || (a[0].querySelector('source')||{}).src) : null,
+               boxes: document.querySelectorAll('#main input[type=text]').length };
+    })()`);
+    r.ok('the Listening part comes with its recording', listening.players > 0, JSON.stringify(listening));
+    r.eq('forty numbered boxes', listening.boxes, 40);
 
-  const seekable = await s.eval(`(async () => {
-    const a = document.querySelector('audio');
-    const src = a.currentSrc || a.src || (a.querySelector('source')||{}).src;
-    const res = await fetch(src, { headers: { Range: 'bytes=0-1023' } });
-    return { status: res.status, range: res.headers.get('content-range'),
-             type: res.headers.get('content-type') };
-  })()`);
-  r.eq('the recording is really on the server', seekable.status, 206);
-  r.ok('and can be seeked into', !!seekable.range, JSON.stringify(seekable));
+    const seekable = await s.eval(`(async () => {
+      const a = document.querySelector('audio');
+      const src = a.currentSrc || a.src || (a.querySelector('source')||{}).src;
+      const res = await fetch(src, { headers: { Range: 'bytes=0-1023' } });
+      return { status: res.status, range: res.headers.get('content-range'),
+               type: res.headers.get('content-type') };
+    })()`);
+    r.eq('the recording is really on the server', seekable.status, 206);
+    r.ok('and can be seeked into', !!seekable.range, JSON.stringify(seekable));
 
-  await goto(s, BASE + '#/b/ielts-20/unit/2');
-  await sleep(1600);
-  const reading = await s.eval(`(() => {
-    const main = document.getElementById('main');
-    return { boxes: main.querySelectorAll('input[type=text]').length, length: main.textContent.length };
-  })()`);
-  r.eq('the Reading part has forty boxes too', reading.boxes, 40);
-  r.ok('and carries the passage as selectable text', reading.length > 2000, String(reading.length));
+    await goto(s, BASE + '#/b/ielts-20/unit/2');
+    await sleep(1600);
+    const reading = await s.eval(`(() => {
+      const main = document.getElementById('main');
+      return { boxes: main.querySelectorAll('input[type=text]').length, length: main.textContent.length };
+    })()`);
+    r.eq('the Reading part has forty boxes too', reading.boxes, 40);
+    r.ok('and carries the passage as selectable text', reading.length > 2000, String(reading.length));
 
-  const graded = await s.eval(`(async () => {
-    // Through ENTITLE, not fetch('data/…'): a paid book is not on this host,
-    // and this is the same road the app itself took to get it.
-    const d = await ENTITLE.fetchBook('ielts-20');
-    const first = d.units[1].subExercises[0].items[0];
-    const box = document.querySelector('#main input[type=text]');
-    box.value = String(first.answer).split(' / ')[0];
-    box.dispatchEvent(new Event('input', {bubbles:true}));
-    box.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', bubbles:true}));
-    await new Promise(r=>setTimeout(r,400));
-    const items = JSON.parse(localStorage.getItem('agylshyn_v1')).items;
-    const k = Object.keys(items).find(x => x.indexOf('ielts-20|') === 0);
-    return { key: k, streak: items[k] && items[k].streak, wanted: first.answer };
-  })()`);
-  r.ok('the printed answer is accepted', graded.streak >= 1, JSON.stringify(graded));
+    const graded = await s.eval(`(async () => {
+      // Through ENTITLE, not fetch('data/…'): a paid book is not on this host,
+      // and this is the same road the app itself took to get it.
+      const d = await ENTITLE.fetchBook('ielts-20');
+      const first = d.units[1].subExercises[0].items[0];
+      const box = document.querySelector('#main input[type=text]');
+      box.value = String(first.answer).split(' / ')[0];
+      box.dispatchEvent(new Event('input', {bubbles:true}));
+      box.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', bubbles:true}));
+      await new Promise(r=>setTimeout(r,400));
+      const items = JSON.parse(localStorage.getItem('agylshyn_v1')).items;
+      const k = Object.keys(items).find(x => x.indexOf('ielts-20|') === 0);
+      return { key: k, streak: items[k] && items[k].streak, wanted: first.answer };
+    })()`);
+    r.ok('the printed answer is accepted', graded.streak >= 1, JSON.stringify(graded));
+  }
 
   /* ================= offline ================= */
   r.head('offline');

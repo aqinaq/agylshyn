@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { connect, goto, sleep } = require('./cdp.js');
 const { Report } = require('./report.js');
-const { mock, signedIn, LIVE, PAID } = require('./supamock.js');
+const { mock, signedIn, LIVE, PAID, hasBook, NO_BOOK } = require('./supamock.js');
 
 const BASE = process.env.TEST_BASE || 'http://127.0.0.1:8853/';
 const PORT = Number(process.env.TEST_CDP || 9333);
@@ -124,20 +124,27 @@ async function run() {
   r.eq('a missing sample file is a 404, not an error page', gone, 404);
 
   /* ================= paying ================= */
+  // Everything above is about the SAMPLE, which is a published file and is
+  // always here. This last part is about what a subscriber gets instead, and
+  // that needs the paid book itself — not in a fresh checkout.
   r.head('after paying');
-  await conn.send('Target.closeTarget', { targetId: s.targetId });
-  s = await signedIn(conn, { access: LIVE });
-  s.on('Runtime.exceptionThrown', p => errors.push(p.exceptionDetails.text));
-  await goto(s, BASE + '#/b/vocab-upint/unit/1');
-  await until(s, `document.querySelectorAll('#unitList .unit-link').length > 50`);
-  const paid = await s.eval(`({
-    banner: !!document.querySelector('.sample-bar'),
-    units: document.querySelectorAll('#unitList .unit-link').length,
-    locked: !!document.querySelector('.locked-link')
-  })`);
-  r.ok('a subscriber gets the whole book', paid.units > 50, String(paid.units));
-  r.ok('with no sample banner', !paid.banner);
-  r.ok('and nothing locked in the list', !paid.locked);
+  if (!hasBook('vocab-upint')) {
+    r.note(NO_BOOK('vocab-upint'));
+  } else {
+    await conn.send('Target.closeTarget', { targetId: s.targetId });
+    s = await signedIn(conn, { access: LIVE });
+    s.on('Runtime.exceptionThrown', p => errors.push(p.exceptionDetails.text));
+    await goto(s, BASE + '#/b/vocab-upint/unit/1');
+    await until(s, `document.querySelectorAll('#unitList .unit-link').length > 50`);
+    const paid = await s.eval(`({
+      banner: !!document.querySelector('.sample-bar'),
+      units: document.querySelectorAll('#unitList .unit-link').length,
+      locked: !!document.querySelector('.locked-link')
+    })`);
+    r.ok('a subscriber gets the whole book', paid.units > 50, String(paid.units));
+    r.ok('with no sample banner', !paid.banner);
+    r.ok('and nothing locked in the list', !paid.locked);
+  }
 
   /* ================= a free book is untouched ================= */
   r.head('a free book');
