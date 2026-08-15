@@ -7,10 +7,15 @@
 #
 # The artifact carries site/ whole, including whichever of pdf/ and audio/ are
 # still in the checkout. While they are, the two bases in site/media.config.js
-# stay empty, the relative paths in data/*.json resolve on their own, and ~800 MB
-# goes up on every deploy — expect a few minutes, and note that Pages warns once
-# a published site passes ~1 GB. Pages serves Range requests, which is what lets
-# an <audio> element seek.
+# stay empty and the relative paths in data/*.json resolve on their own. Pages
+# serves Range requests, which is what lets an <audio> element seek.
+#
+# Size, measured rather than remembered (an older version of this comment said
+# 800 MB, which was never right): site/ is 555 MB — audio 340, pdf 209. A
+# published Pages site may be no larger than 1 GB, so the headroom is ~445 MB,
+# and an IELTS book costs 130-200 MB of it (c19 104 MB of audio, c20 73, c21
+# 163, plus a 2-44 MB PDF). That is two or three more books, not ten. Check this
+# number before adding one.
 #
 # Once those two folders move to object storage (site/tools/upload_media.py, and
 # the runbook in the root README), the bases point at the bucket, this artifact
