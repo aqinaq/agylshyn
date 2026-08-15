@@ -50,6 +50,14 @@ const bookFile = id => {
   return found ? path.relative(SITE, found) : null;
 };
 
+// Where the big folders are being served from. Both empty means "next to the
+// site", which is what a checkout that still has them looks like.
+function mediaBases() {
+  const src = read('media.config.js');
+  const grab = name => (src.match(new RegExp("window\\." + name + "\\s*=\\s*'([^']*)'")) || [])[1] || '';
+  return { audio: grab('AUDIO_BASE'), pdf: grab('PDF_BASE') };
+}
+
 const JS = ['app.js', 'srs.js', 'dict.js', 'sync.js', 'entitle.js', 'help.js',
   'pdfview.js', 'placement.js', 'ask.js', 'classes.js', 'exam.js'];
 const html = read('index.html');
@@ -177,7 +185,8 @@ for (const b of BOOKS) {
   r.eq(b.id + ': books.js unit count matches the data', b.units, d.units.length);
   r.eq(b.id + ': index.json unit count matches', row.units, d.units.length);
   r.eq(b.id + ': index.json question count matches', row.tracked, trackedIn(d));
-  if (b.pdf) r.ok(b.id + ': its PDF is there', exists(b.pdf), b.pdf);
+  // Its PDF is checked in "the coursebook PDFs" below, which knows whether the
+  // folder is in this checkout at all.
   units += d.units.length;
   tracked += trackedIn(d);
 }
@@ -471,8 +480,16 @@ for (const b of BOOKS.filter(b => b.kind === 'ielts')) {
 }
 
 /* ===================== 4. the listening audio ===================== */
+// Two questions that look like one. "Is every recording a book names actually
+// there" can only be asked of a folder that is here; once site/audio/ moved to
+// object storage it is not, and asking anyway would mean this file failing on
+// every checkout for the rest of the project's life. So it asks the question it
+// can — every path resolves to a file — only while the folder is on disk, and
+// otherwise says plainly which tool does ask the other one.
 r.head('audio');
 {
+  const bases = mediaBases();
+  const local = fs.existsSync(path.join(SITE, 'audio'));
   const missing = [];
   let refs = 0;
   const walk = (bid, o) => {
@@ -483,14 +500,46 @@ r.head('audio');
         : o.audio.src ? [o.audio.src] : [];
       for (const f of files) {
         refs++;
-        if (!exists(String(f).replace(/^\.?\//, ''))) missing.push(bid + ' ' + f);
+        if (local && !exists(String(f).replace(/^\.?\//, ''))) missing.push(bid + ' ' + f);
       }
     }
     for (const k in o) if (o[k] && typeof o[k] === 'object') walk(bid, o[k]);
   };
   for (const b of BOOKS) if (data[b.id]) for (const u of data[b.id].units) walk(b.id, u);
-  r.ok('every recording a book points at is on disk', missing.length === 0, missing.slice(0, 8).join(', '));
   r.note(refs + ' recordings referenced');
+  // A book that names no audio at all is a different bug and a silent one: the
+  // three IELTS books are half Listening, and half of that is the recording.
+  r.ok('the books name recordings at all', refs > 0, String(refs));
+  if (local) {
+    r.ok('every recording a book points at is on disk', missing.length === 0,
+      missing.slice(0, 8).join(', '));
+  } else {
+    r.warnIf(true, 'site/audio/ is not in this checkout — the recordings are checked '
+      + 'against the bucket by: python3 site/tools/upload_media.py --check audio');
+    r.ok('and AUDIO_BASE says where they went', !!bases.audio,
+      'media.config.js leaves AUDIO_BASE empty, so the app will look for a folder that is not there');
+  }
+}
+
+/* =============== 4b. the PDFs, wherever they now live =============== */
+// Same shape as the audio above, and the same reason.
+r.head('the coursebook PDFs');
+{
+  const bases = mediaBases();
+  const local = fs.existsSync(path.join(SITE, 'pdf'));
+  const named = BOOKS.filter(b => b.pdf);
+  r.ok('every book names a PDF', named.length === BOOKS.length,
+    BOOKS.filter(b => !b.pdf).map(b => b.id).join(', '));
+  if (local) {
+    const gone = named.filter(b => !exists(b.pdf));
+    r.ok('and every one of them is on disk', gone.length === 0,
+      gone.map(b => b.pdf).join(', '));
+  } else {
+    r.warnIf(true, 'site/pdf/ is not in this checkout — the books are checked '
+      + 'against the bucket by: python3 site/tools/upload_media.py --check pdf');
+    r.ok('and PDF_BASE says where they went', !!bases.pdf,
+      'media.config.js leaves PDF_BASE empty, so the app will look for a folder that is not there');
+  }
 }
 
 /* ===================== 5. wiring ===================== */

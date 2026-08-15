@@ -83,7 +83,8 @@ async function main() {
   for (const suite of ['tests/app_e2e.js', 'tests/device_e2e.js', 'tests/admin_e2e.js',
                        'tests/paywall_e2e.js', 'tests/exam_e2e.js', 'tests/tasks_e2e.js',
                        'tests/dictation_e2e.js', 'tests/mistakes_e2e.js', 'tests/sample_e2e.js',
-                       'tests/classes_e2e.js', 'tests/notes_e2e.js', 'tests/backup_e2e.js']) {
+                       'tests/classes_e2e.js', 'tests/notes_e2e.js', 'tests/backup_e2e.js',
+                       'tests/media_e2e.js']) {
     failures += node(suite);
   }
 

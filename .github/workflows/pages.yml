@@ -5,11 +5,17 @@
 # the artifact publishes it at the domain root without moving anything or
 # maintaining a second branch.
 #
-# The artifact carries site/ whole, including pdf/ (223 MB) and audio/ (~550 MB),
-# so AUDIO_BASE in site/audio.config.js stays empty and the relative paths in
-# data/*.json resolve on their own. Pages serves Range requests, which is what
-# lets an <audio> element seek. Roughly 800 MB goes up on every deploy — expect
-# a few minutes — and Pages warns once a published site passes ~1 GB.
+# The artifact carries site/ whole, including whichever of pdf/ and audio/ are
+# still in the checkout. While they are, the two bases in site/media.config.js
+# stay empty, the relative paths in data/*.json resolve on their own, and ~800 MB
+# goes up on every deploy — expect a few minutes, and note that Pages warns once
+# a published site passes ~1 GB. Pages serves Range requests, which is what lets
+# an <audio> element seek.
+#
+# Once those two folders move to object storage (site/tools/upload_media.py, and
+# the runbook in the root README), the bases point at the bucket, this artifact
+# drops to about 15 MB, and nothing here has to change: the folders are simply
+# no longer in the checkout to upload.
 #
 # ONE-TIME MANUAL STEP: Settings → Pages → Build and deployment → Source must be
 # set to "GitHub Actions" before the first run. configure-pages can create that

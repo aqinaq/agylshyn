@@ -3720,12 +3720,26 @@
 
   var afterChange = function () {};
 
+  // books.js names a PDF as a site-relative path ("pdf/ielts-21.pdf"). The
+  // folder is ~209 MB and is not in the repository, so a deployed copy serves
+  // it from object storage instead: PDF_BASE (media.config.js) is prefixed
+  // here, the one place a book's PDF becomes a URL. Empty base — a local
+  // checkout, or a deploy that does ship the folder — leaves it as written.
+  var PDF_BASE = String(window.PDF_BASE || '').replace(/\/+$/, '');
+
+  function pdfSrc(p) {
+    var s = String(p == null ? '' : p);
+    if (!s || !PDF_BASE || /^(https?:)?\/\//i.test(s)) return s;
+    return PDF_BASE + '/' + s.replace(/^\.?\//, '');
+  }
+
   // A book may set `pdfWholeFileOnly` when its viewer cannot honour #page=;
   // none does today, but the escape hatch stays.
   function pdfUrl(page, meta) {
     var m = meta || (book && book.meta);
     var pdf = m && m.pdf;
     if (!pdf) return null;
+    pdf = pdfSrc(pdf);
     if (m.pdfWholeFileOnly || page == null) return pdf;
     return pdf + '#page=' + page;
   }
@@ -3826,7 +3840,7 @@
   // The data files store audio as site-relative paths ("audio/c20/t1p1.m4a").
   // The folder is ~490 MB and is deliberately not in the repository, so a
   // deployed copy usually serves it from object storage instead: AUDIO_BASE
-  // (audio.config.js) is prefixed here, in the one place a path becomes a URL.
+  // (media.config.js) is prefixed here, in the one place a path becomes a URL.
   // Empty base — a local checkout, or a deploy that does ship the folder —
   // leaves the path exactly as the data file wrote it.
   var AUDIO_BASE = String(window.AUDIO_BASE || '').replace(/\/+$/, '');

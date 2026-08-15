@@ -184,13 +184,31 @@ async function run() {
   })()`);
   r.eq('and cannot read the roster of a class they only study in', rosterDenied, 403);
 
+  // "Left the class" is drawn once and only once: app.js renders classMsg and
+  // clears it in the same breath, so the next render of the page — the roster
+  // refresh, a sync callback, anything — takes it back off the screen. Waiting
+  // for a condition and then reading the DOM in a second round trip is
+  // therefore a coin toss, and it came up tails about one run in three.
+  //
+  // Catching it needs the watching to start before the thing being watched for:
+  // an observer set up here records the message the moment it lands, and the
+  // assertion below asks for what was recorded. Anything that repaints
+  // afterwards is then irrelevant.
+  await s.eval(`(() => {
+    window.__clsMsgSeen = '';
+    new MutationObserver(() => {
+      const m = document.querySelector('.cls-msg');
+      if (m && !window.__clsMsgSeen) window.__clsMsgSeen = m.textContent || '';
+    }).observe(document.body, { childList: true, subtree: true });
+  })()`);
+
   await s.eval(`[...document.querySelectorAll('.cls-card .btn')]
     .find(b => !b.classList.contains('ghost')).click()`);
   r.ok('leaving asks first', await answerAsk(s));
-  await until(s, `!document.querySelector('.cls-card')`);
+  await until(s, `!!window.__clsMsgSeen && !document.querySelector('.cls-card')`);
   const left = await s.eval(`({
     cards: document.querySelectorAll('.cls-card').length,
-    msg: (document.querySelector('.cls-msg') || {}).textContent || ''
+    msg: window.__clsMsgSeen || (document.querySelector('.cls-msg') || {}).textContent || ''
   })`);
   r.eq('leaving takes it off the page', left.cards, 0);
   r.ok('and says so', left.msg.length > 3, left.msg);

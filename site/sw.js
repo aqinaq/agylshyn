@@ -16,7 +16,7 @@
 // Bump on every shell change (html/js/css). activate() deletes caches whose
 // key no longer matches, so a returning reader can't be left on a half-old
 // shell — which is exactly what happened when books.js grew to eight books.
-var SHELL_VERSION = 'v38';
+var SHELL_VERSION = 'v39';
 var SHELL_CACHE = 'agylshyn-shell-' + SHELL_VERSION;
 var DATA_CACHE = 'agylshyn-data';
 var PDF_CACHE = 'agylshyn-pdf';
@@ -44,7 +44,7 @@ var SHELL = [
   './exam.js',
   './classes.js',
   './pdfview.js',
-  './audio.config.js',
+  './media.config.js',
   './manifest.webmanifest',
   './icon.svg',
   './data/index.json',
@@ -126,9 +126,30 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
-  // Anything on another host is left entirely alone — the translation API, the
-  // listening audio when AUDIO_BASE points at object storage, and Supabase.
-  // Intercepting that bucket would only break the Range requests <audio>
+  // The PDFs are checked before the cross-origin bail-out below, because they
+  // ARE cross-origin now: PDF_BASE points at object storage. Leaving them to
+  // the network would quietly cost the one thing this cache is for — a book
+  // read once is a book readable on the metro — and unlike the audio bucket
+  // there is nothing about a PDF that a whole-file cache entry breaks, as long
+  // as ranged requests are still let through untouched.
+  //
+  // This needs CORS on the bucket. pdf.js reads the bytes itself, so an opaque
+  // response is no use to it and none of this works without the headers listed
+  // in media.config.js — but nor would the plain fetch without a service
+  // worker, so nothing is made worse by caching it.
+  if (/\.pdf$/.test(url.pathname)) {
+    // A ranged request goes straight to the network, untouched. On a phone we
+    // render the book ourselves and pdf.js asks for the few hundred kilobytes
+    // a page needs — answering that with the whole cached file (the only thing
+    // the Cache API can do) makes it give up on ranges and pull all 44 MB.
+    if (req.headers.get('range')) return;
+    e.respondWith(cacheFirst(req, PDF_CACHE));
+    return;
+  }
+
+  // Anything else on another host is left entirely alone — the translation API,
+  // the listening audio when AUDIO_BASE points at object storage, and Supabase.
+  // Intercepting the audio bucket would only break the Range requests <audio>
   // depends on, and caching Supabase would mean a lapsed subscription keeps
   // opening paid books from disk — the one failure a paywall cannot have.
   // Offline for a paid book would need a leased key, not a cache entry.
@@ -140,15 +161,6 @@ self.addEventListener('fetch', function (e) {
   // pdf.js: immutable, so cache-first, and in its own cache so a shell bump
   // does not throw it away.
   if (/\/vendor\//.test(url.pathname)) { e.respondWith(cacheFirst(req, VENDOR_CACHE)); return; }
-  if (/\.pdf$/.test(url.pathname)) {
-    // A ranged request goes straight to the network, untouched. On a phone we
-    // render the book ourselves and pdf.js asks for the few hundred kilobytes
-    // a page needs — answering that with the whole cached file (the only thing
-    // the Cache API can do) makes it give up on ranges and pull all 44 MB.
-    if (req.headers.get('range')) return;
-    e.respondWith(cacheFirst(req, PDF_CACHE));
-    return;
-  }
   // Listening audio goes straight to the network: it is ~490 MB in total, and
   // an <audio> element seeks with Range requests, which a cached whole-file
   // response cannot answer.
