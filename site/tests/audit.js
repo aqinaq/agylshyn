@@ -39,9 +39,15 @@ const HELP = loadGlobal('help.js', 'HELP');
 const PAID = new Set((() => {
   try { return JSON.parse(read('tools/tiers.json')).paid || []; } catch (e) { return []; }
 })());
+// The same env var tools/tiers.py reads, so `AGYLSHYN_CONTENT=/nowhere node
+// tests/audit.js` reproduces exactly what CI and a fresh clone see: no paid
+// books on disk at all. Without it, whatever content/ is sitting next to site/.
+const CONTENT = process.env.AGYLSHYN_CONTENT || path.join(SITE, '..', 'content');
+const HAS_CONTENT = fs.existsSync(CONTENT);
 const bookFile = id => {
-  const homes = PAID.has(id) ? ['../content/', 'data/'] : ['data/', '../content/'];
-  return homes.map(d => d + id + '.json').find(exists) || null;
+  const homes = PAID.has(id) ? [CONTENT, path.join(SITE, 'data')] : [path.join(SITE, 'data'), CONTENT];
+  const found = homes.map(d => path.join(d, id + '.json')).find(p => fs.existsSync(p));
+  return found ? path.relative(SITE, found) : null;
 };
 
 const JS = ['app.js', 'srs.js', 'dict.js', 'sync.js', 'entitle.js', 'help.js',
@@ -150,14 +156,25 @@ function trackedIn(book) {
 const data = {};
 let units = 0, tracked = 0;
 for (const b of BOOKS) {
+  const row = byId[b.id];
+  if (!r.ok(b.id + ': is listed in index.json', !!row)) continue;
   const file = bookFile(b.id);
+  // A checkout with no content/ is not a broken checkout: it is what CI and
+  // every fresh clone look like, because the paid books are gitignored. Their
+  // index.json rows are still published and still have to add up, so the totals
+  // take the row's word for it and the file checks simply do not run. Anywhere
+  // content/ does exist — a build machine — a missing paid book is a failure.
+  if (!file && PAID.has(b.id) && !HAS_CONTENT) {
+    r.warnIf(true, b.id + ': paid and not built here — its file checks were skipped');
+    units += row.units;
+    tracked += row.tracked;
+    continue;
+  }
   if (!r.ok(b.id + ': has a data file', !!file, 'neither site/data/ nor content/')) continue;
   const d = json(file);
   data[b.id] = d;
   r.eq(b.id + ': the file knows its own id', d.id, b.id);
   r.eq(b.id + ': books.js unit count matches the data', b.units, d.units.length);
-  const row = byId[b.id];
-  if (!r.ok(b.id + ': is listed in index.json', !!row)) continue;
   r.eq(b.id + ': index.json unit count matches', row.units, d.units.length);
   r.eq(b.id + ': index.json question count matches', row.tracked, trackedIn(d));
   if (b.pdf) r.ok(b.id + ': its PDF is there', exists(b.pdf), b.pdf);
@@ -336,6 +353,120 @@ r.note('self-check rows (marked by the reader, not auto-graded): ' + manual + ' 
   const akp = json('data/answer-key-pages.json');
   for (const id of Object.keys(akp)) {
     r.ok('answer-key page map: "' + id + '" is a real book', BOOKS.some(b => b.id === id));
+  }
+}
+
+/* ============ 3b. the key that was typed by hand ============ */
+// Cambridge 19 is the one book with no parser behind it. Its pages are scans,
+// so all 320 answers were read off the key by eye into tools/ielts-19-key.json,
+// and build_ielts.py turns that file into the book.
+//
+// The failure this section exists for is quiet. build_c19() collects the
+// numbers it finds in a span and emits `[{'n': i, 'answer': ...} for i in
+// sorted(answers)]` — so a number typed twice, or skipped, or typed as 41, does
+// not raise anything. It just makes a test section with 39 questions in it, and
+// the book goes out an answer short with nothing anywhere saying so.
+//
+// A hand-typed key cannot be checked for being *right* — that needs the book.
+// It can be checked for being *complete*, which is the mistake a typist
+// actually makes, and that is what this does: every section must cover 1–40
+// exactly once, and the built file must carry back what the key holds.
+r.head('the hand-typed IELTS 19 key');
+{
+  const key = json('tools/ielts-19-key.json');
+  const TESTS = ['1', '2', '3', '4'], SKILLS = ['listening', 'reading'];
+  const PER_SECTION = 40;
+
+  r.eq('the key has four tests in it',
+    Object.keys(key).filter(k => k !== '_comment').sort().join(','), TESTS.join(','));
+
+  // number → answer, per section, expanded the way build_ielts.py expands it:
+  // "21&22" is one line of the printed key answering two questions, and both
+  // numbers take the whole line so either order is accepted.
+  const flat = {};
+  let total = 0;
+  for (const test of TESTS) {
+    for (const skill of SKILLS) {
+      const where = 'test ' + test + ' ' + skill;
+      const section = (key[test] || {})[skill];
+      if (!r.ok(where + ': is in the key', !!section)) continue;
+
+      // `seen` holds the answers and can hold an empty one, so what is present
+      // is tracked separately — otherwise a blank answer reads as a missing
+      // question too and one typo is reported as two.
+      const seen = {}, has = new Set(), dupes = [], strays = [], blanks = [];
+      for (const [printed, value] of Object.entries(section)) {
+        if (!String(value == null ? '' : value).trim()) blanks.push(printed);
+        for (const part of printed.split('&')) {
+          const n = Number(part.trim());
+          if (!Number.isInteger(n) || n < 1 || n > PER_SECTION) { strays.push(printed); continue; }
+          if (has.has(n)) dupes.push(String(n));
+          has.add(n);
+          seen[n] = String(value);
+        }
+      }
+      const missing = [];
+      for (let n = 1; n <= PER_SECTION; n++) if (!has.has(n)) missing.push(String(n));
+
+      r.ok(where + ': no question number outside 1–40', strays.length === 0, strays.join(', '));
+      r.ok(where + ': no question answered twice', dupes.length === 0, dupes.join(', '));
+      r.ok(where + ': no question left without an answer', missing.length === 0, missing.join(', '));
+      r.ok(where + ': no answer is blank', blanks.length === 0, blanks.join(', '));
+      flat[test + '/' + skill] = seen;
+      total += Object.keys(seen).length;
+    }
+  }
+  // The number the README prints, arrived at from the file rather than retyped.
+  r.eq('the key holds 320 answers', total, TESTS.length * SKILLS.length * PER_SECTION);
+
+  // And the other direction: what build_ielts.py made of it. This is the check
+  // that fails when the key is edited and the build is not re-run — the one
+  // thing the file's own comment asks the next person to remember.
+  const built = bookFile('ielts-19') && json(bookFile('ielts-19'));
+  if (r.ok('ielts-19 is built', !!built, 'run: python3 site/tools/build_ielts.py')) {
+    r.eq('the built book has one unit per test section', built.units.length,
+      TESTS.length * SKILLS.length);
+    let carried = 0;
+    const wrong = [];
+    for (const u of built.units) {
+      // Unit 1 is test 1 Listening, unit 2 its Reading, and so on in pairs.
+      const test = String(Math.ceil(u.unit / 2));
+      const skill = u.unit % 2 ? 'listening' : 'reading';
+      const want = flat[test + '/' + skill] || {};
+      const got = {};
+      for (const s of (u.subExercises || [])) for (const it of (s.items || [])) got[it.n] = it.answer;
+      r.eq('unit ' + u.unit + ' (' + u.title + '): 40 questions', Object.keys(got).length, PER_SECTION);
+      for (const n of Object.keys(want)) {
+        carried++;
+        if (got[n] !== want[n]) wrong.push('q' + n + ' of ' + test + '/' + skill);
+      }
+    }
+    r.eq('every answer in the key reached the built book', carried, total);
+    r.ok('and reached it unchanged', wrong.length === 0, wrong.slice(0, 6).join(', ')
+      + (wrong.length ? ' — run: python3 site/tools/build_ielts.py' : ''));
+    const row = byId['ielts-19'];
+    if (row) r.eq('index.json counts the same 320 questions', row.tracked, total);
+  }
+}
+
+/* Every IELTS book is a test paper, whoever assembled it: four tests, each one
+   a Listening and a Reading section of forty numbered questions. The two that
+   are parsed from their PDFs can drift in a way the key file cannot — a passage
+   the parser loses takes its questions with it — and the shape is the same
+   assertion either way. Paid books are only here when content/ is. */
+r.head('IELTS test shape');
+for (const b of BOOKS.filter(b => b.kind === 'ielts')) {
+  const d = data[b.id];
+  if (!d) { r.warnIf(true, b.id + ': not built here — shape unchecked'); continue; }
+  r.eq(b.id + ': eight test sections', d.units.length, 8);
+  for (const u of d.units) {
+    const ns = [];
+    for (const s of (u.subExercises || [])) for (const it of (s.items || [])) ns.push(it.n);
+    const missing = [];
+    for (let n = 1; n <= 40; n++) if (ns.indexOf(n) === -1) missing.push(String(n));
+    r.ok(b.id + ' unit ' + u.unit + ': questions 1–40, each once',
+      ns.length === 40 && missing.length === 0,
+      ns.length + ' questions' + (missing.length ? ', missing ' + missing.join(', ') : ''));
   }
 }
 

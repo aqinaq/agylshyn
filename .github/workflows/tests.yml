@@ -1,0 +1,67 @@
+# Runs site/tests/run.js on every push and pull request.
+#
+# The suite was here long before this workflow was, and that was the problem:
+# it only ever ran when somebody remembered to run it. A content rebuild that
+# dropped questions, a renamed element id, an i18n key added to one language —
+# all of them are caught by these files and none of them were caught by
+# anything automatic. Now a push that breaks them goes red.
+#
+# What it runs, in one command:
+#   tests/audit.js     the static audit, including the hand-typed IELTS 19 key
+#   match_test.js      the answer checker, lifted live out of app.js
+#   11 browser suites  over headless Chrome via CDP, against a real server
+#
+# The checkout is the whole repository, ~800 MB of it, because the audit checks
+# that every recording a book points at and every PDF a book names is actually
+# on disk. Checking that against a directory that was deliberately not fetched
+# would be a check that proves nothing.
+#
+# The paid books are NOT here — content/ is gitignored — and that is the point
+# of running it this way: this is what a fresh clone looks like, so anything
+# that only passes on the author's laptop fails here. The suites report those
+# books as unmeasured rather than as broken.
+name: Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+# A second push supersedes the first; there is nothing to preserve in a
+# half-finished test run, unlike a half-finished deploy.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # node 22+: tests/cdp.js drives Chrome over a global WebSocket rather than
+      # pulling in puppeteer, and global WebSocket is what 22 added.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The runner ships a Chrome, but not always under the same name, and
+      # tests/cdp.js reads CHROME_PATH before it guesses. Resolving it here and
+      # failing when there is none keeps a missing browser from turning into
+      # eleven quietly skipped suites.
+      - name: Find a browser
+        run: |
+          for candidate in google-chrome google-chrome-stable chromium chromium-browser; do
+            if path="$(command -v "$candidate")"; then
+              echo "CHROME_PATH=$path" >> "$GITHUB_ENV"
+              echo "using $path"
+              exit 0
+            fi
+          done
+          echo "no Chrome on this runner" >&2
+          exit 1
+
+      - name: Everything
+        run: node site/tests/run.js

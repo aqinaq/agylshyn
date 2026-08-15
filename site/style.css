@@ -1081,6 +1081,55 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
   .home-choose { text-align: center; }
 }
 
+/* ===== "your progress is only in this browser" ===== */
+/* Same slim full-width bar as .home-help below, but warned rather than neutral:
+   it is the one thing on the page that is about losing something. Warm, not
+   red — nothing has gone wrong yet, and the whole point is that it need not. */
+.home-backup { margin: 22px 0 0; }
+.backup-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--gold-line);
+  box-shadow: var(--shadow);
+}
+.backup-card .bk-ico {
+  font-size: 17px;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--gold-bg);
+}
+.backup-card .bk-txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.backup-card .bk-txt b { font-size: 14px; font-weight: 660; }
+.backup-card .bk-txt span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.backup-card .bk-go { flex: none; }
+/* "Later" is deliberately the quietest thing in the card — a real answer, not
+   a second call to action. */
+.backup-card .bk-later {
+  flex: none;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.backup-card .bk-later:hover { color: var(--text); background: var(--panel-2); }
+@media (max-width: 620px) {
+  .backup-card { flex-wrap: wrap; }
+  .backup-card .bk-txt { flex-basis: calc(100% - 45px); }
+  .backup-card .bk-go { margin-left: 45px; }
+}
+
 /* ===== "How to use" card at the foot of the home page ===== */
 /* slim full-width guide bar, sitting between the hero and the two columns */
 .home-help {

@@ -17,7 +17,16 @@ const CDP = Number(process.env.TEST_CDP || 9333);
 function node(file) {
   const res = spawnSync(process.execPath, [path.join(__dirname, '..', file)],
     { stdio: 'inherit', env: process.env });
-  return res.status || 0;
+  // status is null when the suite was killed by a signal or never started at
+  // all — a crash, an out-of-memory, a missing file. `res.status || 0` counted
+  // every one of those as a pass, which is the one way this runner could go
+  // green while nothing ran.
+  if (res.status === null || res.error) {
+    console.error('  ✗ ' + file + ' did not finish: '
+      + (res.error ? res.error.message : 'killed by ' + res.signal));
+    return 1;
+  }
+  return res.status;
 }
 
 /* The server runs in a child, not in this process. spawnSync below blocks the
@@ -73,7 +82,8 @@ async function main() {
 
   for (const suite of ['tests/app_e2e.js', 'tests/device_e2e.js', 'tests/admin_e2e.js',
                        'tests/paywall_e2e.js', 'tests/exam_e2e.js', 'tests/tasks_e2e.js',
-                       'tests/dictation_e2e.js', 'tests/mistakes_e2e.js', 'tests/sample_e2e.js', 'tests/classes_e2e.js', 'tests/notes_e2e.js']) {
+                       'tests/dictation_e2e.js', 'tests/mistakes_e2e.js', 'tests/sample_e2e.js',
+                       'tests/classes_e2e.js', 'tests/notes_e2e.js', 'tests/backup_e2e.js']) {
     failures += node(suite);
   }
 

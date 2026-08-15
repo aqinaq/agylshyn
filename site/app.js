@@ -1162,6 +1162,65 @@
 
   // keepScroll: this is the same page being redrawn in place (a band chip),
   // not an arrival at it. Only an arrival starts at the top.
+  /* ---- the one thing localStorage cannot do ----
+
+     Every answer, every streak and every saved word lives in this browser's
+     localStorage, which is exactly as durable as this browser. Clearing site
+     data, reinstalling the app, a phone replaced, a private window closed —
+     any of them takes the lot, silently, with no way back. An account fixes it
+     and costs nothing, but it lives behind a button in the top corner that
+     somebody forty units deep has never had a reason to press.
+
+     So the ask is made here instead, and the rule is: only once there is
+     something to lose. Asking a first-time visitor to make an account is how
+     the account starts to look like the price of the site, and this site's
+     whole argument is that it is not.
+
+     The steps are answers given in this browser, not days elapsed, because the
+     reason to sign in is the size of what is unbacked and that only grows when
+     the reader works. Dismissing it at forty answers dismisses forty answers;
+     at two hundred it is a different question and gets asked again. */
+  var BACKUP_STEPS = [40, 200, 800];
+
+  function renderBackupNudge(done) {
+    var box = document.getElementById('homeBackup');
+    if (!box) return;
+    clear(box);
+    box.hidden = true;
+    // Nothing to offer: a fork with no Supabase configured has no cloud to
+    // sync to, and a signed-in reader already has the answer.
+    if (!syncOn() || SYNC.signedIn()) return;
+
+    var step = 0;
+    for (var i = 0; i < BACKUP_STEPS.length; i++) if (done >= BACKUP_STEPS[i]) step = BACKUP_STEPS[i];
+    if (!step) return;
+    if ((state.ui.backupAsked || 0) >= step) return;   // answered at this size already
+
+    var card = el('div', 'backup-card');
+    card.appendChild(el('span', 'bk-ico', '☁'));
+    var txt = el('div', 'bk-txt');
+    txt.appendChild(el('b', null, t('backup.title')));
+    txt.appendChild(el('span', null, t('backup.body', { n: num(done) })));
+    card.appendChild(txt);
+
+    var go = el('button', 'btn primary bk-go', t('backup.go'));
+    go.addEventListener('click', function () { openAuthModal(); });
+    card.appendChild(go);
+
+    // "Later" is a real answer and is recorded as one. A nudge that reappears
+    // on every visit is a nag, and a nag is dismissed without being read.
+    var later = el('button', 'bk-later', t('backup.later'));
+    later.addEventListener('click', function () {
+      state.ui.backupAsked = step;
+      save();
+      renderBackupNudge(done);
+    });
+    card.appendChild(later);
+
+    box.appendChild(card);
+    box.hidden = false;
+  }
+
   function renderHome(keepScroll) {
     setView('home');
     var units = 0, items = 0;
@@ -1241,6 +1300,8 @@
         drillBox.appendChild(ccta);
       }
     }
+
+    renderBackupNudge(done);
 
     // Right-hand sidebar: the cross-book snapshot, then the month calendar.
     // Books stay on the left, so the page fills its width instead of leaving big
@@ -2354,6 +2415,10 @@
         lastWho = who;
         forgetAdminList();
         if (body.getAttribute('data-view') === 'users') renderUsers();
+        // The backup nudge is an argument about a problem that signing in just
+        // solved. Leaving it on screen until the reader happens to navigate
+        // makes the button look like it did nothing.
+        if (body.getAttribute('data-view') === 'home') renderHome(true);
       }
     });
     SYNC.attach({

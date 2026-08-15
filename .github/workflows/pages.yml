@@ -42,8 +42,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       # The deploy is what publishes the site, so it is the right place to stop
-      # a paid book from being published by accident. This fails the job if any
+      # a broken one from going out. These two take four seconds between them
+      # and need no browser, so there is no reason for the deploy not to run
+      # them: a rebuild that dropped questions, an index whose counts no longer
+      # match the data, a hand-typed answer key with a question missing, an
+      # answer checker that stopped accepting lowercase — all of it stops here
+      # rather than reaching a reader. The eleven browser suites run separately,
+      # in tests.yml, on the same push.
+      - name: The site is not broken
+        run: |
+          node site/tests/audit.js
+          node site/match_test.js
+
+      # The other thing only the deploy can get wrong. This fails the job if any
       # book listed in site/tools/tiers.json is still sitting in site/data/ —
       # the one mistake that turns the paywall back into a picture of a lock.
       - name: No paid content in the artifact

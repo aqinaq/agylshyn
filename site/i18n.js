@@ -674,6 +674,14 @@ window.I18N = {
     'auth.close': 'Жабу',
     'auth.title': 'Аккаунт',
     'auth.intro': 'Кіргеннен кейін прогресің бұлтқа сақталады да, басқа құрылғыда да жалғасады. Кірмесең де бәрі бұрынғыдай жұмыс істейді — прогресс осы браузерде сақталады.',
+
+    // Басты беттегі ескерту: прогресс тек осы браузерде тұр. Жауап саны
+    // белгілі бір шекке жеткенде ғана шығады — жаңа келген оқушыдан аккаунт
+    // сұрау аккаунтты сайттың бағасы сияқты көрсетеді.
+    'backup.title': 'Прогресің тек осы браузерде тұр',
+    'backup.body': '{n} жауап бердің. Браузер деректерін тазаласаң, қосымшаны қайта орнатсаң немесе телефон ауыстырсаң, бәрі із-түзсіз жоғалады. Тегін аккаунт ашсаң, прогресің бұлтқа сақталып, кез келген құрылғыда жалғасады.',
+    'backup.go': 'Прогресті сақтау',
+    'backup.later': 'Кейін',
     'auth.google': 'Google арқылы кіру',
     'auth.or': 'немесе',
     'auth.email': 'Пошта',
@@ -1488,6 +1496,11 @@ window.I18N = {
     'auth.close': 'Close',
     'auth.title': 'Account',
     'auth.intro': 'Sign in and your progress is backed up to the cloud and picked up on your other devices. Everything works without an account too — progress just stays in this browser.',
+
+    'backup.title': 'Your progress is only in this browser',
+    'backup.body': 'You have answered {n} questions. Clearing your browser data, reinstalling the app or changing phone takes all of it, with no way back. A free account keeps it in the cloud and picks it up on any device.',
+    'backup.go': 'Back up my progress',
+    'backup.later': 'Later',
     'auth.google': 'Continue with Google',
     'auth.or': 'or',
     'auth.email': 'Email',

@@ -11,11 +11,15 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// CHROME_PATH first, because a CI runner installs its browser wherever it
+// likes and a hard-coded list is how a suite ends up silently skipped there.
 const CHROME = [
+  process.env.CHROME_PATH,
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
-  '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'
-];
+  '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
+  '/usr/bin/chromium', '/usr/bin/chromium-browser'
+].filter(Boolean);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
