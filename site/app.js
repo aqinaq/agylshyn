@@ -110,6 +110,14 @@
       var disk = JSON.parse(e.newValue);
       if (!disk || !disk.items) return;
       mergeInto(state, disk);
+      // Another open tab can write while this one is in the middle of an
+      // answer. Rebuilding the route here detaches the focused input; on the
+      // next keypress the character goes nowhere and the learner has to click
+      // the box again. The merged data is already live in `state`, so defer
+      // the visual refresh until the next navigation when somebody is typing.
+      var ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') &&
+          ae.closest && ae.closest('#main')) return;
       route();
     } catch (err) { /* ignore a malformed cross-tab payload */ }
   });
@@ -2953,8 +2961,8 @@
 
   document.getElementById('pdfClose').addEventListener('click', function () { hidePdf(true); });
 
-  // Some browsers/settings download PDFs instead of displaying them, leaving a
-  // blank frame. If nothing loads shortly after opening, show a way out.
+  // A slow download is not evidence that the browser cannot display the PDF.
+  // Keep the loading message and offer another way to open the book.
   var pdfWatch = null;
 
   function onPdfLoad() {
@@ -2964,8 +2972,7 @@
   }
   pdfFrame.addEventListener('load', onPdfLoad);
 
-  // Essential Grammar's scan is ~70 MB, so "slow" is normal and must not be
-  // mistaken for "broken". Show progress, and only offer a way out much later.
+  // Books can exceed 40 MB. Explain the wait before offering a new tab.
   function watchPdf() {
     clearTimeout(pdfWatch);
     pdfPane.classList.add('loading');
@@ -2976,7 +2983,7 @@
     pdfWatch = setTimeout(function () {
       if (pdfPane.hidden) return;
       clear(pdfFallback);
-      pdfFallback.appendChild(el('div', null, t('pdf.fallback')));
+      pdfFallback.appendChild(el('div', null, t('pdf.loadingSlow')));
       var a = el('a', 'btn small', t('pdf.newTab'));
       a.href = pdfNewTab.href;
       a.target = '_blank';

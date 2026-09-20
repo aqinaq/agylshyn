@@ -156,7 +156,7 @@ async function run() {
   r.ok('the way forward is paying, not signing in',
     /Қайта тексеру|Check again/i.test(nosub.buttons.join(' ')), JSON.stringify(nosub.buttons));
   r.ok('and the offer names a contact',
-    /alacorda|Telegram/i.test(nosub.text), nosub.text.slice(-120));
+    /meuseuk|Telegram/i.test(nosub.text), nosub.text.slice(-120));
 
   /* The manual grant runs on one piece of information the reader supplies, and
      a wrong one means money in and no book out. So: it must be asked for, and

@@ -23,8 +23,8 @@ window.PRICING = {
   // Where a buyer reaches you. Granting is manual — you see the transfer, you
   // press the button in #/users — so this is the step the whole flow rests on.
   contact: {
-    label: '@alacorda',
-    href: 'https://t.me/alacorda',
+    label: '@meuseuk',
+    href: 'https://t.me/meuseuk',
     // The button text when this is the primary action, i.e. no pay link yet.
     cta: { kk: 'Telegram арқылы жазу', en: 'Message on Telegram' }
   },

@@ -180,6 +180,36 @@ async function run() {
   r.eq('every unit is in the list', book.units, 145);
   r.ok('the first unit has boxes to type in', book.inputs > 0, String(book.inputs));
 
+  /* A second open tab saves its counters after it receives this tab's first
+     character. That storage event used to rebuild the whole route, detach the
+     active input, and make every following character disappear until the box
+     was clicked again. Cloud sync already guarded this exact case; local
+     cross-tab sync must do the same. */
+  const typing = await s.eval(`(() => {
+    const input = document.querySelector('#main input[type=text]');
+    input.focus();
+    input.value = 'h';
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    const same = input;
+    const incoming = {v:1, items:{
+      'grammar|145|other-tab|1': {last:'correct', streak:1, wrong:0, val:'x', ts:Date.now()}
+    }, books:{}, daily:{}};
+    window.dispatchEvent(new StorageEvent('storage', {
+      key:'agylshyn_v1', newValue:JSON.stringify(incoming)
+    }));
+    input.value += 'ello';
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    return {
+      value: input.value,
+      active: document.activeElement === input,
+      attached: input.isConnected,
+      same: document.querySelector('#main input[type=text]') === same
+    };
+  })()`);
+  r.ok('typing keeps its focus when another tab saves progress',
+    typing.value === 'hello' && typing.active && typing.attached && typing.same,
+    JSON.stringify(typing));
+
   const wrong = await s.eval(`(async () => {
     const i = document.querySelector('#main input[type=text]');
     i.value = 'qqqqzzz';

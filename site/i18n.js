@@ -793,7 +793,8 @@ window.I18N = {
     'load.missing': 'Жазылымың жарамды, бірақ бұл кітаптың мазмұны серверде әлі жоқ. ' +
       'Кінә сенде емес — жазып қой, қоямын.',
     'load.retry': 'Қайта көру',
-    'pdf.loading': 'Кітап жүктелуде… Файл үлкен, біраз уақыт алуы мүмкін.',
+    'pdf.loading': 'PDF кітабы жүктелуде… Файл үлкен болғандықтан, интернет жылдамдығына қарай біраз уақыт алуы мүмкін. Күте тұрыңыз.',
+    'pdf.loadingSlow': 'Кітап әлі жүктелуде… Баяу интернетте бұл бірнеше минут алуы мүмкін. Күте тұрыңыз немесе кітапты жаңа қойындыда ашып көріңіз.',
     'load.back': '← Кітапханаға',
 
     'lock.title': '{id} — жаттығулары жазылыммен',
@@ -1611,7 +1612,8 @@ window.I18N = {
     'load.missing': 'Your subscription is fine — this book’s content is not on the ' +
       'server yet. Nothing you did; tell me and I will put it there.',
     'load.retry': 'Try again',
-    'pdf.loading': 'Loading the book… the file is large, this can take a while.',
+    'pdf.loading': 'Loading the PDF book… This is a large file, so it may take a little time depending on your connection. Please wait.',
+    'pdf.loadingSlow': 'The book is still loading… On a slow connection, this may take a few minutes. Please wait, or try opening the book in a new tab.',
     'load.back': '← Back to library',
 
     'lock.title': '{id} — exercises need a subscription',
