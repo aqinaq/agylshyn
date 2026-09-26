@@ -55,6 +55,21 @@
 </script>
 </head>
 <body data-view="home">
+<script>
+/* Resolve non-home routes before the first visible element is parsed. The full
+   router still validates the URL, but this tiny first-paint router prevents a
+   bookmarked unit, review session or class page from flashing the library
+   while the catalogue is loading. Keep its route names in step with app.js. */
+(function () {
+  var h = location.hash || '';
+  var view = /^#\/b\//.test(h) ? 'book' :
+    /^#\/drill(?:\/|$)/.test(h) ? 'drill' :
+    /^#\/srs(?:\/|$)/.test(h) ? 'srs' :
+    /^#\/users(?:\/|$)/.test(h) ? 'users' :
+    /^#\/class(?:\/|$)/.test(h) ? 'class' : 'home';
+  document.body.setAttribute('data-view', view);
+})();
+</script>
 
 <!-- First thing Tab reaches, invisible until it has focus. Inside a book the
      topbar alone is a dozen stops (menu, library, account, three tabs, drill,
@@ -116,6 +131,22 @@
          enough of it to be worth losing, and never for a reader who is already
          signed in or for a fork with no backend configured. -->
     <div id="homeBackup" class="home-backup" hidden></div>
+
+    <section class="platform" aria-labelledby="platformTitle">
+      <div class="platform-head">
+        <span class="platform-kicker" data-i18n="platform.kicker"></span>
+        <h2 id="platformTitle" data-i18n="platform.title"></h2>
+        <p data-i18n="platform.sub"></p>
+      </div>
+      <div class="platform-grid">
+        <article class="platform-card"><span class="pf-icon" aria-hidden="true">⌨</span><h3 data-i18n="platform.engine.title"></h3><p data-i18n="platform.engine.body"></p></article>
+        <article class="platform-card"><span class="pf-icon" aria-hidden="true">💡</span><h3 data-i18n="platform.hints.title"></h3><p data-i18n="platform.hints.body"></p></article>
+        <article class="platform-card"><span class="pf-icon" aria-hidden="true">↗</span><h3 data-i18n="platform.progress.title"></h3><p data-i18n="platform.progress.body"></p></article>
+        <article class="platform-card"><span class="pf-icon" aria-hidden="true">↻</span><h3 data-i18n="platform.mistakes.title"></h3><p data-i18n="platform.mistakes.body"></p></article>
+        <article class="platform-card"><span class="pf-icon" aria-hidden="true">🗂</span><h3 data-i18n="platform.srs.title"></h3><p data-i18n="platform.srs.body"></p></article>
+        <article class="platform-card"><span class="pf-icon" aria-hidden="true">◎</span><h3 data-i18n="platform.teacher.title"></h3><p data-i18n="platform.teacher.body"></p></article>
+      </div>
+    </section>
 
     <button type="button" class="home-help home-start" id="homeStart" data-open-place>
       <span class="hh-icon">🧭</span>
@@ -215,6 +246,7 @@
       <button type="button" id="sideMin" class="side-min-btn" data-side-min
               aria-controls="unitList">»</button>
     </div>
+    <div id="unitRange" class="unit-range-wrap" hidden></div>
     <ul id="unitList" class="unit-list"></ul>
     <!-- Phone-only footer. Inside a book the topbar has room for navigation
          (menu · library · account · title) or for settings, not both, and at

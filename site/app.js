@@ -973,6 +973,7 @@
   var body = document.body;
   var main = document.getElementById('main');
   var unitListEl = document.getElementById('unitList');
+  var unitRangeEl = document.getElementById('unitRange');
   var searchEl = document.getElementById('search');
   var errBadge = document.getElementById('errBadge');
   var sidebar = document.getElementById('sidebar');
@@ -2456,6 +2457,11 @@
 
   var book = null;         // currently open book
   var currentUnit = null;
+  // Long books have as many as 145 unit links. Keep only one 24-unit window
+  // visible (and therefore in the accessibility tree) at a time; every unit
+  // remains searchable, and the range controls move through the whole book.
+  var UNIT_WINDOW = 24;
+  var sideWindowStart = null;
   // The Writing/Speaking page open right now, as 'w1' or 's1' — the rail marks
   // it the way it marks the unit a reader is on. Every other page clears it.
   var currentTask = null;
@@ -2487,8 +2493,53 @@
     var q = (searchEl.value || '').trim().toLowerCase();
     var min = sideMin();
     clear(unitListEl);
+    clear(unitRangeEl);
+    unitRangeEl.hidden = true;
     var shown = 0;
-    book.units.forEach(function (u) {
+    var windowed = !q && book.units.length > UNIT_WINDOW;
+    if (windowed) {
+      var anchor = book.units.findIndex(function (u) { return u.unit === currentUnit; });
+      if (anchor < 0 && currentTask) {
+        var taskTest = parseInt(currentTask.slice(1), 10);
+        anchor = book.units.findIndex(function (u) { return EXAM.testOf(u) === taskTest; });
+      }
+      if (sideWindowStart == null || (anchor >= 0 &&
+          (anchor < sideWindowStart || anchor >= sideWindowStart + UNIT_WINDOW))) {
+        sideWindowStart = Math.floor(Math.max(0, anchor) / UNIT_WINDOW) * UNIT_WINDOW;
+      }
+    }
+    if (windowed) {
+      sideWindowStart = Math.max(0, Math.min(sideWindowStart,
+        Math.floor((book.units.length - 1) / UNIT_WINDOW) * UNIT_WINDOW));
+      var range = el('div', 'unit-range');
+      function rangeButton(dir, key, arrow) {
+        var b = el('button');
+        b.type = 'button';
+        b.setAttribute('aria-label', t(key));
+        b.appendChild(el('span', 'ur-arrow', arrow));
+        b.appendChild(el('span', 'ur-label', t(key)));
+        b.addEventListener('click', function () {
+          sideWindowStart += dir * UNIT_WINDOW;
+          renderSidebar();
+          var next = unitRangeEl.querySelector('button[data-dir="' + dir + '"]');
+          if (next) next.focus();
+        });
+        b.setAttribute('data-dir', dir);
+        return b;
+      }
+      if (sideWindowStart > 0) range.appendChild(rangeButton(-1, 'side.earlier', '← '));
+      if (sideWindowStart + UNIT_WINDOW < book.units.length) {
+        range.appendChild(rangeButton(1, 'side.later', '→ '));
+      }
+      unitRangeEl.appendChild(range);
+      unitRangeEl.appendChild(el('div', 'unit-range-status', t('side.range', {
+        from: sideWindowStart + 1,
+        to: Math.min(sideWindowStart + UNIT_WINDOW, book.units.length),
+        total: book.units.length
+      })));
+      unitRangeEl.hidden = false;
+    }
+    book.units.forEach(function (u, unitIndex) {
       if (q) {
         var hay = u.unit + ' ' + (u.title || '').toLowerCase();
         if (hay.indexOf(q) === -1) return;
@@ -2496,6 +2547,9 @@
       shown++;
       var st = unitStats(book.id, u);
       var li = el('li');
+      if (windowed && (unitIndex < sideWindowStart || unitIndex >= sideWindowStart + UNIT_WINDOW)) {
+        li.hidden = true;
+      }
       var full = st.total > 0 && st.pct === 100;
       var a = el('a', 'unit-link' + (currentUnit === u.unit ? ' current' : '') +
         (full ? ' full' : ''));
@@ -2524,6 +2578,7 @@
         [['writing', 'W'], ['speaking', 'S']].forEach(function (pair) {
           if (!bookPrompts(testNo).some(function (p) { return p.skill === pair[0]; })) return;
           var tli = el('li');
+          if (li.hidden) tli.hidden = true;
           var key = pair[1].toLowerCase() + testNo;
           var here = currentTask === key;
           var ta = el('a', 'unit-link task-link' + (here ? ' current' : ''));
@@ -6854,7 +6909,7 @@
     main.appendChild(wait);
 
     var ids = scope === 'all' ? BOOKS.map(function (b) { return b.id; }) : [scope];
-    Promise.all(ids.map(loadBook)).then(function (bks) {
+    loadIndex().then(function () { return Promise.all(ids.map(loadBook)); }).then(function (bks) {
       var r = parseHash(location.hash);
       if (r.view !== 'drill' || r.id !== scope) return;   // navigated away meanwhile
       renderDrillSetup(scope, bks);
@@ -7864,6 +7919,8 @@
     // download still in flight can starve the fetch we are about to make.
     if (pdfOpen()) hidePdf(false);
     paintChrome(id);
+    setView('book');
+    sideWindowStart = null;
     currentUnit = null;
     searchEl.value = '';
     clear(unitListEl);
@@ -8028,5 +8085,10 @@
     refreshSrsBadge();
     SRS.onChange(refreshSrsBadge);
   }
-  loadIndex().then(route);
+  // Non-home routes can paint their own shell immediately. In particular,
+  // openBook shows a loader while it awaits the same shared index promise, so
+  // a deep link never spends that wait looking like the homepage. The library
+  // itself still waits because its totals come from the index.
+  if (parseHash(location.hash).view === 'home') loadIndex().then(route);
+  else { route(); loadIndex(); }
 })();

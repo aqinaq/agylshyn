@@ -209,6 +209,27 @@ a { color: var(--accent); text-decoration: none; }
 #search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
 .unit-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+.unit-range { display: flex; gap: 5px; padding: 4px 3px; }
+.unit-range button {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 5px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.unit-range button:hover { color: var(--text); border-color: var(--accent); }
+.unit-range-status {
+  padding: 3px 8px 5px;
+  color: var(--muted);
+  font-size: 10.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Theme and language, moved out of the cramped phone topbar. Hidden by
    default — on a wide screen those controls are still up in the topbar. */
@@ -275,6 +296,10 @@ a { color: var(--accent); text-decoration: none; }
   }
   body.side-min .unit-link.full .u-num { color: var(--ok); }
   body.side-min .empty-hint { padding: 12px 4px; font-size: 11px; text-align: center; }
+  body.side-min .unit-range { flex-direction: column; }
+  body.side-min .unit-range button { padding: 6px 2px; }
+  body.side-min .unit-range .ur-label { display: none; }
+  body.side-min .unit-range-status { padding-inline: 2px; font-size: 9px; }
 }
 
 .overlay {
@@ -931,6 +956,10 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
 
 .screen { min-height: 100vh; min-height: 100dvh; }
 
+/* The first-paint router in index.html sets data-view before #home is parsed.
+   A deep link therefore starts on its own loading shell, not the library. */
+body:not([data-view="home"]) #home { display: none; }
+
 /* ===== Home banner — the intro sits in its own panel above the picker ===== */
 .home-hero {
   position: relative;
@@ -1059,6 +1088,50 @@ body[data-view="class"] .main { margin: 0 auto; max-width: 980px; }
   margin: 22px 0 20px;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* ===== The learning platform, not only the book shelf ===== */
+.platform {
+  display: grid;
+  grid-template-columns: minmax(210px, .72fr) minmax(0, 2fr);
+  gap: 26px;
+  margin: 22px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.platform-head { align-self: center; }
+.platform-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.platform-head h2 { margin: 0 0 7px; font-size: 19px; line-height: 1.2; }
+.platform-head p,
+.platform-card p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.platform-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.platform-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 11px;
+  background: var(--panel-2);
+}
+.platform-card .pf-icon { display: inline-block; margin-bottom: 6px; color: var(--accent); font-size: 16px; }
+.platform-card h3 { margin: 0 0 4px; font-size: 13px; line-height: 1.25; }
+
+@media (max-width: 860px) {
+  .platform { grid-template-columns: 1fr; gap: 15px; }
+}
+@media (max-width: 560px) {
+  .platform { padding: 18px; }
+  .platform-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
