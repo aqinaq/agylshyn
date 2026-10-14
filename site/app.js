@@ -2488,7 +2488,7 @@
     return (u.skill === 'listening' ? 'L' : 'R') + (test == null ? '' : test);
   }
 
-  function renderSidebar() {
+  function renderSidebar(keepWindow) {
     if (!book) return;
     var q = (searchEl.value || '').trim().toLowerCase();
     var min = sideMin();
@@ -2503,7 +2503,7 @@
         var taskTest = parseInt(currentTask.slice(1), 10);
         anchor = book.units.findIndex(function (u) { return EXAM.testOf(u) === taskTest; });
       }
-      if (sideWindowStart == null || (anchor >= 0 &&
+      if (sideWindowStart == null || (!keepWindow && anchor >= 0 &&
           (anchor < sideWindowStart || anchor >= sideWindowStart + UNIT_WINDOW))) {
         sideWindowStart = Math.floor(Math.max(0, anchor) / UNIT_WINDOW) * UNIT_WINDOW;
       }
@@ -2520,7 +2520,7 @@
         b.appendChild(el('span', 'ur-label', t(key)));
         b.addEventListener('click', function () {
           sideWindowStart += dir * UNIT_WINDOW;
-          renderSidebar();
+          renderSidebar(true);
           var next = unitRangeEl.querySelector('button[data-dir="' + dir + '"]');
           if (next) next.focus();
         });

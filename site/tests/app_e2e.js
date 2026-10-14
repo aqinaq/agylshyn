@@ -180,6 +180,23 @@ async function run() {
   r.eq('every unit is in the list', book.units, 145);
   r.ok('the first unit has boxes to type in', book.inputs > 0, String(book.inputs));
 
+  const paging = await s.eval(`(() => {
+    const status = () => document.querySelector('#unitRange .unit-range-status').textContent.trim();
+    const visible = () => [...document.querySelectorAll('#unitList li:not([hidden]) .u-num')]
+      .map(n => n.textContent.trim());
+    const first = { status: status(), units: visible() };
+    document.querySelector('#unitRange [data-dir="1"]').click();
+    const second = { status: status(), units: visible() };
+    document.querySelector('#unitRange [data-dir="-1"]').click();
+    return { first, second, back: { status: status(), units: visible() } };
+  })()`);
+  r.ok('Later units opens 25–48 while the current unit stays open',
+    paging.second.units[0] === '25' && paging.second.units.at(-1) === '48' &&
+    /25.48.*145/.test(paging.second.status), JSON.stringify(paging.second));
+  r.ok('Earlier units returns to 1–24',
+    paging.first.units[0] === '1' && paging.back.units[0] === '1' &&
+    paging.back.units.at(-1) === '24', JSON.stringify(paging.back));
+
   /* A second open tab saves its counters after it receives this tab's first
      character. That storage event used to rebuild the whole route, detach the
      active input, and make every following character disappear until the box
